@@ -1351,6 +1351,14 @@ const plugin: OpenClawPluginDefinition = {
   description: "Smart LLM router — 55+ models, x402 micropayments, 78% cost savings",
   version: VERSION,
 
+  // Tell OpenClaw which config paths ClawRouter manages so it doesn't trigger
+  // a full gateway restart when injectModelsConfig() writes to openclaw.json.
+  // Without this, mcp.servers.blockrun changes hit OpenClaw's catch-all rule
+  // (no matching prefix → restartGateway = true) creating a restart loop.
+  reload: {
+    noopPrefixes: ["mcp.servers.blockrun"],
+  },
+
   register(api: OpenClawPluginApi) {
     // Check if ClawRouter is disabled via environment variable
     // Usage: CLAWROUTER_DISABLED=true openclaw gateway start
