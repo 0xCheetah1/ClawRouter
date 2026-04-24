@@ -56,6 +56,40 @@ describe("sanitizeOpenAIResponsePayload", () => {
     expect(payload.choices[1].delta?.content).toBe("Hello  world");
   });
 
+  it("strips leaked K2.6 internal monologue prelude and keeps the final reply", () => {
+    const payload = {
+      choices: [
+        {
+          message: {
+            role: "assistant",
+            content: `The user said "hey man". The bootstrap is still pending. I need to check what state we're in.
+
+We have:
+
+• IDENTITY.md updated
+• USER.md updated
+
+BOOTSTRAP.md says:
+
+1. Figure out name
+2. Update files
+
+Let me delete BOOTSTRAP.md and then respond casually.
+
+Hey. All dialed in now — name, vibe, the works. What's up?`,
+          },
+        },
+      ],
+    };
+
+    const changed = sanitizeOpenAIResponsePayload(payload, "moonshot/kimi-k2.6");
+
+    expect(changed).toBe(true);
+    expect(payload.choices[0].message?.content).toBe(
+      "Hey. All dialed in now — name, vibe, the works. What's up?",
+    );
+  });
+
   it("returns false when nothing needs sanitizing", () => {
     const payload = {
       choices: [

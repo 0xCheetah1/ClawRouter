@@ -1130,6 +1130,67 @@ function stripThinkingTokens(content: string): string {
   return cleaned;
 }
 
+const KIMI_K26_MODEL_RE = /(^|\/)kimi-k2\.6$/i;
+const INTERNAL_MONOLOGUE_MARKERS = [
+  /\bthe user said\b/i,
+  /\bi need to\b/i,
+  /\bi think i can\b/i,
+  /\blet me\b/i,
+  /\bbootstrap(?:\.md)?\b/i,
+  /\bidentity\.md\b/i,
+  /\bsoul\.md\b/i,
+  /\buser\.md\b/i,
+  /\bworkflow says\b/i,
+  /\bdelete bootstrap\.md\b/i,
+  /\ball dialed in now\b/i,
+];
+
+function isLikelyInternalMonologueParagraph(paragraph: string): boolean {
+  const text = paragraph.trim();
+  if (!text) return false;
+  if (/^[•*-]\s/m.test(text)) return true;
+  if (INTERNAL_MONOLOGUE_MARKERS.some((re) => re.test(text))) return true;
+  if (/(^|\n)(we have:|i should:|i should either|i can complete|i'll delete)/im.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Some Kimi K2.6 responses leak the model's planning transcript as plain text
+ * before the actual user-facing reply. Keep only the trailing non-monologue
+ * paragraph block when that pattern is detected.
+ */
+function stripKimiInternalMonologue(content: string, modelId?: string): string {
+  if (!content || !modelId || !KIMI_K26_MODEL_RE.test(modelId)) return content;
+
+  const paragraphs = content
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (paragraphs.length < 2) return content;
+
+  const internalIdxs = paragraphs
+    .map((p, i) => (isLikelyInternalMonologueParagraph(p) ? i : -1))
+    .filter((i) => i >= 0);
+  if (internalIdxs.length === 0) return content;
+
+  let tailStart = paragraphs.length - 1;
+  while (tailStart >= 0 && isLikelyInternalMonologueParagraph(paragraphs[tailStart])) {
+    tailStart--;
+  }
+  if (tailStart < 0) return "";
+
+  let firstTail = tailStart;
+  while (firstTail - 1 >= 0 && !isLikelyInternalMonologueParagraph(paragraphs[firstTail - 1])) {
+    firstTail--;
+  }
+
+  // Only strip when there is clearly internal monologue before the final reply block.
+  if (firstTail === 0) return content;
+  return paragraphs.slice(firstTail).join("\n\n");
+}
+
 type OpenAIResponseChoice = {
   message?: Record<string, unknown>;
   delta?: Record<string, unknown>;
@@ -1150,7 +1211,10 @@ type OpenAIResponsePayload = {
  *
  * Mutates `payload` in place and returns whether anything changed.
  */
-export function sanitizeOpenAIResponsePayload(payload: OpenAIResponsePayload): boolean {
+export function sanitizeOpenAIResponsePayload(
+  payload: OpenAIResponsePayload,
+  modelId?: string,
+): boolean {
   if (!Array.isArray(payload.choices) || payload.choices.length === 0) return false;
 
   let changed = false;
@@ -1159,7 +1223,7 @@ export function sanitizeOpenAIResponsePayload(payload: OpenAIResponsePayload): b
       if (!container) continue;
 
       if (typeof container.content === "string") {
-        const stripped = stripThinkingTokens(container.content);
+        const stripped = stripKimiInternalMonologue(stripThinkingTokens(container.content), modelId);
         if (stripped !== container.content) {
           container.content = stripped;
           changed = true;
@@ -5095,7 +5159,7 @@ async function proxyRequest(
             usage?: unknown;
           };
 
-          sanitizeOpenAIResponsePayload(rsp);
+          sanitizeOpenAIResponsePayload(rsp, actualModelUsed || rsp.model);
 
           // Extract input token count from upstream response
           if (rsp.usage && typeof rsp.usage === "object") {
@@ -5343,7 +5407,7 @@ async function proxyRequest(
       if (responseBody.length > 0) {
         try {
           const parsed = JSON.parse(responseBody.toString()) as OpenAIResponsePayload;
-          if (sanitizeOpenAIResponsePayload(parsed)) {
+          if (sanitizeOpenAIResponsePayload(parsed, actualModelUsed)) {
             responseBody = Buffer.from(JSON.stringify(parsed));
           }
         } catch {
