@@ -1130,6 +1130,52 @@ function stripThinkingTokens(content: string): string {
   return cleaned;
 }
 
+type OpenAIResponseChoice = {
+  message?: Record<string, unknown>;
+  delta?: Record<string, unknown>;
+};
+
+type OpenAIResponsePayload = {
+  choices?: OpenAIResponseChoice[];
+};
+
+/**
+ * Sanitize assistant-facing OpenAI response payloads before returning them to clients.
+ *
+ * Why this exists:
+ * - Some upstream models leak internal reasoning in `reasoning_content`.
+ * - Some models embed tagged thinking blocks directly in `content`.
+ *
+ * ClawRouter should not forward either to downstream chat UIs by default.
+ *
+ * Mutates `payload` in place and returns whether anything changed.
+ */
+export function sanitizeOpenAIResponsePayload(payload: OpenAIResponsePayload): boolean {
+  if (!Array.isArray(payload.choices) || payload.choices.length === 0) return false;
+
+  let changed = false;
+  for (const choice of payload.choices) {
+    for (const container of [choice.message, choice.delta]) {
+      if (!container) continue;
+
+      if (typeof container.content === "string") {
+        const stripped = stripThinkingTokens(container.content);
+        if (stripped !== container.content) {
+          container.content = stripped;
+          changed = true;
+        }
+      }
+
+      if ("reasoning_content" in container) {
+        delete container.reasoning_content;
+        changed = true;
+      }
+    }
+  }
+
+  return changed;
+}
+
 /** Callback info for low balance warning */
 export type LowBalanceInfo = {
   balanceUSD: string;
@@ -5049,6 +5095,8 @@ async function proxyRequest(
             usage?: unknown;
           };
 
+          sanitizeOpenAIResponsePayload(rsp);
+
           // Extract input token count from upstream response
           if (rsp.usage && typeof rsp.usage === "object") {
             const u = rsp.usage as Record<string, unknown>;
@@ -5294,15 +5342,9 @@ async function proxyRequest(
       // Strip thinking tokens from non-streaming responses (same as streaming path)
       if (responseBody.length > 0) {
         try {
-          const parsed = JSON.parse(responseBody.toString()) as {
-            choices?: Array<{ message?: { content?: string } }>;
-          };
-          if (parsed.choices?.[0]?.message?.content) {
-            const stripped = stripThinkingTokens(parsed.choices[0].message.content);
-            if (stripped !== parsed.choices[0].message.content) {
-              parsed.choices[0].message.content = stripped;
-              responseBody = Buffer.from(JSON.stringify(parsed));
-            }
+          const parsed = JSON.parse(responseBody.toString()) as OpenAIResponsePayload;
+          if (sanitizeOpenAIResponsePayload(parsed)) {
+            responseBody = Buffer.from(JSON.stringify(parsed));
           }
         } catch {
           /* not JSON, skip */
