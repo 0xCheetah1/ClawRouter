@@ -8,7 +8,11 @@ describe("TOP_MODELS", () => {
     expect(TOP_MODELS).toEqual(topModelsJson);
     expect(new Set(TOP_MODELS).size).toBe(TOP_MODELS.length);
     expect(TOP_MODELS).toContain("openai/gpt-5.5");
+    expect(TOP_MODELS).toContain("openai/gpt-6-astra");
+    expect(TOP_MODELS).toContain("openai/chat-latest");
     expect(TOP_MODELS).toContain("xai/grok-4.5");
+    expect(TOP_MODELS).toContain("xai/grok-4.6");
+    expect(TOP_MODELS).toContain("anthropic/claude-fable-5.1");
     expect(TOP_MODELS).toContain("anthropic/claude-fable-5");
     expect(TOP_MODELS).toContain("deepseek/deepseek-reasoner");
     expect(TOP_MODELS).toContain("free/nemotron-3.5-lightning");

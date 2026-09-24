@@ -230,9 +230,61 @@ describe("resolveModelAlias", () => {
     const instant = BLOCKRUN_MODELS.find((m) => m.id === "openai/chat-latest");
     expect(instant?.reasoning).toBeUndefined();
     expect(instant?.agentic).toBeUndefined();
-    // Deliberately NOT in the picker: a rolling alias is a pin-on-purpose model,
-    // not a curated default (same treatment as sonnet-4.5 / opus-4.6).
-    expect(TOP_MODELS).not.toContain("openai/chat-latest");
+    expect(TOP_MODELS).toContain("openai/chat-latest");
+  });
+
+  it("registers latest curated upstream additions", () => {
+    expect(BLOCKRUN_MODELS.find((m) => m.id === "anthropic/claude-fable-5.1")).toEqual({
+      id: "anthropic/claude-fable-5.1",
+      name: "Claude Fable 5.1",
+      version: "5.1",
+      inputPrice: 10.0,
+      outputPrice: 50.0,
+      contextWindow: 1000000,
+      maxOutput: 128000,
+      reasoning: true,
+      vision: true,
+      agentic: true,
+      toolCalling: true,
+    });
+    expect(BLOCKRUN_MODELS.find((m) => m.id === "openai/gpt-6-astra")).toEqual({
+      id: "openai/gpt-6-astra",
+      name: "GPT-6 Astra",
+      version: "6",
+      inputPrice: 10.0,
+      outputPrice: 50.0,
+      contextWindow: 1050000,
+      maxOutput: 128000,
+      reasoning: true,
+      vision: true,
+      agentic: true,
+      toolCalling: true,
+    });
+    expect(BLOCKRUN_MODELS.find((m) => m.id === "xai/grok-4.6")).toEqual({
+      id: "xai/grok-4.6",
+      name: "Grok 4.6",
+      version: "4.6",
+      inputPrice: 2.0,
+      outputPrice: 6.0,
+      contextWindow: 500000,
+      maxOutput: 16384,
+      reasoning: true,
+      vision: true,
+      agentic: true,
+      toolCalling: true,
+    });
+    for (const id of [
+      "anthropic/claude-fable-5.1",
+      "openai/gpt-6-astra",
+      "openai/gpt-5.6-terra-pro",
+      "openai/gpt-5.6-sol-pro",
+      "openai/gpt-5.6-luna-pro",
+      "openai/chat-latest",
+      "xai/grok-4.6",
+    ]) {
+      expect(TOP_MODELS).toContain(id);
+      expect(VISIBLE_OPENCLAW_MODELS.map((m) => m.id)).toContain(id);
+    }
   });
 });
 

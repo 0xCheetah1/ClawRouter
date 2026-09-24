@@ -38,6 +38,8 @@ export const MODEL_ALIASES: Record<string, string> = {
   // land on the real model again. Note: `anthropic/claude-fable-5` must NOT be an
   // alias key — it is a live catalog id, and alias keys shadow catalog entries.
   fable: "anthropic/claude-fable-5",
+  "fable-5.1": "anthropic/claude-fable-5.1",
+  "fable-5-1": "anthropic/claude-fable-5.1",
   "fable-5": "anthropic/claude-fable-5",
   "fable-5.0": "anthropic/claude-fable-5",
   // Opus 5 (2026-07-24) takes the bare `opus` alias: identical $5/$25 and the
@@ -104,6 +106,8 @@ export const MODEL_ALIASES: Record<string, string> = {
   "sol-pro": "openai/gpt-5.6-sol-pro",
   "terra-pro": "openai/gpt-5.6-terra-pro",
   "luna-pro": "openai/gpt-5.6-luna-pro",
+  "gpt-6-astra": "openai/gpt-6-astra",
+  astra: "openai/gpt-6-astra",
   "gpt-5.5": "openai/gpt-5.5",
   "gpt-5.5-pro": "openai/gpt-5.5-pro",
   // ChatGPT Instant. `chat-latest` is a rolling upstream id — pinning it means
@@ -667,6 +671,19 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
   // Terra tier is the sane default. Sol stays reachable via the explicit
   // `gpt-5.6-sol` pin for callers who want the deepest tier and accept the risk.
   {
+    id: "openai/gpt-6-astra",
+    name: "GPT-6 Astra",
+    version: "6",
+    inputPrice: 10.0,
+    outputPrice: 50.0,
+    contextWindow: 1050000,
+    maxOutput: 128000,
+    reasoning: true,
+    vision: true,
+    agentic: true,
+    toolCalling: true,
+  },
+  {
     id: "openai/gpt-5.6-sol",
     name: "GPT-5.6 Sol",
     version: "5.6",
@@ -1071,6 +1088,19 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
   // claude-fable-5 relisted 2026-07-06 after Anthropic restored the offer
   // (delisted 2026-06-13). Mythos-class tier above Opus; thinking is always on
   // upstream, so there is no non-reasoning mode to model here.
+  {
+    id: "anthropic/claude-fable-5.1",
+    name: "Claude Fable 5.1",
+    version: "5.1",
+    inputPrice: 10.0,
+    outputPrice: 50.0,
+    contextWindow: 1000000,
+    maxOutput: 128000,
+    reasoning: true,
+    vision: true,
+    agentic: true,
+    toolCalling: true,
+  },
   {
     id: "anthropic/claude-fable-5",
     name: "Claude Fable 5",
@@ -1590,6 +1620,19 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
   // request at $5.00/$18.00 once prompt tokens reach 200K, which this registry has
   // no field to express. That skews `logUsage` telemetry on long-context calls, not
   // the charge — payment is server-dictated via 402.
+  {
+    id: "xai/grok-4.6",
+    name: "Grok 4.6",
+    version: "4.6",
+    inputPrice: 2.0,
+    outputPrice: 6.0,
+    contextWindow: 500000,
+    maxOutput: 16384,
+    reasoning: true,
+    vision: true,
+    agentic: true,
+    toolCalling: true,
+  },
   {
     id: "xai/grok-4.5",
     name: "Grok 4.5",
