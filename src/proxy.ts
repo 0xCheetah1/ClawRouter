@@ -28,8 +28,14 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 // request-scoped store, and the logging code reads it after payFetch completes.
 // `amountUsd` is what an x402 payment actually signed for; `estimatedUsd` is
 // what THIS attempt is expected to cost, published for the API-key rail's
-// spend-window check, which has no 402 quote to read (#329).
-const paymentStore = new AsyncLocalStorage<{ amountUsd: number; estimatedUsd?: number }>();
+// spend-window check, which has no 402 quote to read (#329). `sessionSpend` is
+// this request's share of its session's `maxCostPerRun` budget: the signing
+// hooks check and record against it (see session-spend.ts).
+const paymentStore = new AsyncLocalStorage<{
+  amountUsd: number;
+  estimatedUsd?: number;
+  sessionSpend?: SessionSpend;
+}>();
 import { finished, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { AddressInfo } from "node:net";
@@ -102,7 +108,15 @@ import {
   POLICY_LISTS,
   SpendControl,
   SpendPolicyError,
+  parseQuotedAmountMicros,
 } from "./spend-control.js";
+import {
+  CostCapError,
+  SessionSpend,
+  microsToUsd,
+  parseMicros,
+  usdToMicros,
+} from "./session-spend.js";
 import { compressContext, shouldCompress, type NormalizedMessage } from "./compression/index.js";
 // Balance error classes are available for programmatic use but not used in the
 // proxy (universal free fallback means we don't throw balance errors anymore):
@@ -2798,6 +2812,27 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   // `account` stays undefined and every wallet-shaped field reads off it.
   const account = walletKey ? privateKeyToAccount(walletKey as `0x${string}`) : undefined;
   const x402 = authMode === "wallet" ? new x402Client() : undefined;
+  // The strict `maxCostPerRun` cap, enforced where the money is: before every
+  // payment is created, against the quoted amount. Admission alone cannot hold
+  // the cap — a retry or fallback inside one request signs again (ET-20261010).
+  // Registered BEFORE the spend-policy hook: x402 does not run failure hooks
+  // when a before-hook throws, so refusing after SpendControl reserved would
+  // leak its reservation.
+  x402?.onBeforePaymentCreation(async (context) => {
+    const spend = paymentStore.getStore()?.sessionSpend;
+    if (!spend?.isStrict) return;
+    // v2 `amount` or v1 `maxAmountRequired` — the v1 SVM schemes are registered too.
+    const quote = parseQuotedAmountMicros(context.selectedRequirements);
+    if (quote === undefined) {
+      // Fail closed: an amount we cannot read cannot be shown to fit the cap.
+      throw new CostCapError("ClawRouter cost cap: unreadable payment amount in the 402 quote");
+    }
+    if (!spend.coverPayment(quote)) {
+      throw new CostCapError(
+        `ClawRouter cost cap exceeded: signing $${microsToUsd(quote).toFixed(6)} would push this session past its maxCostPerRun limit`,
+      );
+    }
+  });
   if (x402 && account) {
     const evmPublicClient = createPublicClient({ chain: base, transport: http() });
     const evmSigner = toClientEvmSigner(account, evmPublicClient);
@@ -2879,6 +2914,16 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     console.log(`[ClawRouter] Payment signed on ${chain} (${network}) — $${amountUsd.toFixed(6)}`);
   });
 
+  // Signed: the payment counts against the session's maxCostPerRun budget now,
+  // whatever the response turns out to be (session-spend.ts). Registered LAST
+  // among the after-hooks: if an earlier one throws, x402 never returns the
+  // payment, and nothing that was never sent gets recorded as spend.
+  x402?.onAfterPaymentCreation(async (context) => {
+    const spend = paymentStore.getStore()?.sessionSpend;
+    const amount = parseQuotedAmountMicros(context.selectedRequirements);
+    if (spend && amount !== undefined) spend.recordSigned(amount);
+  });
+
   // The upstream fetch. Same signature on both rails, which is what lets every
   // handler below stay unaware of how the call is being paid for: one settles a
   // 402 by signing USDC, the other never sees a 402 because the bearer token
@@ -2910,6 +2955,9 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           // server-side against account credit, so there is no per-request
           // settlement for an observer to report.
           onPayment: options.onPayment,
+          // A 402 answer to a signed payment means the gateway declined it and
+          // nothing settled — take it back off the session's budget.
+          onPaymentDeclined: () => paymentStore.getStore()?.sessionSpend?.voidLastSigned(),
         });
 
   // Create balance monitor for pre-request checks (lazy import to avoid loading @solana/kit on Base chain)
@@ -4612,6 +4660,20 @@ async function tryModelRequest(
     return { success: true, response };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    if (err instanceof CostCapError) {
+      // The strict session cap refused to sign this attempt (a retry or
+      // fallback after earlier spend). Same finality as a policy refusal, but
+      // reported the way an over-cap admission is: 429 cost_cap_exceeded.
+      return {
+        success: false,
+        errorBody: JSON.stringify({
+          error: { message: errorMsg, type: "cost_cap_exceeded", code: "cost_cap_exceeded" },
+        }),
+        errorStatus: 429,
+        isProviderError: false,
+        errorCategory: "payment_error",
+      };
+    }
     if (err instanceof SpendPolicyError) {
       // A local refusal, not an upstream fault. Retrying it walks every paid
       // model in the chain (a wasted 402 round trip each) and then lands on a
@@ -6079,18 +6141,22 @@ async function proxyRequest(
   }
 
   // --- Cost cap check: strict mode hard-stop ---
-  // In 'strict' mode, reject if the projected session spend (accumulated + this request's
-  // estimate) would exceed the cap. Checking projected cost (not just historical) prevents
-  // a single large request from overshooting the cap before it's recorded.
+  // In 'strict' mode, reject if the projected session spend would exceed the cap:
+  // what the session has spent, plus what its other in-flight requests hold,
+  // plus this request's estimate. Admission HOLDS the estimate in the same
+  // synchronous step, so concurrent requests cannot all pass on the same
+  // spent total, and the signing hooks then check and record every payment
+  // against it (session-spend.ts). Checking projected cost (not just historical)
+  // prevents a single large request from overshooting the cap before it's recorded.
   // In 'graceful' mode (default), the cap is enforced via model downgrade below.
   // Must happen before streaming headers are sent.
+  let sessionSpend: SessionSpend | undefined;
   if (
     options.maxCostPerRunUsd &&
     effectiveSessionId &&
     !isFreeModel &&
     (options.maxCostPerRunMode ?? "graceful") === "strict"
   ) {
-    const runCostUsd = sessionStore.getSessionCostUsd(effectiveSessionId);
     // Include this request's estimated cost so even the first request is blocked
     // if it would push the session over the cap.
     const thisReqEstStr =
@@ -6099,11 +6165,20 @@ async function proxyRequest(
         : modelId
           ? estimateAmount(modelId, body.length, maxTokens)
           : undefined;
-    const thisReqEstUsd = thisReqEstStr ? Number(thisReqEstStr) / 1_000_000 : 0;
-    const projectedCostUsd = runCostUsd + thisReqEstUsd;
-    if (projectedCostUsd > options.maxCostPerRunUsd) {
+    const admission = SessionSpend.admit(
+      sessionStore,
+      effectiveSessionId,
+      usdToMicros(options.maxCostPerRunUsd),
+      parseMicros(thisReqEstStr) ?? 0n,
+    );
+    if (!admission.admitted) {
+      const spentUsd = microsToUsd(admission.spentMicros);
+      const heldUsd = microsToUsd(admission.heldMicros);
+      const estUsd = microsToUsd(admission.estimateMicros);
+      const projectedCostUsd = spentUsd + heldUsd + estUsd;
+      const breakdown = `spent $${spentUsd.toFixed(4)}${heldUsd > 0 ? ` + in flight $${heldUsd.toFixed(4)}` : ""} + est $${estUsd.toFixed(4)}`;
       console.log(
-        `[ClawRouter] Cost cap exceeded for session ${effectiveSessionId.slice(0, 8)}...: projected $${projectedCostUsd.toFixed(4)} (spent $${runCostUsd.toFixed(4)} + est $${thisReqEstUsd.toFixed(4)}) > $${options.maxCostPerRunUsd} limit`,
+        `[ClawRouter] Cost cap exceeded for session ${effectiveSessionId.slice(0, 8)}...: projected $${projectedCostUsd.toFixed(4)} (${breakdown}) > $${options.maxCostPerRunUsd} limit`,
       );
       res.writeHead(429, {
         "Content-Type": "application/json",
@@ -6112,7 +6187,7 @@ async function proxyRequest(
       res.end(
         JSON.stringify({
           error: {
-            message: `ClawRouter cost cap exceeded: projected spend $${projectedCostUsd.toFixed(4)} (spent $${runCostUsd.toFixed(4)} + est $${thisReqEstUsd.toFixed(4)}) would exceed limit $${options.maxCostPerRunUsd}`,
+            message: `ClawRouter cost cap exceeded: projected spend $${projectedCostUsd.toFixed(4)} (${breakdown}) would exceed limit $${options.maxCostPerRunUsd}`,
             type: "cost_cap_exceeded",
             code: "cost_cap_exceeded",
           },
@@ -6121,7 +6196,15 @@ async function proxyRequest(
       deduplicator.removeInflight(dedupKey);
       return;
     }
+    sessionSpend = admission.spend;
+  } else if (options.maxCostPerRunUsd && effectiveSessionId) {
+    // Graceful mode (and a free model in strict mode) refuses nothing, but a
+    // signed payment is still spend — including one whose response was lost —
+    // so it is recorded the same way.
+    sessionSpend = SessionSpend.track(sessionStore, effectiveSessionId);
   }
+  const requestStore = paymentStore.getStore();
+  if (requestStore) requestStore.sessionSpend = sessionSpend;
 
   // --- Budget pre-check: block when remaining budget can't cover the request ---
   // Must happen BEFORE streaming headers (429 can't be sent after SSE headers are flushed).
@@ -6715,12 +6798,12 @@ async function proxyRequest(
         actualModelUsed = tryModel;
         recordOutcome(tryModel, requestKind, true);
         console.log(`[ClawRouter] Success with model: ${tryModel}`);
-        // Accumulate estimated cost to session for maxCostPerRun tracking
-        if (options.maxCostPerRunUsd && effectiveSessionId && !FREE_MODELS.has(tryModel)) {
-          const costEst = estimateAmount(tryModel, body.length, maxTokens);
-          if (costEst) {
-            sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-          }
+        // Record this success against the session's maxCostPerRun budget. A
+        // signed payment was already recorded at its real amount when it was
+        // created; only an unsigned success (API-key rail) records the estimate.
+        if (sessionSpend && !FREE_MODELS.has(tryModel)) {
+          const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+          if (costEst !== undefined) sessionSpend.recordSuccess(costEst);
         }
         break;
       }
@@ -6819,11 +6902,9 @@ async function proxyRequest(
             upstream = retryResult.response;
             actualModelUsed = tryModel;
             console.log(`[ClawRouter] Explicit-pin retry succeeded for: ${tryModel}`);
-            if (options.maxCostPerRunUsd && effectiveSessionId && !FREE_MODELS.has(tryModel)) {
-              const costEst = estimateAmount(tryModel, body.length, maxTokens);
-              if (costEst) {
-                sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-              }
+            if (sessionSpend && !FREE_MODELS.has(tryModel)) {
+              const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+              if (costEst !== undefined) sessionSpend.recordSuccess(costEst);
             }
             break;
           }
@@ -6902,11 +6983,9 @@ async function proxyRequest(
                 upstream = retryResult.response;
                 actualModelUsed = tryModel;
                 console.log(`[ClawRouter] Rate-limit retry succeeded for: ${tryModel}`);
-                if (options.maxCostPerRunUsd && effectiveSessionId && !FREE_MODELS.has(tryModel)) {
-                  const costEst = estimateAmount(tryModel, body.length, maxTokens);
-                  if (costEst) {
-                    sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-                  }
+                if (sessionSpend && !FREE_MODELS.has(tryModel)) {
+                  const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+                  if (costEst !== undefined) sessionSpend.recordSuccess(costEst);
                 }
                 break;
               }
@@ -7037,6 +7116,9 @@ async function proxyRequest(
       );
       const rawErrBody = lastError?.body || structuredMessage;
       const errStatus = lastError?.status || 502;
+      // The strict cap refused to sign mid-request (a retry or fallback after
+      // earlier spend): flag it the way an admission refusal is flagged.
+      const costCapRefusal = errStatus === 429 && rawErrBody.includes('"cost_cap_exceeded"');
 
       // Transform payment errors into user-friendly messages
       const transformedErr = transformPaymentError(rawErrBody);
@@ -7089,6 +7171,7 @@ async function proxyRequest(
           "x-context-used-kb": String(originalContextSizeKB),
           "x-context-limit-kb": String(CONTEXT_LIMIT_KB),
           ...(lastError?.requestId ? { "x-blockrun-request-id": lastError.requestId } : {}),
+          ...(costCapRefusal ? { "X-ClawRouter-Cost-Cap-Exceeded": "1" } : {}),
         });
         res.end(transformedErr);
 
@@ -7713,6 +7796,10 @@ async function proxyRequest(
     }
 
     throw err;
+  } finally {
+    // Return whatever budget this request still holds. Spend it signed stays
+    // recorded; only the unspent part of the admission hold is released.
+    sessionSpend?.release();
   }
 
   // --- Usage logging (fire-and-forget) ---

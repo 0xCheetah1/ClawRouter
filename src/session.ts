@@ -49,6 +49,9 @@ export const DEFAULT_SESSION_CONFIG: SessionConfig = {
  */
 export class SessionStore {
   private sessions: Map<string, SessionEntry> = new Map();
+  // Kept apart from `sessions`: a hold belongs to requests still running, so it
+  // must not vanish when the idle-session sweep drops an entry mid-request.
+  private sessionHolds: Map<string, bigint> = new Map();
   private config: SessionConfig;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -257,15 +260,40 @@ export class SessionStore {
       this.sessions.set(sessionId, entry);
     }
     entry.sessionCostMicros += additionalMicros;
+    // A negative adjustment (a signed payment the gateway declined) can only
+    // undo what was recorded, never push the total below zero.
+    if (entry.sessionCostMicros < 0n) entry.sessionCostMicros = 0n;
   }
 
   /**
    * Get the total accumulated cost for a session in USD.
    */
   getSessionCostUsd(sessionId: string): number {
-    const entry = this.sessions.get(sessionId);
-    if (!entry) return 0;
-    return Number(entry.sessionCostMicros) / 1_000_000;
+    return Number(this.getSessionCostMicros(sessionId)) / 1_000_000;
+  }
+
+  /**
+   * Get the total accumulated cost for a session in USDC micros.
+   */
+  getSessionCostMicros(sessionId: string): bigint {
+    return this.sessions.get(sessionId)?.sessionCostMicros ?? 0n;
+  }
+
+  /**
+   * Budget held by a session's in-flight requests (USDC micros) — admitted
+   * against the strict cap but not yet spent. See session-spend.ts.
+   */
+  getSessionHoldMicros(sessionId: string): bigint {
+    return this.sessionHolds.get(sessionId) ?? 0n;
+  }
+
+  /**
+   * Grow (positive) or release (negative) a session's in-flight hold.
+   */
+  adjustSessionHold(sessionId: string, deltaMicros: bigint): void {
+    const next = (this.sessionHolds.get(sessionId) ?? 0n) + deltaMicros;
+    if (next > 0n) this.sessionHolds.set(sessionId, next);
+    else this.sessionHolds.delete(sessionId);
   }
 
   /**

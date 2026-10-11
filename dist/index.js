@@ -34678,6 +34678,11 @@ function getSharedSpendControl() {
   host.__clawrouterSharedSpendControl ??= new SpendControl();
   return host.__clawrouterSharedSpendControl;
 }
+function parseQuotedAmountMicros(selected) {
+  const raw = selected.amount ?? selected.maxAmountRequired;
+  if (typeof raw !== "string" || !CANONICAL_AMOUNT.test(raw)) return void 0;
+  return BigInt(raw);
+}
 function parseQuotedAmountUsd(selected) {
   const raw = selected.amount ?? selected.maxAmountRequired;
   if (typeof raw !== "string" || !CANONICAL_AMOUNT.test(raw)) {
@@ -35443,6 +35448,16 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
       return est === void 0 ? void 0 : Number(est);
     };
     const needMicros = estimateMicros();
+    const notifyDeclinedPayment = () => {
+      if (!options?.onPaymentDeclined) return;
+      try {
+        options.onPaymentDeclined();
+      } catch (error) {
+        console.error(
+          `[ClawRouter] onPaymentDeclined callback failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    };
     const cached = !options?.skipPreAuth ? cache2.get(cacheKey2) : void 0;
     const preAuthCovers = cached !== void 0 && Date.now() - cached.cachedAt < ttlMs && cached.coverMicros !== void 0 && needMicros !== void 0 && needMicros <= cached.coverMicros;
     if (preAuthCovers) {
@@ -35461,6 +35476,7 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
           return response2;
         }
         paymentInFlight = false;
+        notifyDeclinedPayment();
         cache2.delete(cacheKey2);
       } catch (err) {
         cache2.delete(cacheKey2);
@@ -35505,6 +35521,7 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
       clonedRequest.headers.set(key3, value);
     }
     const paidResponse = await baseFetch(clonedRequest);
+    if (paidResponse.status === 402) notifyDeclinedPayment();
     notifyAcceptedPayment(paidResponse, payload);
     return paidResponse;
   };
@@ -64542,6 +64559,132 @@ var init_api_key = __esm({
   }
 });
 
+// src/session-spend.ts
+function parseMicros(raw) {
+  if (raw === void 0 || !/^\d+$/.test(raw)) return void 0;
+  return BigInt(raw);
+}
+function usdToMicros(usd) {
+  return BigInt(Math.round(usd * 1e6));
+}
+function microsToUsd(micros) {
+  return Number(micros) / 1e6;
+}
+var SessionSpend, CostCapError;
+var init_session_spend = __esm({
+  "src/session-spend.ts"() {
+    "use strict";
+    init_spend_control();
+    SessionSpend = class _SessionSpend {
+      constructor(store, sessionId, capMicros, holdMicros) {
+        this.store = store;
+        this.sessionId = sessionId;
+        this.capMicros = capMicros;
+        this.heldMicros = holdMicros;
+        if (holdMicros > 0n) store.adjustSessionHold(sessionId, holdMicros);
+      }
+      store;
+      sessionId;
+      capMicros;
+      /** Budget this request still holds against the session (strict mode only). */
+      heldMicros;
+      /** Sum of payments signed by this request that still count. */
+      signedMicros = 0n;
+      /** The most recent signature not yet settled or voided — the one a decline undoes. */
+      lastSignedMicros = 0n;
+      released = false;
+      /**
+       * Strict mode: admit the request only if the session's spend, plus what its
+       * other in-flight requests hold, plus this request's estimate fits the cap —
+       * and hold the estimate in the same step.
+       */
+      static admit(store, sessionId, capMicros, estimateMicros) {
+        const spentMicros = store.getSessionCostMicros(sessionId);
+        const heldMicros = store.getSessionHoldMicros(sessionId);
+        if (spentMicros + heldMicros + estimateMicros > capMicros) {
+          return { admitted: false, spentMicros, heldMicros, estimateMicros };
+        }
+        return {
+          admitted: true,
+          spend: new _SessionSpend(store, sessionId, capMicros, estimateMicros)
+        };
+      }
+      /** Graceful mode: track signed spend, enforce nothing. */
+      static track(store, sessionId) {
+        return new _SessionSpend(store, sessionId, void 0, 0n);
+      }
+      get isStrict() {
+        return this.capMicros !== void 0;
+      }
+      /**
+       * Before a payment is created: may this request sign `quoteMicros`?
+       * Spend already recorded (including this request's own earlier signatures)
+       * plus what OTHER in-flight requests hold, plus the quote, must fit the cap.
+       * Always true in graceful mode.
+       */
+      coverPayment(quoteMicros) {
+        if (this.capMicros === void 0) return true;
+        const spent = this.store.getSessionCostMicros(this.sessionId);
+        const heldByOthers = this.store.getSessionHoldMicros(this.sessionId) - this.heldMicros;
+        if (spent + heldByOthers + quoteMicros > this.capMicros) return false;
+        if (quoteMicros > this.heldMicros) {
+          this.store.adjustSessionHold(this.sessionId, quoteMicros - this.heldMicros);
+          this.heldMicros = quoteMicros;
+        }
+        return true;
+      }
+      /** A payment was signed: it is spend now, and replaces part of the hold. */
+      recordSigned(amountMicros) {
+        if (amountMicros <= 0n) return;
+        this.signedMicros += amountMicros;
+        this.lastSignedMicros = amountMicros;
+        this.store.addSessionCost(this.sessionId, amountMicros);
+        this.shrinkHold(amountMicros);
+      }
+      /**
+       * The gateway answered the payment just signed with a 402: nothing settled.
+       * Payments within one request are signed and sent one at a time, so the
+       * decline always belongs to the latest signature. Undone at most once.
+       */
+      voidLastSigned() {
+        const undo = this.lastSignedMicros;
+        this.lastSignedMicros = 0n;
+        if (undo <= 0n) return;
+        this.signedMicros -= undo;
+        this.store.addSessionCost(this.sessionId, -undo);
+      }
+      /**
+       * An attempt succeeded. When nothing was signed for this request (the API
+       * key rail), the local estimate is the only record of the spend. When a
+       * payment was signed, it is already recorded at its real amount.
+       */
+      recordSuccess(estimateMicros) {
+        if (this.signedMicros > 0n || estimateMicros <= 0n) return;
+        this.store.addSessionCost(this.sessionId, estimateMicros);
+        this.shrinkHold(estimateMicros);
+      }
+      /** The request is over: return whatever it still holds. Idempotent. */
+      release() {
+        if (this.released) return;
+        this.released = true;
+        this.shrinkHold(this.heldMicros);
+      }
+      shrinkHold(byMicros) {
+        const drop = byMicros < this.heldMicros ? byMicros : this.heldMicros;
+        if (drop <= 0n) return;
+        this.heldMicros -= drop;
+        this.store.adjustSessionHold(this.sessionId, -drop);
+      }
+    };
+    CostCapError = class extends SpendPolicyError {
+      constructor(reason) {
+        super(reason);
+        this.name = "CostCapError";
+      }
+    };
+  }
+});
+
 // src/compression/types.ts
 var DEFAULT_COMPRESSION_CONFIG;
 var init_types2 = __esm({
@@ -65389,6 +65532,9 @@ var init_session = __esm({
     };
     SessionStore = class {
       sessions = /* @__PURE__ */ new Map();
+      // Kept apart from `sessions`: a hold belongs to requests still running, so it
+      // must not vanish when the idle-session sweep drops an entry mid-request.
+      sessionHolds = /* @__PURE__ */ new Map();
       config;
       cleanupInterval = null;
       constructor(config = {}) {
@@ -65564,14 +65710,34 @@ var init_session = __esm({
           this.sessions.set(sessionId, entry);
         }
         entry.sessionCostMicros += additionalMicros;
+        if (entry.sessionCostMicros < 0n) entry.sessionCostMicros = 0n;
       }
       /**
        * Get the total accumulated cost for a session in USD.
        */
       getSessionCostUsd(sessionId) {
-        const entry = this.sessions.get(sessionId);
-        if (!entry) return 0;
-        return Number(entry.sessionCostMicros) / 1e6;
+        return Number(this.getSessionCostMicros(sessionId)) / 1e6;
+      }
+      /**
+       * Get the total accumulated cost for a session in USDC micros.
+       */
+      getSessionCostMicros(sessionId) {
+        return this.sessions.get(sessionId)?.sessionCostMicros ?? 0n;
+      }
+      /**
+       * Budget held by a session's in-flight requests (USDC micros) — admitted
+       * against the strict cap but not yet spent. See session-spend.ts.
+       */
+      getSessionHoldMicros(sessionId) {
+        return this.sessionHolds.get(sessionId) ?? 0n;
+      }
+      /**
+       * Grow (positive) or release (negative) a session's in-flight hold.
+       */
+      adjustSessionHold(sessionId, deltaMicros) {
+        const next = (this.sessionHolds.get(sessionId) ?? 0n) + deltaMicros;
+        if (next > 0n) this.sessionHolds.set(sessionId, next);
+        else this.sessionHolds.delete(sessionId);
       }
       /**
        * Stop the cleanup interval.
@@ -96274,6 +96440,19 @@ async function startProxy(options) {
   }
   const account = walletKey ? privateKeyToAccount(walletKey) : void 0;
   const x402 = authMode === "wallet" ? new x402Client() : void 0;
+  x402?.onBeforePaymentCreation(async (context) => {
+    const spend = paymentStore.getStore()?.sessionSpend;
+    if (!spend?.isStrict) return;
+    const quote = parseQuotedAmountMicros(context.selectedRequirements);
+    if (quote === void 0) {
+      throw new CostCapError("ClawRouter cost cap: unreadable payment amount in the 402 quote");
+    }
+    if (!spend.coverPayment(quote)) {
+      throw new CostCapError(
+        `ClawRouter cost cap exceeded: signing $${microsToUsd(quote).toFixed(6)} would push this session past its maxCostPerRun limit`
+      );
+    }
+  });
   if (x402 && account) {
     const evmPublicClient = createPublicClient({ chain: base, transport: http() });
     const evmSigner = toClientEvmSigner(account, evmPublicClient);
@@ -96316,6 +96495,11 @@ async function startProxy(options) {
     if (store) store.amountUsd = amountUsd;
     console.log(`[ClawRouter] Payment signed on ${chain3} (${network}) \u2014 $${amountUsd.toFixed(6)}`);
   });
+  x402?.onAfterPaymentCreation(async (context) => {
+    const spend = paymentStore.getStore()?.sessionSpend;
+    const amount = parseQuotedAmountMicros(context.selectedRequirements);
+    if (spend && amount !== void 0) spend.recordSigned(amount);
+  });
   const payFetch = authMode === "api-key" ? withSpendPolicy(
     createApiKeyFetch(apiKey, fetch, apiBase),
     options.spendControl ?? getSharedSpendControl(),
@@ -96334,7 +96518,10 @@ async function startProxy(options) {
     // Only the wallet rail settles per call. The API-key rail is billed
     // server-side against account credit, so there is no per-request
     // settlement for an observer to report.
-    onPayment: options.onPayment
+    onPayment: options.onPayment,
+    // A 402 answer to a signed payment means the gateway declined it and
+    // nothing settled — take it back off the session's budget.
+    onPaymentDeclined: () => paymentStore.getStore()?.sessionSpend?.voidLastSigned()
   });
   let balanceMonitor;
   if (options._balanceMonitorOverride) {
@@ -97618,6 +97805,17 @@ async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxT
     return { success: true, response };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    if (err instanceof CostCapError) {
+      return {
+        success: false,
+        errorBody: JSON.stringify({
+          error: { message: errorMsg, type: "cost_cap_exceeded", code: "cost_cap_exceeded" }
+        }),
+        errorStatus: 429,
+        isProviderError: false,
+        errorCategory: "payment_error"
+      };
+    }
     if (err instanceof SpendPolicyError) {
       return {
         success: false,
@@ -98697,14 +98895,23 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
       }
     }
   }
+  let sessionSpend;
   if (options.maxCostPerRunUsd && effectiveSessionId && !isFreeModel && (options.maxCostPerRunMode ?? "graceful") === "strict") {
-    const runCostUsd = sessionStore.getSessionCostUsd(effectiveSessionId);
     const thisReqEstStr = estimatedCostMicros !== void 0 ? estimatedCostMicros.toString() : modelId ? estimateAmount(modelId, body.length, maxTokens) : void 0;
-    const thisReqEstUsd = thisReqEstStr ? Number(thisReqEstStr) / 1e6 : 0;
-    const projectedCostUsd = runCostUsd + thisReqEstUsd;
-    if (projectedCostUsd > options.maxCostPerRunUsd) {
+    const admission = SessionSpend.admit(
+      sessionStore,
+      effectiveSessionId,
+      usdToMicros(options.maxCostPerRunUsd),
+      parseMicros(thisReqEstStr) ?? 0n
+    );
+    if (!admission.admitted) {
+      const spentUsd = microsToUsd(admission.spentMicros);
+      const heldUsd = microsToUsd(admission.heldMicros);
+      const estUsd = microsToUsd(admission.estimateMicros);
+      const projectedCostUsd = spentUsd + heldUsd + estUsd;
+      const breakdown = `spent $${spentUsd.toFixed(4)}${heldUsd > 0 ? ` + in flight $${heldUsd.toFixed(4)}` : ""} + est $${estUsd.toFixed(4)}`;
       console.log(
-        `[ClawRouter] Cost cap exceeded for session ${effectiveSessionId.slice(0, 8)}...: projected $${projectedCostUsd.toFixed(4)} (spent $${runCostUsd.toFixed(4)} + est $${thisReqEstUsd.toFixed(4)}) > $${options.maxCostPerRunUsd} limit`
+        `[ClawRouter] Cost cap exceeded for session ${effectiveSessionId.slice(0, 8)}...: projected $${projectedCostUsd.toFixed(4)} (${breakdown}) > $${options.maxCostPerRunUsd} limit`
       );
       res.writeHead(429, {
         "Content-Type": "application/json",
@@ -98713,7 +98920,7 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
       res.end(
         JSON.stringify({
           error: {
-            message: `ClawRouter cost cap exceeded: projected spend $${projectedCostUsd.toFixed(4)} (spent $${runCostUsd.toFixed(4)} + est $${thisReqEstUsd.toFixed(4)}) would exceed limit $${options.maxCostPerRunUsd}`,
+            message: `ClawRouter cost cap exceeded: projected spend $${projectedCostUsd.toFixed(4)} (${breakdown}) would exceed limit $${options.maxCostPerRunUsd}`,
             type: "cost_cap_exceeded",
             code: "cost_cap_exceeded"
           }
@@ -98722,7 +98929,12 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
       deduplicator.removeInflight(dedupKey);
       return;
     }
+    sessionSpend = admission.spend;
+  } else if (options.maxCostPerRunUsd && effectiveSessionId) {
+    sessionSpend = SessionSpend.track(sessionStore, effectiveSessionId);
   }
+  const requestStore = paymentStore.getStore();
+  if (requestStore) requestStore.sessionSpend = sessionSpend;
   if (options.maxCostPerRunUsd && effectiveSessionId && !isFreeModel && (options.maxCostPerRunMode ?? "graceful") === "graceful") {
     const runCostUsd = sessionStore.getSessionCostUsd(effectiveSessionId);
     const remainingUsd = options.maxCostPerRunUsd - runCostUsd;
@@ -99118,11 +99330,9 @@ data: [DONE]
         actualModelUsed = tryModel;
         recordOutcome(tryModel, requestKind, true);
         console.log(`[ClawRouter] Success with model: ${tryModel}`);
-        if (options.maxCostPerRunUsd && effectiveSessionId && !FREE_MODELS.has(tryModel)) {
-          const costEst = estimateAmount(tryModel, body.length, maxTokens);
-          if (costEst) {
-            sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-          }
+        if (sessionSpend && !FREE_MODELS.has(tryModel)) {
+          const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+          if (costEst !== void 0) sessionSpend.recordSuccess(costEst);
         }
         break;
       }
@@ -99196,11 +99406,9 @@ data: [DONE]
             upstream = retryResult.response;
             actualModelUsed = tryModel;
             console.log(`[ClawRouter] Explicit-pin retry succeeded for: ${tryModel}`);
-            if (options.maxCostPerRunUsd && effectiveSessionId && !FREE_MODELS.has(tryModel)) {
-              const costEst = estimateAmount(tryModel, body.length, maxTokens);
-              if (costEst) {
-                sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-              }
+            if (sessionSpend && !FREE_MODELS.has(tryModel)) {
+              const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+              if (costEst !== void 0) sessionSpend.recordSuccess(costEst);
             }
             break;
           }
@@ -99267,11 +99475,9 @@ data: [DONE]
                 upstream = retryResult.response;
                 actualModelUsed = tryModel;
                 console.log(`[ClawRouter] Rate-limit retry succeeded for: ${tryModel}`);
-                if (options.maxCostPerRunUsd && effectiveSessionId && !FREE_MODELS.has(tryModel)) {
-                  const costEst = estimateAmount(tryModel, body.length, maxTokens);
-                  if (costEst) {
-                    sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-                  }
+                if (sessionSpend && !FREE_MODELS.has(tryModel)) {
+                  const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+                  if (costEst !== void 0) sessionSpend.recordSuccess(costEst);
                 }
                 break;
               }
@@ -99365,6 +99571,7 @@ data: [DONE]
       );
       const rawErrBody = lastError?.body || structuredMessage;
       const errStatus = lastError?.status || 502;
+      const costCapRefusal = errStatus === 429 && rawErrBody.includes('"cost_cap_exceeded"');
       const transformedErr = transformPaymentError(rawErrBody);
       requestHadError = true;
       if (headersSentEarly) {
@@ -99401,7 +99608,8 @@ data: [DONE]
           "Content-Type": "application/json",
           "x-context-used-kb": String(originalContextSizeKB),
           "x-context-limit-kb": String(CONTEXT_LIMIT_KB),
-          ...lastError?.requestId ? { "x-blockrun-request-id": lastError.requestId } : {}
+          ...lastError?.requestId ? { "x-blockrun-request-id": lastError.requestId } : {},
+          ...costCapRefusal ? { "X-ClawRouter-Cost-Cap-Exceeded": "1" } : {}
         });
         res.end(transformedErr);
         deduplicator.complete(dedupKey, {
@@ -99835,6 +100043,8 @@ data: [DONE]
       throw new Error(`Request timed out after ${timeoutMs}ms`, { cause: err });
     }
     throw err;
+  } finally {
+    sessionSpend?.release();
   }
   const logModel = routingDecision?.model ?? modelId;
   if (logModel) {
@@ -99921,6 +100131,7 @@ var init_proxy = __esm({
     init_auth();
     init_api_key();
     init_spend_control();
+    init_session_spend();
     init_compression();
     init_errors5();
     init_version4();
@@ -122622,7 +122833,7 @@ var init_client5 = __esm({
 function resolveSpendControl(deps) {
   return deps?.spendControl ?? getSharedSpendControl();
 }
-function usdToMicros(usd) {
+function usdToMicros2(usd) {
   return String(Math.ceil(usd * 1e6));
 }
 async function signUnderSpendPolicy(deps, quote, action, sign4) {
@@ -122888,7 +123099,7 @@ Re-call with confirm:true to sign and submit.`,
         payTo: negRisk ? NEG_RISK_CTF_EXCHANGE_V2 : CTF_EXCHANGE_V2,
         network: `eip155:${POLYGON_CHAIN_ID}`,
         asset: PUSD_COLLATERAL,
-        amount: usdToMicros(notional)
+        amount: usdToMicros2(notional)
       };
       let r2;
       try {

@@ -4,6 +4,33 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.283 — October 11, 2026
+
+### Security: the strict cost cap holds under concurrency and paid failures
+
+**`maxCostPerRunMode: "strict"` can no longer be exceeded.** EmberTail reported
+two ways past it privately (ET-CLAWROUTER-20261010), with real settlements on
+a local chain and on Base Sepolia. With a $0.012 cap and $0.008 requests:
+
+- three requests sent at the same time all got through, because nothing was
+  reserved for requests still running, and settled $0.024;
+- a payment that settled but came back as a 502 was never counted, so the
+  automatic retry paid again: $0.016.
+
+Now each request reserves its estimated cost when it is admitted, so requests
+running at the same time cannot all pass on the same spent total. Every
+payment is checked against the cap before it is signed, including retries,
+fallbacks and reused pre-auths. A signed payment counts at once, even if its
+response is lost. A payment the gateway declines (402) is taken back. A
+mid-request refusal returns 429 `cost_cap_exceeded` with
+`X-ClawRouter-Cost-Cap-Exceeded: 1`, the same as an admission refusal.
+
+**Graceful mode counts what was actually signed.** The default mode now
+records each signed payment's real amount, including payments whose response
+was lost, instead of the local estimate.
+
+Thanks to EmberTail for the report and the evidence bundle.
+
 ## v0.12.282 — October 5, 2026
 
 ### Security: the local proxy only answers local clients

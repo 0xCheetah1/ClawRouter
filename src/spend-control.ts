@@ -995,6 +995,19 @@ const CANONICAL_AMOUNT = /^\d+$/;
  *
  * x402 v1 carries the cost in `maxAmountRequired`; v2 renamed it to `amount`.
  */
+/**
+ * The same quoted amount in USDC micros, exact (no float), for callers that
+ * keep integer ledgers. Undefined for anything non-canonical — fail closed.
+ */
+export function parseQuotedAmountMicros(selected: {
+  amount?: string;
+  maxAmountRequired?: string;
+}): bigint | undefined {
+  const raw = selected.amount ?? selected.maxAmountRequired;
+  if (typeof raw !== "string" || !CANONICAL_AMOUNT.test(raw)) return undefined;
+  return BigInt(raw);
+}
+
 function parseQuotedAmountUsd(selected: {
   amount?: string;
   maxAmountRequired?: string;
