@@ -489,9 +489,15 @@ plugins:
       # graceful (default): when budget runs low, ClawRouter automatically downgrades
       #   to cheaper models (premium → auto → eco → free). Tasks keep running.
       #   Only returns an error if no model can serve the request at all.
+      #   Spend is the amount each signed payment authorized, counted when it is
+      #   signed — a payment whose response is lost still counts.
       #
       # strict: immediately returns 429 (X-ClawRouter-Cost-Cap-Exceeded: 1) once
       #   the session spend reaches the cap. Use when you need a hard budget ceiling.
+      #   Requests in flight hold their estimated cost, so concurrent calls cannot
+      #   all pass on the same spent total; every signed payment counts at once,
+      #   even one whose response is lost; and each payment (including retries and
+      #   fallbacks) is checked against the cap before it is signed.
       maxCostPerRunMode: graceful # or: strict
 
       # Note: image generation endpoints (/v1/images/generations) bypass maxCostPerRun.

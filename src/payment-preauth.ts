@@ -57,6 +57,9 @@ export function createPayFetchWithPreAuth(
     skipPreAuth?: boolean;
     estimateAmount?: EstimateFn;
     onPayment?: (info: PaymentNotification) => void;
+    /** A signed payment was answered with a 402: declined, nothing settled.
+     *  Receives the amount (micro-USDC string) that was signed for. */
+    onPaymentDeclined?: (amount: string) => void;
   },
 ): FetchFn {
   const httpClient = new x402HTTPClient(client);
@@ -129,6 +132,18 @@ export function createPayFetchWithPreAuth(
     };
     const needMicros = estimateMicros();
 
+    const notifyDeclinedPayment = (payload: { accepted?: { amount?: string } }): void => {
+      const amount = payload.accepted?.amount;
+      if (amount === undefined || !options?.onPaymentDeclined) return;
+      try {
+        options.onPaymentDeclined(amount);
+      } catch (error) {
+        console.error(
+          `[ClawRouter] onPaymentDeclined callback failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    };
+
     // Try pre-auth only when we can PROVE the cached payment still covers this
     // request (needMicros <= what the cached entry covered). Skip for Solana:
     // payments use per-tx blockhashes that expire ~60-90s, making cached
@@ -169,6 +184,7 @@ export function createPayFetchWithPreAuth(
         // challenge, so drop it and fall through to a clean, un-paid request
         // that yields a fresh challenge.
         paymentInFlight = false;
+        notifyDeclinedPayment(payload);
         cache.delete(cacheKey);
       } catch (err) {
         cache.delete(cacheKey);
@@ -230,6 +246,7 @@ export function createPayFetchWithPreAuth(
       clonedRequest.headers.set(key, value);
     }
     const paidResponse = await baseFetch(clonedRequest);
+    if (paidResponse.status === 402) notifyDeclinedPayment(payload);
     notifyAcceptedPayment(paidResponse, payload);
     return paidResponse;
   };

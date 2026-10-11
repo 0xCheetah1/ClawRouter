@@ -966,6 +966,7 @@ declare const DEFAULT_SESSION_CONFIG: SessionConfig;
  */
 declare class SessionStore {
     private sessions;
+    private sessionHolds;
     private config;
     private cleanupInterval;
     constructor(config?: Partial<SessionConfig>);
@@ -1036,6 +1037,19 @@ declare class SessionStore {
      * Get the total accumulated cost for a session in USD.
      */
     getSessionCostUsd(sessionId: string): number;
+    /**
+     * Get the total accumulated cost for a session in USDC micros.
+     */
+    getSessionCostMicros(sessionId: string): bigint;
+    /**
+     * Budget held by a session's in-flight requests (USDC micros) — admitted
+     * against the strict cap but not yet spent. See session-spend.ts.
+     */
+    getSessionHoldMicros(sessionId: string): bigint;
+    /**
+     * Grow (positive) or release (negative) a session's in-flight hold.
+     */
+    adjustSessionHold(sessionId: string, deltaMicros: bigint): void;
     /**
      * Stop the cleanup interval.
      */
