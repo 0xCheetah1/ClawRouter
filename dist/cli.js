@@ -101852,7 +101852,8 @@ __export(reconcile_exports, {
   joinRows: () => joinRows,
   loadGatewayRows: () => loadGatewayRows,
   loadLocalRows: () => loadLocalRows,
-  reconcile: () => reconcile
+  reconcile: () => reconcile,
+  reconcileExitCode: () => reconcileExitCode
 });
 import { readFile as readFile3, readdir as readdir3 } from "fs/promises";
 import { join as join13 } from "path";
@@ -101899,16 +101900,36 @@ async function loadLocalRows(since) {
 async function loadGatewayRows(apiKey, from15, maxPages = 40) {
   const rows = [];
   const unavailableDays = /* @__PURE__ */ new Set();
+  const requested = /* @__PURE__ */ new Set();
   let cursor;
   for (let page = 0; page < maxPages; page++) {
     const result = await fetchUsagePage(apiKey, { from: from15, limit: 500, cursor });
-    if (!result) return page === 0 ? void 0 : { rows, unavailableDays: [...unavailableDays] };
+    if (!result) {
+      if (page === 0) return void 0;
+      return {
+        rows,
+        unavailableDays: [...unavailableDays],
+        incomplete: `page ${page + 1} of the ledger could not be read`
+      };
+    }
     rows.push(...result.rows);
     result.unavailableDays.forEach((d) => unavailableDays.add(d));
-    if (!result.nextCursor) break;
+    if (!result.nextCursor) return { rows, unavailableDays: [...unavailableDays] };
+    if (requested.has(result.nextCursor)) {
+      return {
+        rows,
+        unavailableDays: [...unavailableDays],
+        incomplete: `the ledger's page cursor stopped advancing after page ${page + 1}`
+      };
+    }
     cursor = result.nextCursor;
+    requested.add(cursor);
   }
-  return { rows, unavailableDays: [...unavailableDays] };
+  return {
+    rows,
+    unavailableDays: [...unavailableDays],
+    incomplete: `the ledger has more than ${maxPages} pages for this window; try fewer --days`
+  };
 }
 function joinRows(localRows, gatewayRows, unkeyed = 0, unavailableDays = []) {
   const localById = new Map(localRows.map((r2) => [r2.requestId, r2]));
@@ -101951,7 +101972,14 @@ async function reconcile(apiKey, days) {
     loadGatewayRows(apiKey, since.toISOString())
   ]);
   if (!gateway) throw new Error("Could not read the BlockRun usage ledger (GET /v1/usage).");
-  return joinRows(localRows, gateway.rows, unkeyed, gateway.unavailableDays);
+  const result = joinRows(localRows, gateway.rows, unkeyed, gateway.unavailableDays);
+  if (gateway.incomplete) result.ledgerIncomplete = gateway.incomplete;
+  return result;
+}
+function reconcileExitCode(r2) {
+  if (r2.chargedNotRecorded.length > 0) return 2;
+  if (r2.ledgerIncomplete) return 1;
+  return 0;
 }
 function formatReconcile(r2, days) {
   const out = [];
@@ -101959,6 +101987,13 @@ function formatReconcile(r2, days) {
   out.push(`
 BlockRun reconciliation \u2014 last ${days} day${days === 1 ? "" : "s"}
 `);
+  if (r2.ledgerIncomplete) {
+    out.push(`  \u26A0 Partial ledger: ${r2.ledgerIncomplete}.`);
+    out.push(`    Only the ledger pages that were read are compared: the gateway total is`);
+    out.push(`    short, charges on the unread pages are not checked, and calls billed on`);
+    out.push(`    those pages show up as recorded locally with no settled ledger row.
+`);
+  }
   out.push(
     `  Gateway charged:  ${usd(r2.gatewayTotalUsd)}   (${r2.matched.length + r2.chargedNotRecorded.length} settled calls)`
   );
@@ -236125,10 +236160,10 @@ async function cmdReconcile(days) {
     process.exit(1);
   }
   try {
-    const { reconcile: reconcile2, formatReconcile: formatReconcile2 } = await Promise.resolve().then(() => (init_reconcile(), reconcile_exports));
+    const { reconcile: reconcile2, formatReconcile: formatReconcile2, reconcileExitCode: reconcileExitCode2 } = await Promise.resolve().then(() => (init_reconcile(), reconcile_exports));
     const result = await reconcile2(resolved.key, days);
     console.log(formatReconcile2(result, days));
-    process.exitCode = result.chargedNotRecorded.length > 0 ? 2 : 0;
+    process.exitCode = reconcileExitCode2(result);
   } catch (error) {
     console.error(`\u2717 ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);

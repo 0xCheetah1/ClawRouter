@@ -4,6 +4,24 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.284 — October 11, 2026
+
+### `clawrouter reconcile` no longer reports a partial ledger as complete
+
+`clawrouter reconcile` reads the gateway ledger page by page. If a later page
+failed, the 40-page cap was reached, or the gateway returned a cursor it had
+already sent, the report was built from the pages that did arrive and still
+said everything matched, exiting 0. Charges on the unread pages were never
+compared, so a scheduled check stayed silent.
+
+The report now says when the ledger read is incomplete, above the totals, and
+names the side that is short. New exit codes: 2 when there are charges with no
+local record (even on a partial read), 1 when the read was incomplete, 0 when
+everything matched. A repeated cursor now stops the read instead of adding the
+same rows again.
+
+- Thanks to @erhnysr for the fix (#430).
+
 ## v0.12.283 — October 11, 2026
 
 ### Security: the strict cost cap holds under concurrency and paid failures
