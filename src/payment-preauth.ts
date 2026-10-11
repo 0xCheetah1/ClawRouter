@@ -57,9 +57,10 @@ export function createPayFetchWithPreAuth(
     skipPreAuth?: boolean;
     estimateAmount?: EstimateFn;
     onPayment?: (info: PaymentNotification) => void;
-    /** A signed payment was answered with a 402: declined, nothing settled.
-     *  Receives the amount (micro-USDC string) that was signed for. */
-    onPaymentDeclined?: (amount: string) => void;
+    /** The payment this call just signed was answered with a 402: declined,
+     *  nothing settled. No amount is passed — a v1 payload does not carry the
+     *  accepted quote — so the receiver reverses the signature it recorded. */
+    onPaymentDeclined?: () => void;
   },
 ): FetchFn {
   const httpClient = new x402HTTPClient(client);
@@ -132,11 +133,10 @@ export function createPayFetchWithPreAuth(
     };
     const needMicros = estimateMicros();
 
-    const notifyDeclinedPayment = (payload: { accepted?: { amount?: string } }): void => {
-      const amount = payload.accepted?.amount;
-      if (amount === undefined || !options?.onPaymentDeclined) return;
+    const notifyDeclinedPayment = (): void => {
+      if (!options?.onPaymentDeclined) return;
       try {
-        options.onPaymentDeclined(amount);
+        options.onPaymentDeclined();
       } catch (error) {
         console.error(
           `[ClawRouter] onPaymentDeclined callback failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -184,7 +184,7 @@ export function createPayFetchWithPreAuth(
         // challenge, so drop it and fall through to a clean, un-paid request
         // that yields a fresh challenge.
         paymentInFlight = false;
-        notifyDeclinedPayment(payload);
+        notifyDeclinedPayment();
         cache.delete(cacheKey);
       } catch (err) {
         cache.delete(cacheKey);
@@ -246,7 +246,7 @@ export function createPayFetchWithPreAuth(
       clonedRequest.headers.set(key, value);
     }
     const paidResponse = await baseFetch(clonedRequest);
-    if (paidResponse.status === 402) notifyDeclinedPayment(payload);
+    if (paidResponse.status === 402) notifyDeclinedPayment();
     notifyAcceptedPayment(paidResponse, payload);
     return paidResponse;
   };

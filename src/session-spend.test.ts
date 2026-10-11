@@ -63,12 +63,14 @@ describe("SessionSpend", () => {
     expect(b.coverPayment(8_000n)).toBe(false); // was true: 16000 against 12000
   });
 
-  it("takes back a declined payment, never more than was signed", () => {
+  it("takes back a declined payment once, and only the latest one", () => {
     const store = newStore();
     const spend = admit(store, 8_000n);
-    spend.recordSigned(8_000n);
-    spend.voidSigned(10_000n);
-    expect(store.getSessionCostMicros("s")).toBe(0n);
+    spend.recordSigned(3_000n);
+    spend.recordSigned(4_000n);
+    spend.voidLastSigned();
+    spend.voidLastSigned(); // a second decline report cannot undo the first payment
+    expect(store.getSessionCostMicros("s")).toBe(3_000n);
   });
 
   it("records the estimate on success only when nothing was signed", () => {

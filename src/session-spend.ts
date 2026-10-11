@@ -21,7 +21,7 @@
  *      the moment it is created, whatever the response turns out to be:
  *      "never arrived" and "settled, response lost" look identical from here,
  *      so it counts. Only a 402 answer to the paid request — the gateway
- *      declining the payment, so nothing settled — takes it back (`voidSigned`).
+ *      declining the payment, so nothing settled — takes it back (`voidLastSigned`).
  *   3. Every signature is re-checked. In strict mode `coverPayment()` runs
  *      before each payment is created (the retry, the fallback, the pre-auth),
  *      against the quoted amount, so a retry after a paid failure cannot sign
@@ -61,6 +61,8 @@ export class SessionSpend {
   private heldMicros: bigint;
   /** Sum of payments signed by this request that still count. */
   private signedMicros = 0n;
+  /** The most recent signature not yet settled or voided — the one a decline undoes. */
+  private lastSignedMicros = 0n;
   private released = false;
 
   private constructor(
@@ -132,13 +134,19 @@ export class SessionSpend {
   recordSigned(amountMicros: bigint): void {
     if (amountMicros <= 0n) return;
     this.signedMicros += amountMicros;
+    this.lastSignedMicros = amountMicros;
     this.store.addSessionCost(this.sessionId, amountMicros);
     this.shrinkHold(amountMicros);
   }
 
-  /** The gateway answered a signed payment with a 402: nothing settled. */
-  voidSigned(amountMicros: bigint): void {
-    const undo = amountMicros < this.signedMicros ? amountMicros : this.signedMicros;
+  /**
+   * The gateway answered the payment just signed with a 402: nothing settled.
+   * Payments within one request are signed and sent one at a time, so the
+   * decline always belongs to the latest signature. Undone at most once.
+   */
+  voidLastSigned(): void {
+    const undo = this.lastSignedMicros;
+    this.lastSignedMicros = 0n;
     if (undo <= 0n) return;
     this.signedMicros -= undo;
     this.store.addSessionCost(this.sessionId, -undo);

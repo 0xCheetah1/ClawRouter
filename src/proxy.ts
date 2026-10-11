@@ -2957,10 +2957,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           onPayment: options.onPayment,
           // A 402 answer to a signed payment means the gateway declined it and
           // nothing settled — take it back off the session's budget.
-          onPaymentDeclined: (amount) => {
-            const micros = parseMicros(amount);
-            if (micros !== undefined) paymentStore.getStore()?.sessionSpend?.voidSigned(micros);
-          },
+          onPaymentDeclined: () => paymentStore.getStore()?.sessionSpend?.voidLastSigned(),
         });
 
   // Create balance monitor for pre-request checks (lazy import to avoid loading @solana/kit on Base chain)

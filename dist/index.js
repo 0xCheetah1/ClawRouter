@@ -35448,11 +35448,10 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
       return est === void 0 ? void 0 : Number(est);
     };
     const needMicros = estimateMicros();
-    const notifyDeclinedPayment = (payload2) => {
-      const amount = payload2.accepted?.amount;
-      if (amount === void 0 || !options?.onPaymentDeclined) return;
+    const notifyDeclinedPayment = () => {
+      if (!options?.onPaymentDeclined) return;
       try {
-        options.onPaymentDeclined(amount);
+        options.onPaymentDeclined();
       } catch (error) {
         console.error(
           `[ClawRouter] onPaymentDeclined callback failed: ${error instanceof Error ? error.message : String(error)}`
@@ -35477,7 +35476,7 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
           return response2;
         }
         paymentInFlight = false;
-        notifyDeclinedPayment(payload2);
+        notifyDeclinedPayment();
         cache2.delete(cacheKey2);
       } catch (err) {
         cache2.delete(cacheKey2);
@@ -35522,7 +35521,7 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
       clonedRequest.headers.set(key3, value);
     }
     const paidResponse = await baseFetch(clonedRequest);
-    if (paidResponse.status === 402) notifyDeclinedPayment(payload);
+    if (paidResponse.status === 402) notifyDeclinedPayment();
     notifyAcceptedPayment(paidResponse, payload);
     return paidResponse;
   };
@@ -64591,6 +64590,8 @@ var init_session_spend = __esm({
       heldMicros;
       /** Sum of payments signed by this request that still count. */
       signedMicros = 0n;
+      /** The most recent signature not yet settled or voided — the one a decline undoes. */
+      lastSignedMicros = 0n;
       released = false;
       /**
        * Strict mode: admit the request only if the session's spend, plus what its
@@ -64636,12 +64637,18 @@ var init_session_spend = __esm({
       recordSigned(amountMicros) {
         if (amountMicros <= 0n) return;
         this.signedMicros += amountMicros;
+        this.lastSignedMicros = amountMicros;
         this.store.addSessionCost(this.sessionId, amountMicros);
         this.shrinkHold(amountMicros);
       }
-      /** The gateway answered a signed payment with a 402: nothing settled. */
-      voidSigned(amountMicros) {
-        const undo = amountMicros < this.signedMicros ? amountMicros : this.signedMicros;
+      /**
+       * The gateway answered the payment just signed with a 402: nothing settled.
+       * Payments within one request are signed and sent one at a time, so the
+       * decline always belongs to the latest signature. Undone at most once.
+       */
+      voidLastSigned() {
+        const undo = this.lastSignedMicros;
+        this.lastSignedMicros = 0n;
         if (undo <= 0n) return;
         this.signedMicros -= undo;
         this.store.addSessionCost(this.sessionId, -undo);
@@ -96514,10 +96521,7 @@ async function startProxy(options) {
     onPayment: options.onPayment,
     // A 402 answer to a signed payment means the gateway declined it and
     // nothing settled — take it back off the session's budget.
-    onPaymentDeclined: (amount) => {
-      const micros = parseMicros(amount);
-      if (micros !== void 0) paymentStore.getStore()?.sessionSpend?.voidSigned(micros);
-    }
+    onPaymentDeclined: () => paymentStore.getStore()?.sessionSpend?.voidLastSigned()
   });
   let balanceMonitor;
   if (options._balanceMonitorOverride) {
