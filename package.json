@@ -88,7 +88,7 @@
     "url": "git+https://github.com/BlockRunAI/ClawRouter.git"
   },
   "dependencies": {
-    "@blockrun/llm": "^3.10.0",
+    "@blockrun/llm": "^3.23.1",
     "@noble/hashes": "^2.2.0",
     "@polymarket/builder-relayer-client": "^0.0.10",
     "@polymarket/builder-signing-sdk": "0.0.8",
@@ -96,15 +96,15 @@
     "@scure/bip32": "^2.0.1",
     "@scure/bip39": "^1.5.0",
     "@solana/kit": "^8.4.0",
-    "@x402/core": "^2.9.0",
-    "@x402/evm": "^2.9.0",
-    "@x402/fetch": "^2.9.0",
-    "@x402/svm": "^2.9.0",
+    "@x402/core": "~2.28.0",
+    "@x402/evm": "~2.28.0",
+    "@x402/fetch": "~2.28.0",
+    "@x402/svm": "~2.28.0",
     "axios": "^1.20.0",
     "bs58": "^6.0.0",
     "https-proxy-agent": "^9.1.0",
     "undici": "^8.11.2",
-    "viem": "^2.39.3"
+    "viem": "~2.56.9"
   },
   "peerDependencies": {
     "openclaw": ">=2025.1.0"
@@ -141,7 +141,10 @@
     "@solana-program/compute-budget": "^0.18.1",
     "@solana-program/token": "^0.16.1",
     "@solana-program/token-2022": "^0.16.1",
-    "proxy-addr": "^2.0.8"
+    "proxy-addr": "^2.0.8",
+    "@x402/svm": {
+      "@solana/program-client-core": "$@solana/kit"
+    }
   },
   "engines": {
     "node": ">=22"

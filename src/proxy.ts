@@ -2811,7 +2811,11 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   // pay", and we pay no one — the gateway bills the account server-side).
   // `account` stays undefined and every wallet-shaped field reads off it.
   const account = walletKey ? privateKeyToAccount(walletKey as `0x${string}`) : undefined;
-  const x402 = authMode === "wallet" ? new x402Client() : undefined;
+  // @x402/core 2.28 added its own spend controls, on by default: $1 per payment
+  // and default assets only. ClawRouter has its own (SpendControl, the session
+  // cap) and BlockRun prices long-context and reasoning calls above $1, so the
+  // SDK's are switched off to keep the pre-2.28 behavior exactly.
+  const x402 = authMode === "wallet" ? new x402Client().setSpendControls(false) : undefined;
   // The strict `maxCostPerRun` cap, enforced where the money is: before every
   // payment is created, against the quoted amount. Admission alone cannot hold
   // the cap — a retry or fallback inside one request signs again (ET-20261010).

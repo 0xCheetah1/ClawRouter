@@ -27,7 +27,7 @@ function testClient(): x402Client {
   const keys = deriveAllKeys(MNEMONIC);
   const account = privateKeyToAccount(keys.evmPrivateKey);
   const pc = createPublicClient({ chain: base, transport: http() });
-  const client = new x402Client();
+  const client = new x402Client().setSpendControls(false); // as the proxy builds it: ClawRouter enforces its own limits
   registerExactEvmScheme(client, { signer: toClientEvmSigner(account, pc) });
   return client;
 }
