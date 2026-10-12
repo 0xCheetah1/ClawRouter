@@ -1272,6 +1272,8 @@ type ProxyOptions = {
      * CLAWROUTER_SOLANA_BATCH is set.
      */
     solanaBatch?: boolean | SolanaBatchSettings;
+    /** @internal Set by startProxy when Solana batch-settlement is active. */
+    _solanaBatchActive?: boolean;
     /**
      * Upstream proxy URL for all outgoing requests.
      * Supports http://, https://, and socks5:// schemes.

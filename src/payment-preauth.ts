@@ -425,14 +425,10 @@ async function payInBatch(
     throw new PaymentInDoubtError(error);
   }
   if (attempt.kind === "paid") {
-    // The charge is known only from a receipt. A 200 without one makes the
-    // payer report 0, which proves nothing: the ceiling then keeps counting.
-    const hasReceipt =
-      attempt.response.headers.has("payment-response") ||
-      attempt.response.headers.has("x-payment-response");
-    const chargedMicros = hasReceipt
-      ? BigInt(Math.round(attempt.chargedUsd * 1_000_000))
-      : undefined;
+    // The charge is known only from a receipt that states it. A 200 without
+    // one, or with one that is malformed or names no amount, makes the payer
+    // report 0, which proves nothing: the ceiling then keeps counting.
+    const chargedMicros = receiptChargedMicros(attempt.response);
     batch.settle(mark, { kind: "paid", chargedMicros });
     const accept = paymentRequired.accepts.find((a) => a.scheme === "batch-settlement");
     const charged =
@@ -448,4 +444,27 @@ async function payInBatch(
     throw attempt.error;
   }
   return { kind: "exact", paymentRequired: attempt.paymentRequired ?? paymentRequired };
+}
+
+/**
+ * The charge a batch receipt states, in micro-USDC, or undefined when no
+ * receipt states one: `extra.chargedAmount` (where sol.blockrun.ai puts the
+ * per-call charge), else the top-level `amount`. Only a canonical decimal
+ * integer counts.
+ */
+function receiptChargedMicros(response: Response): bigint | undefined {
+  const header =
+    response.headers.get("payment-response") ?? response.headers.get("x-payment-response");
+  if (!header) return undefined;
+  let receipt: { amount?: unknown; extra?: { chargedAmount?: unknown } | null } | undefined;
+  try {
+    const parsed = JSON.parse(Buffer.from(header, "base64").toString("utf8")) as unknown;
+    receipt = parsed && typeof parsed === "object" ? (parsed as typeof receipt) : undefined;
+  } catch {
+    return undefined;
+  }
+  for (const value of [receipt?.extra?.chargedAmount, receipt?.amount]) {
+    if (typeof value === "string" && /^\d+$/.test(value)) return BigInt(value);
+  }
+  return undefined;
 }

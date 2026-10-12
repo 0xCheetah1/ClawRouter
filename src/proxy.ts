@@ -1622,6 +1622,8 @@ export type ProxyOptions = {
    * CLAWROUTER_SOLANA_BATCH is set.
    */
   solanaBatch?: boolean | SolanaBatchSettings;
+  /** @internal Set by startProxy when Solana batch-settlement is active. */
+  _solanaBatchActive?: boolean;
   /**
    * Upstream proxy URL for all outgoing requests.
    * Supports http://, https://, and socks5:// schemes.
@@ -3035,6 +3037,9 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       `[ClawRouter] Solana batch-settlement on (BlockRun operator, max deposit ${solanaBatchSettings.maxDeposit ?? "$1"})`,
     );
   }
+  const requestOptions: ProxyOptions = solanaBatch
+    ? { ...options, _solanaBatchActive: true }
+    : options;
 
   // The upstream fetch. Same signature on both rails, which is what lets every
   // handler below stay unaware of how the call is being paid for: one settles a
@@ -4350,7 +4355,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           res,
           apiBase,
           payFetch,
-          options,
+          requestOptions,
           routerOpts,
           deduplicator,
           balanceMonitor,
@@ -6191,7 +6196,13 @@ async function proxyRequest(
   // Use `let` so the balance-fallback path can update this when modelId is switched to a free model.
   let isFreeModel = FREE_MODELS.has(modelId ?? "");
 
-  if (modelId && !options.skipBalanceCheck && !isFreeModel) {
+  // With Solana batch-settlement on, a chat call is paid from the channel's
+  // escrow, which the wallet balance does not show: right after a deposit the
+  // liquid balance can be low while the channel has plenty. Leave the decision
+  // to the payment itself (no escrow → exact → a payment failure takes the
+  // free-model fallback below) rather than downgrading on liquid USDC alone.
+  const paidFromChannel = options._solanaBatchActive === true && isChatCompletion;
+  if (modelId && !options.skipBalanceCheck && !isFreeModel && !paidFromChannel) {
     const estimated = estimateAmount(modelId, body.length, maxTokens);
     const preflightEstimated = estimateBalancePreflightAmount(modelId, body.length, maxTokens);
     if (estimated) {

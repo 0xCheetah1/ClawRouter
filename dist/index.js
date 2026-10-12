@@ -244627,8 +244627,7 @@ async function payInBatch(batch, template, paymentRequired, closesAtStart, fetch
     throw new PaymentInDoubtError(error);
   }
   if (attempt.kind === "paid") {
-    const hasReceipt = attempt.response.headers.has("payment-response") || attempt.response.headers.has("x-payment-response");
-    const chargedMicros = hasReceipt ? BigInt(Math.round(attempt.chargedUsd * 1e6)) : void 0;
+    const chargedMicros = receiptChargedMicros(attempt.response);
     batch.settle(mark, { kind: "paid", chargedMicros });
     const accept = paymentRequired.accepts.find((a) => a.scheme === "batch-settlement");
     const charged = chargedMicros !== void 0 ? { amount: chargedMicros.toString(), network: accept?.network ?? "solana" } : void 0;
@@ -244641,6 +244640,21 @@ async function payInBatch(batch, template, paymentRequired, closesAtStart, fetch
     throw attempt.error;
   }
   return { kind: "exact", paymentRequired: attempt.paymentRequired ?? paymentRequired };
+}
+function receiptChargedMicros(response) {
+  const header = response.headers.get("payment-response") ?? response.headers.get("x-payment-response");
+  if (!header) return void 0;
+  let receipt;
+  try {
+    const parsed = JSON.parse(Buffer.from(header, "base64").toString("utf8"));
+    receipt = parsed && typeof parsed === "object" ? parsed : void 0;
+  } catch {
+    return void 0;
+  }
+  for (const value of [receipt?.extra?.chargedAmount, receipt?.amount]) {
+    if (typeof value === "string" && /^\d+$/.test(value)) return BigInt(value);
+  }
+  return void 0;
 }
 
 // src/builder-code.ts
@@ -251007,7 +251021,7 @@ var SessionSpend = class _SessionSpend {
    * payment was signed, it is already recorded at its real amount.
    */
   recordSuccess(estimateMicros) {
-    if (this.signedMicros > 0n || estimateMicros <= 0n) return;
+    if (this.signedLog.length > 0 || estimateMicros <= 0n) return;
     this.store.addSessionCost(this.sessionId, estimateMicros);
     this.shrinkHold(estimateMicros);
   }
@@ -254820,6 +254834,7 @@ async function startProxy(options) {
       `[ClawRouter] Solana batch-settlement on (BlockRun operator, max deposit ${solanaBatchSettings.maxDeposit ?? "$1"})`
     );
   }
+  const requestOptions = solanaBatch ? { ...options, _solanaBatchActive: true } : options;
   const payFetch = authMode === "api-key" ? withSpendPolicy(
     createApiKeyFetch(apiKey, fetch, apiBase),
     options.spendControl ?? getSharedSpendControl(),
@@ -255855,7 +255870,7 @@ async function startProxy(options) {
           res,
           apiBase,
           payFetch,
-          options,
+          requestOptions,
           routerOpts,
           deduplicator,
           balanceMonitor,
@@ -257167,7 +257182,8 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
   deduplicator.markInflight(dedupKey);
   let estimatedCostMicros;
   let isFreeModel = FREE_MODELS.has(modelId ?? "");
-  if (modelId && !options.skipBalanceCheck && !isFreeModel) {
+  const paidFromChannel = options._solanaBatchActive === true && isChatCompletion;
+  if (modelId && !options.skipBalanceCheck && !isFreeModel && !paidFromChannel) {
     const estimated = estimateAmount(modelId, body.length, maxTokens);
     const preflightEstimated = estimateBalancePreflightAmount(modelId, body.length, maxTokens);
     if (estimated) {

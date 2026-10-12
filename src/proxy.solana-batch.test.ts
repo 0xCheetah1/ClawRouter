@@ -22,6 +22,7 @@ import { generateKeyPairSigner, type KeyPairSigner } from "@solana/kit";
 import { signBatchVoucher } from "@x402/svm/batch-settlement/client";
 
 import { startProxy, type ProxyHandle } from "./proxy.js";
+import type { BalanceMonitor } from "./balance.js";
 import { InMemorySpendControlStorage, SpendControl } from "./spend-control.js";
 import { deriveAllKeys } from "./wallet.js";
 
@@ -326,5 +327,65 @@ describe("Solana batch-settlement through the proxy", () => {
 
     expect([first.status, second.status]).toEqual([200, 429]);
     expect(schemesPaid).toEqual(["batch-settlement"]);
+  }, 30_000);
+  it("pays a chat call from the channel even when the liquid wallet balance looks too low", async () => {
+    // After a deposit the wallet's liquid USDC can be near zero while the
+    // channel holds plenty. The balance preflight must not downgrade the call
+    // to a free model on liquid USDC alone.
+    const broke = {
+      getCachedBalance: () => undefined,
+      checkBalance: async () => ({
+        balance: 10n,
+        balanceUSD: "$0.00",
+        isLow: true,
+        isEmpty: false,
+        walletAddress: "x",
+      }),
+      checkSufficient: async () => ({
+        sufficient: false,
+        info: {
+          balance: 10n,
+          balanceUSD: "$0.00",
+          isLow: true,
+          isEmpty: false,
+          walletAddress: "x",
+        },
+        shortfall: "$0.01",
+      }),
+      deductEstimated: () => {},
+      invalidate: () => {},
+    } as unknown as BalanceMonitor;
+    // Its own wallet: the in-doubt tests above leave this file's main wallet
+    // with a pending channel request, which (correctly) keeps it on exact.
+    const keys = deriveAllKeys(
+      "legal winner thank year wave sausage worth useful legal winner thank yellow",
+    );
+    const lowBalanceProxy = await startProxy({
+      wallet: { key: keys.evmPrivateKey, solanaPrivateKeyBytes: keys.solanaPrivateKeyBytes },
+      paymentChain: "solana",
+      apiBase: `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`,
+      port: 0,
+      spendControl: new SpendControl({ storage: new InMemorySpendControlStorage() }),
+      solanaBatch: { operators: [operator.address], channelStore: false },
+      _balanceMonitorOverride: broke,
+    });
+    try {
+      const res = await fetch(`${lowBalanceProxy.baseUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 64,
+          stream: false,
+          messages: [{ role: "user", content: `low balance ${seq++}` }],
+        }),
+      });
+      const json = (await res.json()) as { model?: string };
+      expect(res.status).toBe(200);
+      expect(json.model).toBe(MODEL);
+      expect(schemesPaid).toEqual(["batch-settlement"]);
+    } finally {
+      await lowBalanceProxy.close();
+    }
   }, 30_000);
 });

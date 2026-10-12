@@ -66,11 +66,14 @@ function quote(amount = "5000"): Response {
 }
 
 const ok = (tag: string) => new Response(JSON.stringify({ tag }), { status: 200 });
-/** A served batch call, with the receipt that states its charge. */
-const okWithReceipt = (tag: string) =>
+/** A served batch call, with a receipt (`extra.chargedAmount`, as sol.blockrun.ai sends it). */
+const receipt = (body: unknown) => Buffer.from(JSON.stringify(body)).toString("base64");
+const okWithReceipt = (tag: string, chargedAmount = "1200") =>
   new Response(JSON.stringify({ tag }), {
     status: 200,
-    headers: { "PAYMENT-RESPONSE": Buffer.from("{}").toString("base64") },
+    headers: {
+      "PAYMENT-RESPONSE": receipt({ success: true, amount: "", extra: { chargedAmount } }),
+    },
   });
 
 type Pay = BatchPayerLike["pay"];
@@ -258,16 +261,31 @@ describe("Solana batch-settlement routing", () => {
     });
     h.answers.push(
       () => quote(),
-      () =>
-        new Response("{}", {
-          status: 200,
-          headers: { "PAYMENT-RESPONSE": Buffer.from("{}").toString("base64") },
-        }),
+      () => okWithReceipt("zero", "0"),
     );
 
     await h.payFetch(CHAT, chatInit());
 
     expect(h.outcomes).toEqual([{ kind: "paid", chargedMicros: 0n }]);
+  });
+
+  it.each([
+    ["not base64 JSON", "%%%"],
+    ["no amount anywhere", receipt({ success: true, extra: {} })],
+    ["a non-canonical amount", receipt({ success: true, extra: { chargedAmount: "0x10" } })],
+  ])("keeps the ceiling when the receipt is %s", async (_label, header) => {
+    const h = harness(async (_pr, send) => {
+      const response = await send({ "PAYMENT-SIGNATURE": "batch-auth" });
+      return { kind: "paid", response, chargedUsd: 0 };
+    });
+    h.answers.push(
+      () => quote(),
+      () => new Response("{}", { status: 200, headers: { "PAYMENT-RESPONSE": header } }),
+    );
+
+    await h.payFetch(CHAT, chatInit());
+
+    expect(h.outcomes).toEqual([{ kind: "paid", chargedMicros: undefined }]);
   });
 
   it("keeps streaming chat and other endpoints on exact", async () => {

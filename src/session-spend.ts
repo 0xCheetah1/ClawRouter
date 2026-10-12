@@ -190,7 +190,9 @@ export class SessionSpend {
    * payment was signed, it is already recorded at its real amount.
    */
   recordSuccess(estimateMicros: bigint): void {
-    if (this.signedMicros > 0n || estimateMicros <= 0n) return;
+    // Any signature at all means the spend is already on the books, at what
+    // was signed or what a receipt settled it to (zero included).
+    if (this.signedLog.length > 0 || estimateMicros <= 0n) return;
     this.store.addSessionCost(this.sessionId, estimateMicros);
     this.shrinkHold(estimateMicros);
   }
