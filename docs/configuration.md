@@ -255,9 +255,12 @@ actually cost. One on-chain transaction covers many calls.
 - **Who holds the deposit.** The channel's voucher signer is BlockRun's
   operator key, pinned in ClawRouter (the operator a 402 names is never
   trusted). The deposit is escrow, capped by
-  `CLAWROUTER_SOLANA_BATCH_MAX_DEPOSIT` (`$1` by default). Unused escrow is
-  returned when the channel is closed; ClawRouter does not close channels yet,
-  so close one with `@blockrun/llm`'s `closeBatchChannel()` on the same wallet.
+  `CLAWROUTER_SOLANA_BATCH_MAX_DEPOSIT` (`$1` by default), and later calls keep
+  spending it. A channel idle for 3 days is closed by BlockRun at what has been
+  settled, and the unused escrow returns to the wallet on its own (the gateway
+  advertises this as `batchPolicy.idleCloseSeconds` in its 402). To get it back
+  sooner, close the channel with `@blockrun/llm`'s `closeBatchChannel()` on the
+  same wallet; ClawRouter has no close command yet.
 - **Spend limits apply unchanged.** `maxCostPerRun` and the spend policy
   (`clawrouter policy`) check each batch payment at its per-call ceiling before
   it is signed, exactly like an `exact` payment. `maxCostPerRun` then books what
