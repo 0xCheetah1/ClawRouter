@@ -12092,7 +12092,7 @@ function alphabet(letters) {
   };
 }
 // @__NO_SIDE_EFFECTS__
-function join(separator = "") {
+function join2(separator = "") {
   astr("join", separator);
   return {
     encode: (from16) => {
@@ -12298,7 +12298,7 @@ var init_esm = __esm({
       convertRadix2,
       radix,
       radix2,
-      join,
+      join: join2,
       padding
     };
   }
@@ -23434,7 +23434,7 @@ function alphabet2(letters) {
   };
 }
 // @__NO_SIDE_EFFECTS__
-function join6(separator = "") {
+function join7(separator = "") {
   astr2("join", separator);
   return {
     encode: (from16) => {
@@ -23544,7 +23544,7 @@ var genBase58, base58, createBase58check;
 var init_base2 = __esm({
   "node_modules/@scure/base/index.js"() {
     "use strict";
-    genBase58 = /* @__NO_SIDE_EFFECTS__ */ (abc) => /* @__PURE__ */ chain2(/* @__PURE__ */ radix3(58), /* @__PURE__ */ alphabet2(abc), /* @__PURE__ */ join6(""));
+    genBase58 = /* @__NO_SIDE_EFFECTS__ */ (abc) => /* @__PURE__ */ chain2(/* @__PURE__ */ radix3(58), /* @__PURE__ */ alphabet2(abc), /* @__PURE__ */ join7(""));
     base58 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ genBase58("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"));
     createBase58check = (sha25612) => {
       afn2(sha25612);
@@ -31146,7 +31146,7 @@ var init_index_node16 = __esm({
 });
 
 // node_modules/@solana/keys/dist/index.node.mjs
-import { mkdir as mkdir2, writeFile } from "fs/promises";
+import { mkdir as mkdir3, writeFile as writeFile2 } from "fs/promises";
 import { dirname as dirname2 } from "path";
 function addPkcs8Header(bytes) {
   return new Uint8Array([
@@ -31422,8 +31422,8 @@ async function writeKeyPair(keyPair2, path8, config = {}) {
   const bytes = new Uint8Array(64);
   bytes.set(privateKeyBytes, 0);
   bytes.set(publicKeyBytes, 32);
-  await mkdir2(dirname2(path8), { recursive: true });
-  await writeFile(path8, JSON.stringify(Array.from(bytes)), {
+  await mkdir3(dirname2(path8), { recursive: true });
+  await writeFile2(path8, JSON.stringify(Array.from(bytes)), {
     flag: config.unsafelyOverwriteExistingKeyPair ? "w" : "wx",
     mode: 384
   });
@@ -38276,7 +38276,7 @@ var require_websocket = __commonJS({
     var http5 = __require("http");
     var net3 = __require("net");
     var tls2 = __require("tls");
-    var { randomBytes: randomBytes9, createHash: createHash5 } = __require("crypto");
+    var { randomBytes: randomBytes9, createHash: createHash6 } = __require("crypto");
     var { Duplex, Readable: Readable3 } = __require("stream");
     var { URL: URL3 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -38944,7 +38944,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest = createHash5("sha1").update(key3 + GUID).digest("base64");
+        const digest = createHash6("sha1").update(key3 + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -39313,7 +39313,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter2 = __require("events");
     var http5 = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash5 } = __require("crypto");
+    var { createHash: createHash6 } = __require("crypto");
     var extension3 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -39620,7 +39620,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash5("sha1").update(key3 + GUID).digest("base64");
+        const digest = createHash6("sha1").update(key3 + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -88735,7 +88735,7 @@ var require_snapshot_utils = __commonJS({
 var require_snapshot_recorder = __commonJS({
   "node_modules/undici/lib/mock/snapshot-recorder.js"(exports, module) {
     "use strict";
-    var { writeFile: writeFile5, readFile: readFile3, mkdir: mkdir7 } = __require("fs/promises");
+    var { writeFile: writeFile5, readFile: readFile4, mkdir: mkdir7 } = __require("fs/promises");
     var { dirname: dirname6, resolve: resolve2 } = __require("path");
     var { setTimeout: setTimeout2, clearTimeout: clearTimeout2 } = __require("timers");
     var { InvalidArgumentError, UndiciError } = require_errors();
@@ -88952,7 +88952,7 @@ var require_snapshot_recorder = __commonJS({
           throw new InvalidArgumentError("Snapshot path is required");
         }
         try {
-          const data = await readFile3(resolve2(path8), "utf8");
+          const data = await readFile4(resolve2(path8), "utf8");
           const parsed = JSON.parse(data);
           if (Array.isArray(parsed)) {
             this.#snapshots.clear();
@@ -221543,7 +221543,7 @@ var require_axios = __commonJS({
     }
     var isString2 = typeOfTest2("string");
     var isFunction$1 = typeOfTest2("function");
-    var isNumber2 = typeOfTest2("number");
+    var isNumber3 = typeOfTest2("number");
     var isObject3 = (thing) => thing !== null && typeof thing === "object";
     var isBoolean2 = (thing) => thing === true || thing === false;
     var isPlainObject5 = (val) => {
@@ -221773,7 +221773,7 @@ var require_axios = __commonJS({
       if (!thing) return null;
       if (isArray2(thing)) return thing;
       let i = thing.length;
-      if (!isNumber2(i)) return null;
+      if (!isNumber3(i)) return null;
       const arr = new Array(i);
       while (i-- > 0) {
         arr[i] = thing[i];
@@ -221925,7 +221925,7 @@ var require_axios = __commonJS({
       isFormData: isFormData2,
       isArrayBufferView: isArrayBufferView2,
       isString: isString2,
-      isNumber: isNumber2,
+      isNumber: isNumber3,
       isBoolean: isBoolean2,
       isObject: isObject3,
       isPlainObject: isPlainObject5,
@@ -232329,16 +232329,6 @@ function isAgenticModel(modelId) {
 function getAgenticModels() {
   return BLOCKRUN_MODELS.filter((m) => m.agentic).map((m) => m.id);
 }
-function supportsToolCalling(modelId) {
-  const normalized = modelId.replace("blockrun/", "");
-  const model = BLOCKRUN_MODELS.find((m) => m.id === normalized);
-  return model?.toolCalling ?? false;
-}
-function supportsVision(modelId) {
-  const normalized = modelId.replace("blockrun/", "");
-  const model = BLOCKRUN_MODELS.find((m) => m.id === normalized);
-  return model?.vision ?? false;
-}
 function getModelContextWindow(modelId) {
   const normalized = modelId.replace("blockrun/", "");
   const model = BLOCKRUN_MODELS.find((m) => m.id === normalized);
@@ -232350,6 +232340,6588 @@ function isReasoningModel(modelId) {
   return model?.reasoning ?? false;
 }
 
+// node_modules/@blockrun/model-catalog/dist/snapshot.v1.json
+var snapshot_v1_default = {
+  catalog: {
+    schema_version: 1,
+    catalog_version: "2026.09.29.1",
+    observed_at: "2026-09-29T23:31:20.524862+00:00",
+    sources: {
+      base: "https://blockrun.ai/api/v1/models?format=json",
+      solana: "https://sol.blockrun.ai/api/v1/models?format=json"
+    },
+    models: [
+      {
+        id: "anthropic/claude-fable-5",
+        name: "Claude Fable 5",
+        provider: "anthropic",
+        description: "Anthropic's most capable model \u2014 Mythos-class tier above Opus, for the most demanding reasoning and long-horizon agentic work. 1M context, 128K output, always-on thinking",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 10,
+              output: 50,
+              cache_read: 1,
+              cache_write: 12.5
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 10,
+              output: 50
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-fable-5.1",
+        name: "Claude Fable 5.1",
+        provider: "anthropic",
+        description: "Anthropic's most capable model \u2014 successor to Fable 5 in the same tier at the same price, for the most demanding reasoning and long-horizon agentic work. 1M context, 128K output, always-on thinking",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 10,
+              output: 50,
+              cache_read: 0.25,
+              cache_write: 12.5
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 10,
+              output: 50
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-haiku-4.5",
+        name: "Claude Haiku 4.5",
+        provider: "anthropic",
+        description: "Fastest and most efficient Claude, near-frontier intelligence",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1,
+              output: 5,
+              cache_read: 0.1,
+              cache_write: 1.25
+            },
+            context_window: 2e5,
+            max_output: 64e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1,
+              output: 5
+            },
+            context_window: 2e5,
+            max_output: 64e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-opus-4.5",
+        name: "Claude Opus 4.5",
+        provider: "anthropic",
+        description: "Latest Anthropic flagship with enhanced reasoning and creativity",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25,
+              cache_read: 0.5,
+              cache_write: 6.25
+            },
+            context_window: 2e5,
+            max_output: 64e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25
+            },
+            context_window: 2e5,
+            max_output: 64e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-opus-4.7",
+        name: "Claude Opus 4.7",
+        provider: "anthropic",
+        description: "Powerful Claude Opus for complex reasoning and agentic coding. 1M context, 128k output, adaptive thinking",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25,
+              cache_read: 0.5,
+              cache_write: 6.25
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-opus-4.8",
+        name: "Claude Opus 4.8",
+        provider: "anthropic",
+        description: "Most capable Claude 4-series Opus for complex reasoning and agentic coding. 1M context, 128k output, adaptive thinking",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25,
+              cache_read: 0.5,
+              cache_write: 6.25
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-opus-5",
+        name: "Claude Opus 5",
+        provider: "anthropic",
+        description: "Newest Opus \u2014 step-change over Opus 4.8 for deep reasoning and agentic coding at the same price. 1M context, 128k output, adaptive thinking",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25,
+              cache_read: 0.5,
+              cache_write: 6.25
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 25
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-opus-5.5",
+        name: "Claude Opus 5.5",
+        provider: "anthropic",
+        description: "Newest Opus \u2014 Opus-class deep reasoning and agentic coding at a lower price than Opus 5. 1M context, 128k output, always-on adaptive thinking, vision",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 4,
+              output: 20,
+              cache_read: 0.2,
+              cache_write: 5
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 4,
+              output: 20
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-sonnet-4.5",
+        name: "Claude Sonnet 4.5",
+        provider: "anthropic",
+        description: "Sonnet 4.5 \u2014 strong coding and agentic performance, vision",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 3,
+              output: 15,
+              cache_read: 0.3,
+              cache_write: 3.75
+            },
+            context_window: 2e5,
+            max_output: 64e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 3,
+              output: 15
+            },
+            context_window: 2e5,
+            max_output: 64e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-sonnet-4.6",
+        name: "Claude Sonnet 4.6",
+        provider: "anthropic",
+        description: "Best balance of intelligence, speed, and cost",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 3,
+              output: 15,
+              cache_read: 0.3,
+              cache_write: 3.75
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 3,
+              output: 15
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-sonnet-5",
+        name: "Claude Sonnet 5",
+        provider: "anthropic",
+        description: "Newest Sonnet \u2014 near-Opus coding/agentic quality at Sonnet cost. 1M context, 128k output, adaptive thinking, vision",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10,
+              cache_read: 0.2,
+              cache_write: 2.5
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "anthropic/claude-sonnet-5.5",
+        name: "Claude Sonnet 5.5",
+        provider: "anthropic",
+        description: "Newest Sonnet \u2014 fast, capable everyday coding and agent work at Sonnet cost. 1M context, 128k output, adaptive thinking, vision",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10,
+              cache_read: 0.2,
+              cache_write: 2.5
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10
+            },
+            context_window: 1e6,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "azure/sora-2",
+        name: "Sora 2",
+        provider: "azure",
+        description: "OpenAI Sora 2 via Azure AI Foundry \u2014 text-to-video AND image-to-video at 720p with synchronized audio. 4s default; 4, 8, or 12s. Portrait or landscape. Image-to-video takes a non-human reference image (human faces are rejected upstream \u2014 use Seedance + RealFace for real people). $0.10/sec.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.105,
+              per_call_surcharge: 0,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 4,
+              max_duration_seconds: 12
+            }
+          },
+          solana: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          }
+        }
+      },
+      {
+        id: "bytedance/seed-audio-1.0",
+        name: "Seed Audio 1.0",
+        provider: "bytedance",
+        description: "ByteDance's Seed Audio 1.0 \u2014 prompt-directed audio creation: describe the voice, emotion, and sound staging in natural language. Up to 120s output, mp3/wav. Billed by audio duration ($0.003/second, estimated from input length).",
+        lifecycle: "active",
+        declared_capabilities: [
+          "speech",
+          "tts"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.315,
+              transaction_fee: 1e-3,
+              max_input_chars: 3e3,
+              max_output_seconds: 120
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.3,
+              max_input_chars: 3e3
+            }
+          }
+        }
+      },
+      {
+        id: "bytedance/seedance-1.5-pro",
+        name: "Seedance 1.5 Pro",
+        provider: "bytedance",
+        description: "ByteDance Seedance 1.5 Pro \u2014 budget text/image-to-video at 720p with synced audio (t2v), 5s default. Does NOT support RealFace assets.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.070783146,
+              per_call_surcharge: 0,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 5,
+              max_duration_seconds: 12
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.07,
+              default_duration_seconds: 5,
+              max_duration_seconds: 12
+            }
+          }
+        }
+      },
+      {
+        id: "bytedance/seedance-2.0",
+        name: "Seedance 2.0 Pro",
+        provider: "bytedance",
+        description: "ByteDance Seedance 2.0 Pro \u2014 premium quality text/image-to-video at 720p with synced audio (t2v), 5s default. Supports BytePlus RealFace assets \u2014 see /docs/video/real-person-ip for enrollment.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.22709592675,
+              per_call_surcharge: 0,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 5,
+              max_duration_seconds: 15
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.227,
+              default_duration_seconds: 5,
+              max_duration_seconds: 15
+            }
+          }
+        }
+      },
+      {
+        id: "bytedance/seedance-2.0-fast",
+        name: "Seedance 2.0 Fast",
+        provider: "bytedance",
+        description: "ByteDance Seedance 2.0 Fast \u2014 fast video at 720p with synced audio (t2v), 5s default. ~60-80s to generate. Supports BytePlus RealFace assets \u2014 see /docs/video/real-person-ip for enrollment.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.165160674,
+              per_call_surcharge: 0,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 5,
+              max_duration_seconds: 15
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.165,
+              default_duration_seconds: 5,
+              max_duration_seconds: 15
+            }
+          }
+        }
+      },
+      {
+        id: "bytedance/seedance-2.0-mini",
+        name: "Seedance 2.0 Mini",
+        provider: "bytedance",
+        description: "ByteDance Seedance 2.0 Mini \u2014 720p video with synced audio at half the flagship rate, 5s default. 480p and 720p (no 1080p/4K). Supports BytePlus RealFace assets \u2014 see /docs/video/real-person-ip for enrollment.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.07971075,
+              per_call_surcharge: 0,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 5,
+              max_duration_seconds: 15
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.0797,
+              default_duration_seconds: 5,
+              max_duration_seconds: 15
+            }
+          }
+        }
+      },
+      {
+        id: "bytedance/seedance-2.5",
+        name: "Seedance 2.5",
+        provider: "bytedance",
+        description: "ByteDance Seedance 2.5 \u2014 Long-form video up to 30s at 720p, with first/last-frame control and up to 30 reference images. For 1080p or 4K use Seedance 2.0 Pro.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.31557485925,
+              per_call_surcharge: 0,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 5,
+              max_duration_seconds: 30
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.315,
+              default_duration_seconds: 5,
+              max_duration_seconds: 30
+            }
+          }
+        }
+      },
+      {
+        id: "bytedance/seedream-5-pro",
+        name: "Seedream 5.0 Pro",
+        provider: "bytedance",
+        description: "ByteDance's Seedream 5.0 Pro \u2014 flagship image generation and editing, up to 4K-class resolution with reference-image support",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.04725,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.045
+            }
+          }
+        }
+      },
+      {
+        id: "cohere/north-mini-code",
+        name: "Cohere North Mini Code (Free)",
+        provider: "cohere",
+        description: "Cohere's North Mini Code, free. Compact coding model, 256K context, sub-second responses.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 256e3,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 256e3,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "deepseek/deepseek-chat",
+        name: "DeepSeek V4 Flash Chat",
+        provider: "deepseek",
+        description: "Paid V4 Flash in non-thinking mode (1.6T-class quality at $0.14 in / $0.28 out). Production-grade reliability and 5MB request bodies.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "deepseek/deepseek-reasoner",
+        name: "DeepSeek V4 Flash Reasoner",
+        provider: "deepseek",
+        description: "Paid V4 Flash in thinking mode for reasoning tasks. Same upstream as deepseek/deepseek-chat but with thinking enabled by default.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "deepseek/deepseek-v4-flash-vision-exp",
+        name: "DeepSeek V4 Flash Vision",
+        provider: "deepseek",
+        description: "DeepSeek V4 Flash Vision \u2014 1M context with text and image input. Experimental multimodal tier of the V4 Flash family.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.44,
+              output: 1.32
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.44,
+              output: 1.32
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "deepseek/deepseek-v4-pro",
+        name: "DeepSeek V4 Pro",
+        provider: "deepseek",
+        description: "DeepSeek V4 flagship \u2014 1.6T MoE / 49B active, 1M context. Strongest open-weight reasoner. Thinking mode default.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.32,
+              output: 3.96,
+              cache_read: 0.044
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.32,
+              output: 3.96
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "elevenlabs/flash-v2.5",
+        name: "ElevenLabs Flash v2.5",
+        provider: "elevenlabs",
+        description: "Ultra-low-latency (~75ms) speech synthesis for real-time voice agents. 32 languages.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "speech",
+          "tts"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.0525,
+              transaction_fee: 1e-3,
+              max_input_chars: 4e4
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.05,
+              max_input_chars: 4e4
+            }
+          }
+        }
+      },
+      {
+        id: "elevenlabs/multilingual-v2",
+        name: "ElevenLabs Multilingual v2",
+        provider: "elevenlabs",
+        description: "Highest-consistency voice for long-form narration, audiobooks, and voiceover. 29 languages.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "speech",
+          "tts"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.105,
+              transaction_fee: 1e-3,
+              max_input_chars: 1e4
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.1,
+              max_input_chars: 1e4
+            }
+          }
+        }
+      },
+      {
+        id: "elevenlabs/sound-effects",
+        name: "ElevenLabs Sound Effects",
+        provider: "elevenlabs",
+        description: "Generate cinematic sound effects and audio textures from a text prompt (up to 22s).",
+        lifecycle: "active",
+        declared_capabilities: [
+          "sound_effect"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "sound_effect"
+            ],
+            billing_mode: "per_generation",
+            pricing: {
+              per_generation: 0.0525,
+              transaction_fee: 1e-3,
+              max_duration_seconds: 22
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "sound_effect"
+            ],
+            billing_mode: "per_generation",
+            pricing: {
+              per_generation: 0.05,
+              max_duration_seconds: 22
+            }
+          }
+        }
+      },
+      {
+        id: "elevenlabs/turbo-v2.5",
+        name: "ElevenLabs Turbo v2.5",
+        provider: "elevenlabs",
+        description: "Balanced quality and latency (~250ms) for interactive use cases. 32 languages.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "speech",
+          "tts"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.0525,
+              transaction_fee: 1e-3,
+              max_input_chars: 4e4
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.05,
+              max_input_chars: 4e4
+            }
+          }
+        }
+      },
+      {
+        id: "elevenlabs/v3",
+        name: "ElevenLabs v3",
+        provider: "elevenlabs",
+        description: "Maximum expressiveness and emotional range for creative applications. 70+ languages.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "speech",
+          "tts"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.105,
+              transaction_fee: 1e-3,
+              max_input_chars: 5e3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "speech",
+              "tts"
+            ],
+            billing_mode: "per_character",
+            pricing: {
+              per_1k_chars: 0.1,
+              max_input_chars: 5e3
+            }
+          }
+        }
+      },
+      {
+        id: "google/gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        provider: "google",
+        description: "Fast and efficient Gemini model with vision support",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 2.5,
+              cache_read: 0.03
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 2.5
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-2.5-flash-lite",
+        name: "Gemini 2.5 Flash Lite",
+        provider: "google",
+        description: "Most economical Gemini model - ultra-fast and lightweight (requires new SDK)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.1,
+              output: 0.4,
+              cache_read: 0.01
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.1,
+              output: 0.4
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        provider: "google",
+        description: "State-of-the-art for reasoning, coding, and mathematics",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.25,
+              output: 10,
+              cache_read: 0.125,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: false,
+                  input: 2.5,
+                  output: 15,
+                  cache_read: 0.25
+                }
+              ]
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.25,
+              output: 10,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: false,
+                  input: 2.5,
+                  output: 15
+                }
+              ]
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3-flash-preview",
+        name: "Gemini 3 Flash Preview",
+        provider: "google",
+        description: "Frontier-class performance with Pro-level intelligence at Flash speed and pricing. Includes thinking mode (requires new SDK)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.5,
+              output: 3
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.5,
+              output: 3
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3.1-flash-lite",
+        name: "Gemini 3.1 Flash Lite",
+        provider: "google",
+        description: "Ultra-fast and lightweight Gemini 3.1 model with thinking mode for high-throughput tasks",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.25,
+              output: 1.5,
+              cache_read: 0.025
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.25,
+              output: 1.5
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3.1-pro",
+        name: "Gemini 3.1 Pro",
+        provider: "google",
+        description: "Latest Gemini with improved thinking, token efficiency, and agentic capabilities. Optimized for software engineering (requires new SDK)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 12,
+              cache_read: 0.2,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: false,
+                  input: 4,
+                  output: 18,
+                  cache_read: 0.4
+                }
+              ]
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 12,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: false,
+                  input: 4,
+                  output: 18
+                }
+              ]
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3.5-flash",
+        name: "Gemini 3.5 Flash",
+        provider: "google",
+        description: "Latest-generation Flash with built-in thinking mode \u2014 frontier-class quality at Flash speed",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.5,
+              output: 9,
+              cache_read: 0.15
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.5,
+              output: 9
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3.5-flash-lite",
+        name: "Gemini 3.5 Flash Lite",
+        provider: "google",
+        description: "Latest Flash Lite \u2014 ultra-fast, lightweight Gemini with thinking mode for high-throughput tasks",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 2.5,
+              cache_read: 0.03
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 2.5
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3.6-flash",
+        name: "Gemini 3.6 Flash",
+        provider: "google",
+        description: "Newest-generation Flash with built-in thinking mode \u2014 frontier-class quality at Flash speed",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.75,
+              output: 3.75,
+              cache_read: 0.075
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.75,
+              output: 3.75
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/gemini-3.8-flash",
+        name: "Gemini 3.8 Flash",
+        provider: "google",
+        description: "Newest-generation Flash with built-in thinking mode \u2014 frontier-class quality at Flash speed",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.75,
+              output: 3.75,
+              cache_read: 0.075
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.75,
+              output: 3.75
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "google/nano-banana",
+        name: "Nano Banana",
+        provider: "google",
+        description: "Google's Gemini 2.5 Flash image generation - fast and efficient",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.0525,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.05
+            }
+          }
+        }
+      },
+      {
+        id: "google/nano-banana-2",
+        name: "Nano Banana 2",
+        provider: "google",
+        description: "Google's Gemini 3.1 Flash image generation - pro-level quality at Flash speed",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.0945,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.09
+            }
+          }
+        }
+      },
+      {
+        id: "google/nano-banana-pro",
+        name: "Nano Banana Pro",
+        provider: "google",
+        description: "Google's Gemini 3 Pro image generation - highest quality up to 4K",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.105,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.1
+            }
+          }
+        }
+      },
+      {
+        id: "minimax/minimax-m2.7",
+        name: "MiniMax M2.7",
+        provider: "minimax",
+        description: "MiniMax's flagship reasoning model with recursive self-improvement. Great value for complex tasks (~60 tps)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 1.2
+            },
+            context_window: 204800,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 1.2
+            },
+            context_window: 204800,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "minimax/minimax-m3",
+        name: "MiniMax M3",
+        provider: "minimax",
+        description: "MiniMax's M3 flagship \u2014 1M context, strong reasoning + coding.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 1.2
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.3,
+              output: 1.2
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "minimax/music-2.5+",
+        name: "MiniMax Music 2.5+",
+        provider: "minimax",
+        description: "MiniMax's flagship music generation model. Supports lyrics, instrumental, and style prompts. ~3 min output.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "music"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "music"
+            ],
+            billing_mode: "per_track",
+            pricing: {
+              per_track: 0.1575,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "music"
+            ],
+            billing_mode: "per_track",
+            pricing: {
+              per_track: 0.15
+            }
+          }
+        }
+      },
+      {
+        id: "moonshot/kimi-k3",
+        name: "Kimi K3",
+        provider: "moonshot",
+        description: "Moonshot's flagship \u2014 a 2.8-trillion-parameter open MoE with 1M context, image + text input, returning reasoning_content. Live-verified 2026-07-17 (chat, tools, vision).",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 3,
+              output: 15,
+              cache_read: 0.3
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 3,
+              output: 15
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "nvidia/gemma-4-31b",
+        name: "Gemma 4 31B (Free)",
+        provider: "nvidia",
+        description: "Google's Gemma 4 31B instruction-tuned, open weights, hosted free by NVIDIA.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 131072,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "nvidia/llama-3.2-11b-vision",
+        name: "Llama 3.2 11B Vision (Free)",
+        provider: "nvidia",
+        description: "Meta's Llama 3.2 11B Vision hosted free by NVIDIA. Accepts images; 128K context.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 128e3,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 128e3,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "nvidia/muse-glimmer-30b",
+        name: "Muse Glimmer 30B (Free)",
+        provider: "nvidia",
+        description: "Meta's Muse Glimmer 30B \u2014 Apache 2.0, 29.6B dense, hosted free by NVIDIA. Meta's open line after Llama.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 131072,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        name: "Nemotron 3 Nano Omni (Free)",
+        provider: "nvidia",
+        description: "NVIDIA's multimodal reasoning Nemotron Nano Omni, free. 31B / 3.2B active MoE. Accepts text, images, video, audio. ChartQA 90.3, DocVQA 95.6, MMMU 70.8 \u2014 the only vision-capable free model in our catalog",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [
+              "chat",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 256e3,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 256e3,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "nvidia/nemotron-3-ultra-550b",
+        name: "Nemotron 3 Ultra 550B (Free)",
+        provider: "nvidia",
+        description: "NVIDIA Nemotron 3 Ultra 550B-A55B, free. 550B total / 55B active MoE with a 1M-token context \u2014 the largest free model in the catalog.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 1e6,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 1e6,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "nvidia/nemotron-3.5-lightning",
+        name: "Nemotron 3.5 Lightning (Free)",
+        provider: "nvidia",
+        description: "NVIDIA Nemotron 3.5 Lightning 30B-A3B, free. Thinking-mode reasoning with a 1M-token context.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 1e6,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 1e6,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "openai/chat-latest",
+        name: "ChatGPT Instant (GPT-5.5)",
+        provider: "openai",
+        description: "ChatGPT's default model \u2014 the rolling `chat-latest` alias, currently GPT-5.5 Instant. Tuned for speed and concision, same price as GPT-5.5",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 30,
+              cache_read: 0.5
+            },
+            context_window: 128e3,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 30
+            },
+            context_window: 128e3,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-4.1",
+        name: "GPT-4.1",
+        provider: "openai",
+        description: "Latest GPT-4 generation model",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 8,
+              cache_read: 0.5
+            },
+            context_window: 128e3,
+            max_output: 32768
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 8
+            },
+            context_window: 128e3,
+            max_output: 32768
+          }
+        }
+      },
+      {
+        id: "openai/gpt-4.1-mini",
+        name: "GPT-4.1 Mini",
+        provider: "openai",
+        description: "Fast and affordable GPT-4.1 model",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.4,
+              output: 1.6,
+              cache_read: 0.1
+            },
+            context_window: 128e3,
+            max_output: 32768
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.4,
+              output: 1.6
+            },
+            context_window: 128e3,
+            max_output: 32768
+          }
+        }
+      },
+      {
+        id: "openai/gpt-4.1-nano",
+        name: "GPT-4.1 Nano",
+        provider: "openai",
+        description: "Ultra-fast and cost-effective GPT-4.1",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.1,
+              output: 0.4,
+              cache_read: 0.025
+            },
+            context_window: 128e3,
+            max_output: 32768
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.1,
+              output: 0.4
+            },
+            context_window: 128e3,
+            max_output: 32768
+          }
+        }
+      },
+      {
+        id: "openai/gpt-4o",
+        name: "GPT-4o",
+        provider: "openai",
+        description: "Multimodal model with vision and audio",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2.5,
+              output: 10,
+              cache_read: 1.25
+            },
+            context_window: 128e3,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2.5,
+              output: 10
+            },
+            context_window: 128e3,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "openai/gpt-4o-mini",
+        name: "GPT-4o Mini",
+        provider: "openai",
+        description: "Fast and affordable GPT-4o model",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.15,
+              output: 0.6,
+              cache_read: 0.075
+            },
+            context_window: 128e3,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.15,
+              output: 0.6
+            },
+            context_window: 128e3,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5-mini",
+        name: "GPT-5 Mini",
+        provider: "openai",
+        description: "Cost-optimized reasoning and chat",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.25,
+              output: 2,
+              cache_read: 0.025
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.25,
+              output: 2
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.1",
+        name: "GPT-5.1",
+        provider: "openai",
+        description: "Frontier model with 400K context and configurable reasoning effort",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.25,
+              output: 10,
+              cache_read: 0.125
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.25,
+              output: 10
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.2",
+        name: "GPT-5.2",
+        provider: "openai",
+        description: "Frontier model with 400K context and adaptive reasoning",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.75,
+              output: 14,
+              cache_read: 0.175
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.75,
+              output: 14
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.2-pro",
+        name: "GPT-5.2 Pro",
+        provider: "openai",
+        description: "Uses more compute for consistently better answers",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 21,
+              output: 168
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 21,
+              output: 168
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.3-codex",
+        name: "GPT-5.3 Codex",
+        provider: "openai",
+        description: "Industry-leading agentic coding model. 400K context, reasoning, tool use, and complex execution",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.75,
+              output: 14,
+              cache_read: 0.175
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.75,
+              output: 14
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.4",
+        name: "GPT-5.4",
+        provider: "openai",
+        description: "Most capable and efficient frontier model with 1M context, native computer use, and thinking mode",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2.5,
+              output: 15,
+              cache_read: 0.25,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 5,
+                  output: 22.5,
+                  cache_read: 0.5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2.5,
+              output: 15,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 5,
+                  output: 22.5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.4-mini",
+        name: "GPT-5.4 Mini",
+        provider: "openai",
+        description: "Strongest mini model for coding, computer use, and subagents with GPT-5.4 capabilities",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.75,
+              output: 4.5,
+              cache_read: 0.075
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.75,
+              output: 4.5
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.4-nano",
+        name: "GPT-5.4 Nano",
+        provider: "openai",
+        description: "Fastest and most affordable GPT-5.4 model for high-throughput tasks",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.2,
+              output: 1.25,
+              cache_read: 0.02
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.2,
+              output: 1.25
+            },
+            context_window: 4e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.4-pro",
+        name: "GPT-5.4 Pro",
+        provider: "openai",
+        description: "Premium GPT-5.4 with maximum compute for the hardest problems",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 30,
+              output: 180,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 60,
+                  output: 270
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 30,
+              output: 180,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 60,
+                  output: 270
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.5",
+        name: "GPT-5.5",
+        provider: "openai",
+        description: "First fully retrained base since GPT-4.5. 1M context, 128K output, native agent + computer use",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 30,
+              cache_read: 0.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 10,
+                  output: 45,
+                  cache_read: 1
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 5,
+              output: 30,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 10,
+                  output: 45
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.5-pro",
+        name: "GPT-5.5 Pro",
+        provider: "openai",
+        description: "Premium GPT-5.5 with maximum compute for the hardest problems",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 30,
+              output: 180,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 60,
+                  output: 270
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 30,
+              output: 180,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 60,
+                  output: 270
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.6-luna",
+        name: "GPT-5.6 Luna",
+        provider: "openai",
+        description: "Cost-efficient GPT-5.6 tier for high-volume, latency-sensitive chat and lightweight agentic workflows. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.2,
+              output: 1.2,
+              cache_read: 0.02,
+              cache_write: 0.25,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 0.4,
+                  output: 1.8,
+                  cache_read: 0.04,
+                  cache_write: 0.5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.2,
+              output: 1.2,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 0.4,
+                  output: 1.8
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.6-luna-pro",
+        name: "GPT-5.6 Luna Pro",
+        provider: "openai",
+        description: "GPT-5.6 Luna with pro reasoning mode \u2014 budget tier with deeper reasoning for high-volume workloads. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.2,
+              output: 1.2,
+              cache_read: 0.02,
+              cache_write: 0.25,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 0.4,
+                  output: 1.8,
+                  cache_read: 0.04,
+                  cache_write: 0.5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.2,
+              output: 1.2,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 0.4,
+                  output: 1.8
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.6-sol",
+        name: "GPT-5.6 Sol",
+        provider: "openai",
+        description: "OpenAI flagship tier \u2014 deepest reasoning for complex coding, agentic workflows, and long-horizon problems. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 4,
+              output: 20,
+              cache_read: 0.4,
+              cache_write: 5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 8,
+                  output: 30,
+                  cache_read: 0.8,
+                  cache_write: 10
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 4,
+              output: 20,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 8,
+                  output: 30
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.6-sol-pro",
+        name: "GPT-5.6 Sol Pro",
+        provider: "openai",
+        description: "Highest-capability GPT-5.6 \u2014 Sol with pro reasoning mode for the hardest problems and long-running agentic work. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 4,
+              output: 20,
+              cache_read: 0.4,
+              cache_write: 5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 8,
+                  output: 30,
+                  cache_read: 0.8,
+                  cache_write: 10
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 4,
+              output: 20,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 8,
+                  output: 30
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.6-terra",
+        name: "GPT-5.6 Terra",
+        provider: "openai",
+        description: "Balanced GPT-5.6 tier \u2014 everyday coding, reasoning, and agentic tasks at half the flagship price. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 12,
+              cache_read: 0.2,
+              cache_write: 2.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 18,
+                  cache_read: 0.4,
+                  cache_write: 5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 12,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 18
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-5.6-terra-pro",
+        name: "GPT-5.6 Terra Pro",
+        provider: "openai",
+        description: "GPT-5.6 Terra with pro reasoning mode \u2014 deeper responses on complex tasks at half the standard Terra rate. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 12,
+              cache_read: 0.2,
+              cache_write: 2.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 18,
+                  cache_read: 0.4,
+                  cache_write: 5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 12,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 18
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-6-astra",
+        name: "GPT-6 Astra",
+        provider: "openai",
+        description: "OpenAI flagship \u2014 GPT-6 generation, tuned for long-horizon agentic work and computer use. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 10,
+              output: 50,
+              cache_read: 1,
+              cache_write: 12.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 20,
+                  output: 75,
+                  cache_read: 2,
+                  cache_write: 25
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 10,
+              output: 50,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 20,
+                  output: 75
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-6-luna",
+        name: "GPT-6 Luna",
+        provider: "openai",
+        description: "Fast, low-cost GPT-6 tier \u2014 high-volume chat, classification and lightweight agentic work. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.1,
+              output: 0.5,
+              cache_read: 0.01,
+              cache_write: 0.125,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 0.2,
+                  output: 0.75,
+                  cache_read: 0.02,
+                  cache_write: 0.25
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.1,
+              output: 0.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 0.2,
+                  output: 0.75
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-6-sol",
+        name: "GPT-6 Sol",
+        provider: "openai",
+        description: "Cost-efficient GPT-6 tier \u2014 complex coding and agentic workflows below the Astra flagship. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10,
+              cache_read: 0.2,
+              cache_write: 2.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 15,
+                  cache_read: 0.4,
+                  cache_write: 5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 15
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "openai/gpt-image-1",
+        name: "GPT Image 1",
+        provider: "openai",
+        description: "Native image generation in GPT-4o",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.021,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.02
+            }
+          }
+        }
+      },
+      {
+        id: "openai/gpt-image-2",
+        name: "ChatGPT Images 2.0",
+        provider: "openai",
+        description: "OpenAI's GPT Image 2 \u2014 reasoning-driven image generation with multilingual text rendering, character consistency, and high-fidelity edits",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.063,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.06
+            }
+          }
+        }
+      },
+      {
+        id: "openai/gpt-image-2.5-flare",
+        name: "GPT Image 2.5 Flare",
+        provider: "openai",
+        description: "OpenAI GPT Image 2.5 fast model for high-quality everyday image generation",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.294,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.06
+            }
+          }
+        }
+      },
+      {
+        id: "openai/gpt-image-2.5-sunburst",
+        name: "GPT Image 2.5 Sunburst",
+        provider: "openai",
+        description: "OpenAI GPT Image 2.5 most capable model for image generation and high-precision editing",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.294,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.06
+            }
+          }
+        }
+      },
+      {
+        id: "openai/o1",
+        name: "o1",
+        provider: "openai",
+        description: "Advanced reasoning model for complex tasks",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 15,
+              output: 60,
+              cache_read: 7.5
+            },
+            context_window: 2e5,
+            max_output: 1e5
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 15,
+              output: 60
+            },
+            context_window: 2e5,
+            max_output: 1e5
+          }
+        }
+      },
+      {
+        id: "openai/o3",
+        name: "o3",
+        provider: "openai",
+        description: "Latest reasoning model with improved performance",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 8,
+              cache_read: 0.5
+            },
+            context_window: 2e5,
+            max_output: 1e5
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 8
+            },
+            context_window: 2e5,
+            max_output: 1e5
+          }
+        }
+      },
+      {
+        id: "openai/o3-mini",
+        name: "o3-mini",
+        provider: "openai",
+        description: "Efficient reasoning model for STEM tasks",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.1,
+              output: 4.4,
+              cache_read: 0.55
+            },
+            context_window: 128e3,
+            max_output: 1e5
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.1,
+              output: 4.4
+            },
+            context_window: 128e3,
+            max_output: 1e5
+          }
+        }
+      },
+      {
+        id: "openai/o4-mini",
+        name: "o4-mini",
+        provider: "openai",
+        description: "Latest generation efficient reasoning model",
+        lifecycle: "active",
+        declared_capabilities: [
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.1,
+              output: 4.4,
+              cache_read: 0.275
+            },
+            context_window: 128e3,
+            max_output: 1e5
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.1,
+              output: 4.4
+            },
+            context_window: 128e3,
+            max_output: 1e5
+          }
+        }
+      },
+      {
+        id: "openjev",
+        name: "OpenJev",
+        provider: "blockrun",
+        description: "Typed judgments over text or JSON: yes/no with a probability, a choice with per-option probabilities, or a score. An open-source NLI cross-encoder we host ourselves \u2014 NOT Jev, and expected to be materially weaker than it; we have not benchmarked the two against each other. Free with an API key from https://user.blockrun.ai; served at https://api.blockrun.ai/v1/decide, not by /v1/chat/completions.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "judgment"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "judgment"
+            ],
+            billing_mode: "free",
+            pricing: {
+              per_call: 0
+            }
+          },
+          solana: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          }
+        }
+      },
+      {
+        id: "poolside/laguna-s-2.1",
+        name: "Laguna S 2.1",
+        provider: "poolside",
+        description: "Poolside's Laguna S 2.1 \u2014 118B open-weight coding model, 1M context, very cheap per token.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.09,
+              output: 0.18
+            },
+            context_window: 1048576,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "poolside/laguna-xs-2.1",
+        name: "Poolside Laguna XS 2.1 (Free)",
+        provider: "nvidia",
+        description: "Poolside Laguna XS 2.1 hosted free by NVIDIA. Fast compact coding model (~161 tok/s).",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 131072,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 131072,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "qwen/qwen3.7-flash",
+        name: "Qwen3.7 Flash",
+        provider: "qwen",
+        description: "Alibaba's fastest Qwen tier \u2014 1M context reasoning for high-volume, latency-sensitive workloads",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.03,
+              output: 0.13,
+              long_context: [
+                {
+                  threshold: 32e3,
+                  inclusive: true,
+                  input: 0.1,
+                  output: 0.4
+                },
+                {
+                  threshold: 256e3,
+                  inclusive: true,
+                  input: 0.2,
+                  output: 0.8
+                }
+              ]
+            },
+            context_window: 1e6,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.03,
+              output: 0.13
+            },
+            context_window: 1e6,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "qwen/qwen3.7-max",
+        name: "Qwen3.7 Max",
+        provider: "qwen",
+        description: "Alibaba's Qwen flagship \u2014 the Max tier. 1M context, strong reasoning, coding, and agentic tool use. Live-verified 2026-07-20.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.475,
+              output: 4.425
+            },
+            context_window: 1e6,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.475,
+              output: 4.425
+            },
+            context_window: 1e6,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "qwen/qwen3.7-plus",
+        name: "Qwen3.7 Plus",
+        provider: "qwen",
+        description: "Alibaba's balanced Qwen tier \u2014 1M context with reasoning, coding, and agentic tool use at a fraction of the Max price",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.32,
+              output: 1.28,
+              long_context: [
+                {
+                  threshold: 256e3,
+                  inclusive: true,
+                  input: 0.96,
+                  output: 3.84
+                }
+              ]
+            },
+            context_window: 1e6,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.32,
+              output: 1.28
+            },
+            context_window: 1e6,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "qwen/qwen3.8-flash",
+        name: "Qwen3.8 Flash",
+        provider: "qwen",
+        description: "Alibaba's Qwen3.8 Flash \u2014 125B MoE with hybrid attention, 1M context, image input. Outperforms the Qwen3.7 Plus tier at a lower price.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.15,
+              output: 0.47
+            },
+            context_window: 1e6,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.15,
+              output: 0.47
+            },
+            context_window: 1e6,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "qwen/qwen3.8-max",
+        name: "Qwen3.8 Max",
+        provider: "qwen",
+        description: "Alibaba's Qwen3.8 Max \u2014 current flagship of the Qwen line. 1M context, 131K output.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6
+            },
+            context_window: 1e6,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "tencent/hy4-preview",
+        name: "Tencent Hy4 Preview",
+        provider: "tencent",
+        description: "Tencent's Hy4 \u2014 770B mixture-of-experts, Apache 2.0, 1M context. A large open flagship at a fraction of closed-model pricing.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: false,
+            categories: [],
+            billing_mode: "unavailable",
+            pricing: {}
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.834,
+              output: 2.501
+            },
+            context_window: 1048576,
+            max_output: 64e3
+          }
+        }
+      },
+      {
+        id: "xai/grok-4.3",
+        name: "Grok 4.3",
+        provider: "xai",
+        description: "xAI's Grok 4.3 reasoning model. 1M context, vision-capable, tuned for agentic workflows and instruction-following.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.25,
+              output: 2.5,
+              cache_read: 0.2,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 2.5,
+                  output: 5,
+                  cache_read: 0.4
+                }
+              ]
+            },
+            context_window: 1e6,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.25,
+              output: 2.5,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 2.5,
+                  output: 5
+                }
+              ]
+            },
+            context_window: 1e6,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "xai/grok-4.5",
+        name: "Grok 4.5",
+        provider: "xai",
+        description: "xAI's flagship Grok 4.5 \u2014 their most intelligent and fastest model. 500K context, vision-capable, chain-of-thought reasoning. Supports Live Search (+$0.025/source)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "search",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "search",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6,
+              cache_read: 0.3,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 4,
+                  output: 12,
+                  cache_read: 0.6
+                }
+              ]
+            },
+            context_window: 5e5,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "search",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 4,
+                  output: 12
+                }
+              ]
+            },
+            context_window: 5e5,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "xai/grok-4.6",
+        name: "Grok 4.6",
+        provider: "xai",
+        description: "xAI's flagship Grok 4.6 \u2014 500K context, chain-of-thought reasoning with selectable effort. Supports Live Search (+$0.025/source)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "search",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "search",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6,
+              cache_read: 0.5,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 4,
+                  output: 12,
+                  cache_read: 1
+                }
+              ]
+            },
+            context_window: 5e5,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "search",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 4,
+                  output: 12
+                }
+              ]
+            },
+            context_window: 5e5,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "xai/grok-4.7",
+        name: "Grok 4.7",
+        provider: "xai",
+        description: "xAI's flagship Grok 4.7 \u2014 500K context, vision, always-on reasoning with selectable effort (low to xhigh). Supports Live Search (+$0.025/source)",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "search",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "search",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6,
+              cache_read: 0.5,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 4,
+                  output: 12,
+                  cache_read: 1
+                }
+              ]
+            },
+            context_window: 5e5,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "search",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 4,
+                  output: 12
+                }
+              ]
+            },
+            context_window: 5e5,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "xai/grok-build-0.1",
+        name: "Grok Build 0.1",
+        provider: "xai",
+        description: "xAI's fast agentic coding model, trained for interactive software-engineering workflows. 256K context, text + image input.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1,
+              output: 2,
+              cache_read: 0.2,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 2,
+                  output: 4,
+                  cache_read: 0.4
+                }
+              ]
+            },
+            context_window: 256e3,
+            max_output: 16384
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1,
+              output: 2,
+              long_context: [
+                {
+                  threshold: 2e5,
+                  inclusive: true,
+                  input: 2,
+                  output: 4
+                }
+              ]
+            },
+            context_window: 256e3,
+            max_output: 16384
+          }
+        }
+      },
+      {
+        id: "xai/grok-imagine-image",
+        name: "Grok Imagine",
+        provider: "xai",
+        description: "xAI's Grok Imagine image generation. Fast, 300 RPM.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.021,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.02
+            }
+          }
+        }
+      },
+      {
+        id: "xai/grok-imagine-image-2.0",
+        name: "Grok Imagine 2.0",
+        provider: "xai",
+        description: "xAI's Grok Imagine 2.0 image generation. Sits between Grok Imagine and the Pro quality tier on price.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.042,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.04
+            }
+          }
+        }
+      },
+      {
+        id: "xai/grok-imagine-image-pro",
+        name: "Grok Imagine Pro",
+        provider: "xai",
+        description: "xAI's premium Grok Imagine image generation (quality tier). Higher quality, 30 RPM.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.0525,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.05
+            }
+          }
+        }
+      },
+      {
+        id: "xai/grok-imagine-video",
+        name: "Grok Imagine Video",
+        provider: "xai",
+        description: "xAI's Grok Imagine video generation. Text or image to video, configurable 1\u201315s clips. $0.05/sec at 480p (default), $0.07/sec at 720p \u2014 official per-second rates, plus a flat $0.001 per generation.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.05,
+              per_call_surcharge: 1e-3,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 8,
+              max_duration_seconds: 15
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.05,
+              default_duration_seconds: 8,
+              max_duration_seconds: 15
+            }
+          }
+        }
+      },
+      {
+        id: "xai/grok-imagine-video-1.5",
+        name: "Grok Imagine Video 1.5",
+        provider: "xai",
+        description: "xAI's flagship Grok Imagine Video 1.5 \u2014 text or image to video with native synced audio, 1\u201315s clips. $0.08/sec at 480p (default), $0.14/sec at 720p, $0.25/sec at 1080p \u2014 official per-second rates, plus a flat $0.001 per generation.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "video"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.08,
+              per_call_surcharge: 1e-3,
+              transaction_fee: 1e-3,
+              default_duration_seconds: 8,
+              max_duration_seconds: 15
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "video"
+            ],
+            billing_mode: "per_second",
+            pricing: {
+              per_second: 0.08,
+              default_duration_seconds: 8,
+              max_duration_seconds: 15
+            }
+          }
+        }
+      },
+      {
+        id: "xiaomi/mimo-v2.5",
+        name: "MiMo V2.5",
+        provider: "xiaomi",
+        description: "Xiaomi's MiMo V2.5 \u2014 310B sparse MoE, natively multimodal, 1M context. Accepts text and images.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
+            },
+            context_window: 1048576,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
+            },
+            context_window: 1048576,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "xiaomi/mimo-v2.5-pro",
+        name: "Xiaomi MiMo-V2.5 Pro",
+        provider: "xiaomi",
+        description: "Xiaomi's MiMo-V2.5 Pro \u2014 1M context reasoning model, priced well below the frontier tier.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.435,
+              output: 0.87
+            },
+            context_window: 1048576,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.435,
+              output: 0.87
+            },
+            context_window: 1048576,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "zai/cogview-4",
+        name: "CogView-4",
+        provider: "zai",
+        description: "Zhipu AI's CogView-4 image generation model \u2014 high quality, supports up to 1440x1440",
+        lifecycle: "active",
+        declared_capabilities: [
+          "image"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.01575,
+              transaction_fee: 1e-3
+            }
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "image"
+            ],
+            billing_mode: "per_image",
+            pricing: {
+              per_image: 0.015
+            }
+          }
+        }
+      },
+      {
+        id: "zai/glm-5",
+        name: "GLM-5",
+        provider: "zai",
+        description: "Z.AI's foundation model with 200K context. Strong reasoning and agentic capabilities",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1,
+              output: 3.2,
+              cache_read: 0.2
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1,
+              output: 3.2
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "zai/glm-5-turbo",
+        name: "GLM-5 Turbo",
+        provider: "zai",
+        description: "Optimized GLM-5 variant with faster inference",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.2,
+              output: 4
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.2,
+              output: 4
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "zai/glm-5.1",
+        name: "GLM-5.1",
+        provider: "zai",
+        description: "Z.AI flagship \u2014 #1 open source on SWE-Bench Pro, 8-hour autonomous execution. 200K context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.4,
+              output: 4.4,
+              cache_read: 0.26
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.4,
+              output: 4.4
+            },
+            context_window: 2e5,
+            max_output: 128e3
+          }
+        }
+      },
+      {
+        id: "zai/glm-5.2",
+        name: "GLM-5.2",
+        provider: "zai",
+        description: "Z.AI GLM-5.2 \u2014 1M-token context, strong open-source long-horizon coding. Verified live on Z.AI.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.4,
+              output: 4.4,
+              cache_read: 0.26
+            },
+            context_window: 1e6,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.4,
+              output: 4.4
+            },
+            context_window: 1e6,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "zai/glm-5.3",
+        name: "GLM-5.3",
+        provider: "zai",
+        description: "Z.AI's flagship \u2014 1M-token context with always-on reasoning, strong at long-horizon coding. Verified live on Z.AI.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.4,
+              output: 4.4,
+              cache_read: 0.26
+            },
+            context_window: 1e6,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 1.4,
+              output: 4.4
+            },
+            context_window: 1e6,
+            max_output: 131072
+          }
+        }
+      },
+      {
+        id: "zai/glm-5.3-flash",
+        name: "GLM-5.3 Flash",
+        provider: "zai",
+        description: "Z.AI's first natively multimodal GLM-5 \u2014 320B/18B MoE with image input, 1M-token context, and always-on reasoning at value-tier pricing. Verified live on Z.AI.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.15,
+              output: 0.5,
+              cache_read: 0.03
+            },
+            context_window: 1e6,
+            max_output: 131072
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.15,
+              output: 0.5
+            },
+            context_window: 1e6,
+            max_output: 131072
+          }
+        }
+      }
+    ]
+  },
+  picker_policy: {
+    schema_version: 1,
+    policy_version: "2026.09.29.1",
+    catalog_version: "2026.09.29.1",
+    default_network: "solana",
+    compatibility_shortcuts: {
+      "opus-4.6": "anthropic/claude-opus-4.6",
+      "haiku-4.5": "anthropic/claude-haiku-4.5-20251001",
+      "gpt-5.4-pro": "openai/gpt-5.4-pro",
+      "gpt-5.3": "openai/gpt-5.3",
+      "gpt-5.2-pro": "openai/gpt-5.2-pro",
+      o3: "openai/o3",
+      o4: "openai/o4-mini",
+      "o4-mini": "openai/o4-mini",
+      o1: "openai/o1",
+      "grok-3": "xai/grok-3",
+      "grok-4": "xai/grok-4-0709",
+      "grok-fast": "xai/grok-4-1-fast-reasoning",
+      "grok-4.1": "xai/grok-4-1-fast-reasoning",
+      r1: "deepseek/deepseek-reasoner",
+      "deepseek-v4": "nvidia/deepseek-v4-flash",
+      "deepseek-v4-flash": "nvidia/deepseek-v4-flash",
+      dsv4: "nvidia/deepseek-v4-flash",
+      "deepseek-v3.2": "nvidia/deepseek-v4-flash",
+      "deepseek-v3": "nvidia/deepseek-v4-flash",
+      "k2.6": "moonshot/kimi-k2.6",
+      "kimi-k2.5": "moonshot/kimi-k2.6",
+      "k2.5": "moonshot/kimi-k2.6"
+    },
+    views: {
+      default_chat: {
+        description: "ClawRouter recommendations, filtered to live Solana chat; remaining active models are always discoverable.",
+        virtual_entries: [
+          "blockrun/auto",
+          "blockrun/free"
+        ],
+        model_ids: [
+          "anthropic/claude-fable-5",
+          "anthropic/claude-opus-5",
+          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-4.7",
+          "anthropic/claude-sonnet-5",
+          "anthropic/claude-sonnet-4.6",
+          "anthropic/claude-haiku-4.5",
+          "openai/gpt-5.6-terra",
+          "openai/gpt-5.6-sol",
+          "openai/gpt-5.6-luna",
+          "openai/gpt-5.5",
+          "openai/gpt-5.4",
+          "openai/gpt-5.4-mini",
+          "openai/gpt-5.4-nano",
+          "openai/gpt-5.3-codex",
+          "google/gemini-3.1-pro",
+          "google/gemini-3.8-flash",
+          "google/gemini-3.6-flash",
+          "google/gemini-3.5-flash",
+          "google/gemini-3.5-flash-lite",
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3-flash-preview",
+          "xai/grok-4.5",
+          "xai/grok-4.3",
+          "xai/grok-build-0.1",
+          "zai/glm-5.3",
+          "zai/glm-5.3-flash",
+          "zai/glm-5.2",
+          "zai/glm-5.1",
+          "zai/glm-5-turbo",
+          "zai/glm-5",
+          "xiaomi/mimo-v2.5",
+          "xiaomi/mimo-v2.5-pro",
+          "minimax/minimax-m3",
+          "minimax/minimax-m2.7",
+          "moonshot/kimi-k3",
+          "qwen/qwen3.7-max",
+          "qwen/qwen3.8-flash",
+          "deepseek/deepseek-v4-flash-vision-exp",
+          "deepseek/deepseek-v4-pro",
+          "deepseek/deepseek-chat",
+          "nvidia/nemotron-3.5-lightning",
+          "poolside/laguna-xs-2.1",
+          "cohere/north-mini-code",
+          "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nvidia/nemotron-3-ultra-550b",
+          "nvidia/llama-3.2-11b-vision"
+        ],
+        groups: [
+          {
+            id: "recommended",
+            title: "Recommended",
+            model_ids: [
+              "anthropic/claude-fable-5",
+              "anthropic/claude-opus-5",
+              "anthropic/claude-opus-4.8",
+              "anthropic/claude-opus-4.7",
+              "anthropic/claude-sonnet-5",
+              "anthropic/claude-sonnet-4.6",
+              "anthropic/claude-haiku-4.5",
+              "openai/gpt-5.6-terra",
+              "openai/gpt-5.6-sol",
+              "openai/gpt-5.6-luna",
+              "openai/gpt-5.5",
+              "openai/gpt-5.4",
+              "openai/gpt-5.4-mini",
+              "openai/gpt-5.4-nano",
+              "openai/gpt-5.3-codex",
+              "google/gemini-3.1-pro",
+              "google/gemini-3.8-flash",
+              "google/gemini-3.6-flash",
+              "google/gemini-3.5-flash",
+              "google/gemini-3.5-flash-lite",
+              "google/gemini-3.1-flash-lite",
+              "google/gemini-3-flash-preview",
+              "xai/grok-4.5",
+              "xai/grok-4.3",
+              "xai/grok-build-0.1",
+              "zai/glm-5.3",
+              "zai/glm-5.3-flash",
+              "zai/glm-5.2",
+              "zai/glm-5.1",
+              "zai/glm-5-turbo",
+              "zai/glm-5",
+              "xiaomi/mimo-v2.5",
+              "xiaomi/mimo-v2.5-pro",
+              "minimax/minimax-m3",
+              "minimax/minimax-m2.7",
+              "moonshot/kimi-k3",
+              "qwen/qwen3.7-max",
+              "qwen/qwen3.8-flash",
+              "deepseek/deepseek-v4-flash-vision-exp",
+              "deepseek/deepseek-v4-pro",
+              "deepseek/deepseek-chat"
+            ]
+          },
+          {
+            id: "free",
+            title: "Free (no USDC needed)",
+            model_ids: [
+              "nvidia/nemotron-3.5-lightning",
+              "poolside/laguna-xs-2.1",
+              "cohere/north-mini-code",
+              "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+              "nvidia/nemotron-3-ultra-550b",
+              "nvidia/llama-3.2-11b-vision"
+            ]
+          }
+        ],
+        shortcuts: {
+          auto: "blockrun/auto",
+          smart: "blockrun/auto",
+          eco: "blockrun/auto",
+          premium: "blockrun/auto",
+          sonnet: "anthropic/claude-sonnet-5.5",
+          claude: "anthropic/claude-sonnet-5.5",
+          "sonnet-4.6": "anthropic/claude-sonnet-4.6",
+          opus: "anthropic/claude-opus-5.5",
+          "opus-4.8": "anthropic/claude-opus-4.8",
+          "opus-4.7": "anthropic/claude-opus-4.7",
+          haiku: "anthropic/claude-haiku-4.5",
+          gpt: "openai/gpt-6-astra",
+          gpt5: "openai/gpt-5.6-terra",
+          "gpt-5": "openai/gpt-5.5",
+          "gpt-5.5": "openai/gpt-5.5",
+          "gpt-5.4": "openai/gpt-5.4",
+          "gpt-5.2": "openai/gpt-5.2",
+          "gpt-4.1": "openai/gpt-4.1",
+          codex: "openai/gpt-5.3-codex",
+          nano: "openai/gpt-5.4-nano",
+          mini: "openai/gpt-4o-mini",
+          gemini: "google/gemini-2.5-pro",
+          "gemini-2.5": "google/gemini-2.5-pro",
+          flash: "google/gemini-2.5-flash",
+          "gemini-3": "google/gemini-3.1-pro",
+          "gemini-3.1": "google/gemini-3.1-pro",
+          grok: "xai/grok-4.7",
+          "grok-4.3": "xai/grok-4.3",
+          "grok-build": "xai/grok-build-0.1",
+          deepseek: "deepseek/deepseek-chat",
+          "deepseek-v4-pro": "nvidia/nemotron-3.5-lightning",
+          "dsv4-pro": "deepseek/deepseek-v4-pro",
+          "v4-pro": "nvidia/nemotron-3.5-lightning",
+          free: "blockrun/free",
+          glm4: "nvidia/nemotron-3.5-lightning",
+          "deepseek-free": "nvidia/nemotron-3.5-lightning",
+          "qwen-coder": "nvidia/nemotron-3.5-lightning",
+          "qwen-think": "nvidia/nemotron-3.5-lightning",
+          maverick: "nvidia/nemotron-3.5-lightning",
+          "gpt-oss": "nvidia/nemotron-3.5-lightning",
+          "gpt-oss-small": "nvidia/nemotron-3.5-lightning",
+          "mistral-small": "nvidia/nemotron-3.5-lightning",
+          nemotron: "nvidia/nemotron-3.5-lightning",
+          devstral: "nvidia/nemotron-3.5-lightning",
+          minimax: "minimax/minimax-m3",
+          m3: "minimax/minimax-m3",
+          "m2.7": "minimax/minimax-m2.7",
+          glm: "zai/glm-5.3",
+          "glm-5": "zai/glm-5",
+          "glm-turbo": "zai/glm-5-turbo",
+          glm5: "zai/glm-5.1",
+          kimi: "moonshot/kimi-k3",
+          "br-sonnet": "anthropic/claude-sonnet-4.6",
+          "sonnet-4": "anthropic/claude-sonnet-4.6",
+          "sonnet-4-6": "anthropic/claude-sonnet-4.6",
+          "sonnet-5": "anthropic/claude-sonnet-5",
+          "sonnet-5.0": "anthropic/claude-sonnet-5",
+          "sonnet-5-0": "anthropic/claude-sonnet-5",
+          "sonnet-4.5": "anthropic/claude-sonnet-4.5",
+          "sonnet-4-5": "anthropic/claude-sonnet-4.5",
+          "anthropic/claude-sonnet-4-5": "anthropic/claude-sonnet-4.5",
+          fable: "anthropic/claude-fable-5",
+          "fable-5": "anthropic/claude-fable-5",
+          "fable-5.0": "anthropic/claude-fable-5",
+          "opus-5": "anthropic/claude-opus-5",
+          "opus-5.0": "anthropic/claude-opus-5",
+          "opus-5-0": "anthropic/claude-opus-5",
+          "opus-4": "anthropic/claude-opus-4.8",
+          "opus-4-8": "anthropic/claude-opus-4.8",
+          "opus-4-7": "anthropic/claude-opus-4.7",
+          "anthropic/sonnet": "anthropic/claude-sonnet-4.6",
+          "anthropic/fable": "anthropic/claude-fable-5",
+          "anthropic/claude-fable-5.0": "anthropic/claude-fable-5",
+          "anthropic/opus": "anthropic/claude-opus-5",
+          "anthropic/claude-opus-5.0": "anthropic/claude-opus-5",
+          "anthropic/claude-opus-5-0": "anthropic/claude-opus-5",
+          "anthropic/haiku": "anthropic/claude-haiku-4.5",
+          "anthropic/claude": "anthropic/claude-sonnet-4.6",
+          "anthropic/claude-sonnet-4": "anthropic/claude-sonnet-4.6",
+          "anthropic/claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
+          "anthropic/claude-opus-4": "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-4-8": "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-4-7": "anthropic/claude-opus-4.7",
+          "anthropic/claude-opus-4-5": "anthropic/claude-opus-4.5",
+          "anthropic/claude-haiku-4": "anthropic/claude-haiku-4.5",
+          "anthropic/claude-haiku-4-5": "anthropic/claude-haiku-4.5",
+          gpt4: "openai/gpt-4o",
+          "gpt-5.6": "openai/gpt-5.6-terra",
+          "openai/gpt-5.6": "openai/gpt-5.6-terra",
+          "gpt-5.6-sol": "openai/gpt-5.6-sol",
+          "gpt-5.6-terra": "openai/gpt-5.6-terra",
+          "gpt-5.6-luna": "openai/gpt-5.6-luna",
+          "gpt-5.6-sol-pro": "openai/gpt-5.6-sol-pro",
+          "gpt-5.6-terra-pro": "openai/gpt-5.6-terra-pro",
+          "gpt-5.6-luna-pro": "openai/gpt-5.6-luna-pro",
+          "sol-pro": "openai/gpt-5.6-sol-pro",
+          "terra-pro": "openai/gpt-5.6-terra-pro",
+          "luna-pro": "openai/gpt-5.6-luna-pro",
+          "chat-latest": "openai/chat-latest",
+          chatgpt: "openai/chat-latest",
+          "gpt-5.4-nano": "openai/gpt-5.4-nano",
+          "gpt-5-nano": "openai/gpt-5.4-nano",
+          "openai-codex/gpt-5.4-mini": "openai/gpt-5.4-mini",
+          "gpt-5.4-mini": "openai/gpt-5.4-mini",
+          "deepseek-chat": "deepseek/deepseek-chat",
+          "kimi-k3": "moonshot/kimi-k3",
+          "qwen3.7-max": "qwen/qwen3.7-max",
+          "qwen3.8-flash": "qwen/qwen3.8-flash",
+          "qwen3-8-flash": "qwen/qwen3.8-flash",
+          "qwen-vision": "qwen/qwen3.8-flash",
+          "deepseek-vision": "deepseek/deepseek-v4-flash-vision-exp",
+          "v4-flash-vision": "deepseek/deepseek-v4-flash-vision-exp",
+          "mimo-vision": "xiaomi/mimo-v2.5",
+          "qwen-3.7-max": "qwen/qwen3.7-max",
+          "qwen3-7-max": "qwen/qwen3.7-max",
+          "qwen3.7-plus": "qwen/qwen3.7-plus",
+          "qwen-3.7-plus": "qwen/qwen3.7-plus",
+          "qwen3.7-flash": "qwen/qwen3.7-flash",
+          "qwen-3.7-flash": "qwen/qwen3.7-flash",
+          mimo: "xiaomi/mimo-v2.5-pro",
+          "mimo-v2.5-pro": "xiaomi/mimo-v2.5-pro",
+          "mimo-v2.5": "xiaomi/mimo-v2.5",
+          xiaomi: "xiaomi/mimo-v2.5-pro",
+          "google/gemini-3-pro-preview": "google/gemini-3.1-pro",
+          "gemini-3-pro-preview": "google/gemini-3.1-pro",
+          "gemini-pro": "google/gemini-3.1-pro",
+          "gemini-3-pro": "google/gemini-3.1-pro",
+          "gemini-3.1-pro": "google/gemini-3.1-pro",
+          "gemini-3.1-pro-preview": "google/gemini-3.1-pro",
+          "google/gemini-3.1-pro-preview": "google/gemini-3.1-pro",
+          "gemini-3.6-flash": "google/gemini-3.6-flash",
+          "gemini-3.6": "google/gemini-3.6-flash",
+          "gemini-3.5-flash": "google/gemini-3.5-flash",
+          "gemini-3.5-flash-lite": "google/gemini-3.5-flash-lite",
+          "gemini-3.1-flash-lite": "google/gemini-3.1-flash-lite",
+          "gemini-2.5-flash-lite": "google/gemini-2.5-flash-lite",
+          "grok-4.5": "xai/grok-4.5",
+          "grok-4-5": "xai/grok-4.5",
+          "grok-code": "xai/grok-build-0.1",
+          "grok-code-fast-1": "deepseek/deepseek-chat",
+          "xai/grok-code-fast-1": "deepseek/deepseek-chat",
+          nvidia: "nvidia/nemotron-3.5-lightning",
+          "nvidia/deepseek-v3.2": "nvidia/nemotron-3.5-lightning",
+          "free/deepseek-v3.2": "nvidia/nemotron-3.5-lightning",
+          "nvidia/deepseek-v4-pro": "nvidia/nemotron-3.5-lightning",
+          "free/deepseek-v4-pro": "nvidia/nemotron-3.5-lightning",
+          "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nvidia/nemotron-ultra-253b": "nvidia/nemotron-3.5-lightning",
+          "nvidia/devstral-2-123b": "nvidia/nemotron-3.5-lightning",
+          "free/nemotron-ultra-253b": "nvidia/nemotron-3.5-lightning",
+          "free/devstral-2-123b": "nvidia/nemotron-3.5-lightning",
+          "mistral-free": "nvidia/nemotron-3.5-lightning",
+          "glm-free": "nvidia/nemotron-3.5-lightning",
+          "llama-free": "nvidia/llama-3.2-11b-vision",
+          "qwen-coder-free": "nvidia/nemotron-3.5-lightning",
+          "qwen-thinking": "nvidia/nemotron-3.5-lightning",
+          "coder-free": "cohere/north-mini-code",
+          "nemotron-nano-9b": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nemotron-nano": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nemotron-nano-vl": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nano-vl": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nemotron-omni": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nano-omni": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "vision-free": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nemotron-ultra": "nvidia/nemotron-3.5-lightning",
+          "nemotron-253b": "nvidia/nemotron-3.5-lightning",
+          "nemotron-super": "nvidia/nemotron-3.5-lightning",
+          "nemotron-49b": "nvidia/nemotron-3.5-lightning",
+          "nemotron-120b": "nvidia/nemotron-3.5-lightning",
+          "devstral-2": "nvidia/nemotron-3.5-lightning",
+          "nvidia/nemotron-3.5-lightning": "nvidia/nemotron-3.5-lightning",
+          "nvidia/nemotron-3-nano-30b": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nvidia/nemotron-3-ultra-550b": "nvidia/nemotron-3-ultra-550b",
+          "nvidia/llama-3.2-11b-vision": "nvidia/llama-3.2-11b-vision",
+          "cohere/north-mini-code": "cohere/north-mini-code",
+          "poolside/laguna-xs-2.1": "poolside/laguna-xs-2.1",
+          lightning: "nvidia/nemotron-3.5-lightning",
+          "nemotron-lightning": "nvidia/nemotron-3.5-lightning",
+          "nemotron-3.5-lightning": "nvidia/nemotron-3.5-lightning",
+          "nano-30b": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "nemotron-nano-30b": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "ultra-550b": "nvidia/nemotron-3-ultra-550b",
+          "nemotron-ultra-550b": "nvidia/nemotron-3-ultra-550b",
+          "llama-vision": "nvidia/llama-3.2-11b-vision",
+          "llama-3.2-vision": "nvidia/llama-3.2-11b-vision",
+          "north-mini": "cohere/north-mini-code",
+          "north-mini-code": "cohere/north-mini-code",
+          laguna: "poolside/laguna-xs-2.1",
+          "laguna-xs": "poolside/laguna-xs-2.1",
+          "minimax-m3": "minimax/minimax-m3",
+          "minimax-m2.7": "minimax/minimax-m2.7",
+          "glm-5.3": "zai/glm-5.3",
+          "glm-5-3": "zai/glm-5.3",
+          "glm-5.3-flash": "zai/glm-5.3-flash",
+          "glm-5-3-flash": "zai/glm-5.3-flash",
+          "glm-flash": "zai/glm-5.3-flash",
+          "glm-5.2": "zai/glm-5.2",
+          "glm-5.1": "zai/glm-5.1",
+          "glm-5-turbo": "zai/glm-5-turbo",
+          "gpt-fast": "openai/gpt-6-luna",
+          "gpt-balanced": "openai/gpt-6-sol",
+          qwen: "qwen/qwen3.8-max",
+          "free-code": "cohere/north-mini-code",
+          "free-fast": "nvidia/nemotron-3.5-lightning",
+          "free-vision": "nvidia/llama-3.2-11b-vision",
+          "claude-sonnet-4.5": "anthropic/claude-sonnet-4.5",
+          "gpt-5-mini": "openai/gpt-5-mini",
+          "gemini-2.5-pro": "google/gemini-2.5-pro",
+          "claude-haiku-4.5": "anthropic/claude-haiku-4.5",
+          "gpt-4.1-mini": "openai/gpt-4.1-mini",
+          "claude-sonnet-5.5": "anthropic/claude-sonnet-5.5",
+          "claude-sonnet-5": "anthropic/claude-sonnet-5",
+          "claude-opus-4.8": "anthropic/claude-opus-4.8",
+          "gpt-4o": "openai/gpt-4o",
+          "gemma-4-31b": "nvidia/gemma-4-31b",
+          "grok-4.7": "xai/grok-4.7",
+          "laguna-xs-2.1": "poolside/laguna-xs-2.1",
+          "nemotron-3-nano-omni-30b-a3b-reasoning": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+          "gpt-6-sol": "openai/gpt-6-sol",
+          "laguna-s-2.1": "poolside/laguna-s-2.1",
+          "grok-build-0.1": "xai/grok-build-0.1",
+          "claude-opus-4.5": "anthropic/claude-opus-4.5",
+          "qwen3.8-max": "qwen/qwen3.8-max",
+          "deepseek-v4-flash-vision-exp": "deepseek/deepseek-v4-flash-vision-exp",
+          "claude-opus-5": "anthropic/claude-opus-5",
+          "gemini-2.5-flash": "google/gemini-2.5-flash",
+          "muse-glimmer-30b": "nvidia/muse-glimmer-30b",
+          "gpt-6-luna": "openai/gpt-6-luna",
+          "grok-4.6": "xai/grok-4.6",
+          "claude-sonnet-4.6": "anthropic/claude-sonnet-4.6",
+          "llama-3.2-11b-vision": "nvidia/llama-3.2-11b-vision",
+          "hy4-preview": "tencent/hy4-preview",
+          "gpt-4o-mini": "openai/gpt-4o-mini",
+          "claude-opus-4.7": "anthropic/claude-opus-4.7",
+          "claude-opus-5.5": "anthropic/claude-opus-5.5",
+          "gemini-3.8-flash": "google/gemini-3.8-flash",
+          "nemotron-3-ultra-550b": "nvidia/nemotron-3-ultra-550b",
+          "gpt-5.1": "openai/gpt-5.1",
+          "claude-fable-5": "anthropic/claude-fable-5",
+          "gemini-3-flash-preview": "google/gemini-3-flash-preview",
+          "claude-fable-5.1": "anthropic/claude-fable-5.1",
+          "gpt-6-astra": "openai/gpt-6-astra",
+          "gpt-4.1-nano": "openai/gpt-4.1-nano",
+          "gpt-5.3-codex": "openai/gpt-5.3-codex"
+        }
+      }
+    }
+  },
+  router_policy: {
+    schema_version: 1,
+    policy_version: "2026.09.29.1",
+    catalog_version: "2026.09.29.1",
+    default_network: "solana",
+    status: "draft",
+    description: "Prototype model-specific policy for Router Core. Do not consume in production until benchmark review is complete.",
+    candidate_sets: {
+      simple: [
+        "qwen/qwen3.7-flash",
+        "google/gemini-3.5-flash-lite",
+        "minimax/minimax-m3",
+        "cohere/north-mini-code"
+      ],
+      medium: [
+        "openai/gpt-5.6-luna",
+        "google/gemini-3.6-flash",
+        "moonshot/kimi-k3",
+        "qwen/qwen3.8-flash"
+      ],
+      complex: [
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-sol",
+        "anthropic/claude-sonnet-5",
+        "anthropic/claude-opus-5"
+      ],
+      reasoning: [
+        "xai/grok-4.5",
+        "deepseek/deepseek-v4-pro",
+        "google/gemini-3.1-pro",
+        "openai/gpt-5.6-sol"
+      ],
+      agentic: [
+        "openai/gpt-5.6-terra",
+        "anthropic/claude-sonnet-5",
+        "xai/grok-4.5",
+        "moonshot/kimi-k3"
+      ]
+    },
+    free_candidate_sets: {
+      coding: [
+        "cohere/north-mini-code",
+        "poolside/laguna-xs-2.1",
+        "nvidia/nemotron-3.5-lightning"
+      ],
+      general: [
+        "nvidia/nemotron-3.5-lightning",
+        "nvidia/nemotron-3-ultra-550b"
+      ],
+      vision: [
+        "nvidia/llama-3.2-11b-vision",
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+      ]
+    },
+    classifier_model: "nvidia/nemotron-3.5-lightning"
+  }
+};
+
+// node_modules/@blockrun/model-catalog/scripts/lib.mjs
+import { createHash } from "crypto";
+import { readFile } from "fs/promises";
+function validateAll(catalog, pickerPolicy, routerPolicy) {
+  const errors = [];
+  const record = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  const strings = (value) => Array.isArray(value) && value.every((item) => typeof item === "string");
+  if (!record(pickerPolicy?.views) || !record(pickerPolicy.views.default_chat)) {
+    return ["picker policy views.default_chat must be an object"];
+  }
+  for (const [name, view] of Object.entries(pickerPolicy.views)) {
+    if (!record(view)) {
+      errors.push(`picker view ${name} must be an object`);
+      continue;
+    }
+    for (const field of ["model_ids", "virtual_entries"]) {
+      if (!strings(view[field])) errors.push(`picker view ${name}.${field} must be an array of strings`);
+    }
+    if (!record(view.shortcuts) || !Object.values(view.shortcuts).every((target) => typeof target === "string")) {
+      errors.push(`picker view ${name}.shortcuts must map names to strings`);
+    }
+    if (!Array.isArray(view.groups)) errors.push(`picker view ${name}.groups must be an array`);
+    else for (const group of view.groups) {
+      if (!record(group) || typeof group.id !== "string" || typeof group.title !== "string" || !strings(group.model_ids)) {
+        errors.push(`picker view ${name} has a malformed group`);
+      }
+    }
+  }
+  if (errors.length) return errors;
+  if (catalog.schema_version !== 1) errors.push("catalog.schema_version must be 1");
+  if (!/^\d{4}\.\d{2}\.\d{2}\.[1-9]\d*$/.test(catalog.catalog_version ?? "")) {
+    errors.push("catalog.catalog_version must use YYYY.MM.DD.N");
+  }
+  if (Number.isNaN(Date.parse(catalog.observed_at))) errors.push("catalog.observed_at must be an ISO date-time");
+  if (!Array.isArray(catalog.models) || catalog.models.length === 0) errors.push("catalog.models must be non-empty");
+  const ids = /* @__PURE__ */ new Set();
+  const aliases = /* @__PURE__ */ new Set();
+  for (const [index2, model] of (catalog.models ?? []).entries()) {
+    const at = `catalog.models[${index2}]`;
+    if (typeof model.id !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._+/-]*$/.test(model.id)) errors.push(`${at}.id must be a public model identifier`);
+    if (ids.has(model.id)) errors.push(`duplicate model id: ${model.id}`);
+    ids.add(model.id);
+    if (typeof model.name !== "string" || model.name.length === 0) errors.push(`${at}.name must be non-empty`);
+    if (!["active", "preview", "deprecated", "sunset"].includes(model.lifecycle)) errors.push(`${at}.lifecycle is invalid`);
+    if (!Array.isArray(model.declared_capabilities)) errors.push(`${at}.declared_capabilities must be an array`);
+    for (const network of ["base", "solana"]) {
+      const entry = model.networks?.[network];
+      if (!entry) {
+        errors.push(`${at}.networks.${network} is required`);
+        continue;
+      }
+      if (!Array.isArray(entry.categories)) errors.push(`${at}.networks.${network}.categories must be an array`);
+      if (typeof entry.billing_mode !== "string" || entry.billing_mode.length === 0) errors.push(`${at}.networks.${network}.billing_mode is required`);
+      if (typeof entry.pricing !== "object" || entry.pricing === null || Array.isArray(entry.pricing)) errors.push(`${at}.networks.${network}.pricing must be an object`);
+    }
+    for (const alias of model.aliases ?? []) {
+      if (aliases.has(alias)) errors.push(`duplicate alias: ${alias}`);
+      if (ids.has(alias)) errors.push(`alias collides with model id: ${alias}`);
+      aliases.add(alias);
+    }
+  }
+  for (const model of catalog.models ?? []) {
+    for (const target of model.redirects ?? []) {
+      if (!ids.has(target)) errors.push(`${model.id} redirects to missing model ${target}`);
+      if (target === model.id) errors.push(`${model.id} redirects to itself`);
+    }
+  }
+  const byId = new Map((catalog.models ?? []).map((model) => [model.id, model]));
+  const virtualEntries = /* @__PURE__ */ new Set();
+  for (const view of Object.values(pickerPolicy.views ?? {})) {
+    for (const id2 of view.virtual_entries ?? []) virtualEntries.add(id2);
+  }
+  const isSolanaChat = (id2) => {
+    const network = byId.get(id2)?.networks?.solana;
+    return Boolean(network?.listed && network.categories.includes("chat"));
+  };
+  if (pickerPolicy.default_network !== "solana") errors.push("picker policy default_network must be solana");
+  for (const [name, view] of Object.entries(pickerPolicy.views ?? {})) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const id2 of view.model_ids ?? []) {
+      if (!ids.has(id2)) errors.push(`picker view ${name} references missing model ${id2}`);
+      if (seen.has(id2)) errors.push(`picker view ${name} repeats ${id2}`);
+      seen.add(id2);
+      if (ids.has(id2) && !isSolanaChat(id2)) errors.push(`picker view ${name} references model unavailable for Solana chat: ${id2}`);
+    }
+    const grouped = /* @__PURE__ */ new Set();
+    for (const group of view.groups ?? []) {
+      for (const id2 of group.model_ids ?? []) {
+        if (!seen.has(id2)) errors.push(`picker group ${group.id} references model outside view ${name}: ${id2}`);
+        if (grouped.has(id2)) errors.push(`picker view ${name} groups repeat ${id2}`);
+        grouped.add(id2);
+      }
+    }
+    if ((view.groups ?? []).length > 0) {
+      for (const id2 of seen) if (!grouped.has(id2)) errors.push(`picker view ${name} does not group ${id2}`);
+    }
+    for (const [shortcut, target] of Object.entries(view.shortcuts ?? {})) {
+      if (!isSolanaChat(target) && !virtualEntries.has(target)) errors.push(`picker shortcut ${shortcut} has invalid target ${target}`);
+    }
+  }
+  if (routerPolicy.default_network !== "solana") errors.push("router policy default_network must be solana");
+  for (const [name, candidates] of Object.entries(routerPolicy.candidate_sets ?? {})) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const id2 of candidates) {
+      if (!ids.has(id2)) errors.push(`router candidate set ${name} references missing model ${id2}`);
+      if (seen.has(id2)) errors.push(`router candidate set ${name} repeats ${id2}`);
+      if (ids.has(id2) && !isSolanaChat(id2)) errors.push(`router candidate set ${name} references model unavailable for Solana chat: ${id2}`);
+      seen.add(id2);
+    }
+  }
+  for (const [name, candidates] of Object.entries(routerPolicy.free_candidate_sets ?? {})) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const id2 of candidates) {
+      const model = byId.get(id2);
+      if (!model) errors.push(`free router candidate set ${name} references missing model ${id2}`);
+      if (seen.has(id2)) errors.push(`free router candidate set ${name} repeats ${id2}`);
+      if (model && !isSolanaChat(id2)) errors.push(`free router candidate set ${name} references model unavailable for Solana chat: ${id2}`);
+      if (model?.networks?.solana?.billing_mode !== "free") errors.push(`free router candidate set ${name} references paid model ${id2}`);
+      seen.add(id2);
+    }
+  }
+  if (!isSolanaChat(routerPolicy.classifier_model)) {
+    errors.push(`router classifier_model is unavailable for Solana chat: ${routerPolicy.classifier_model}`);
+  }
+  for (const [name, policy] of [["picker", pickerPolicy], ["router", routerPolicy]]) {
+    if (policy.schema_version !== 1) errors.push(`${name} policy schema_version must be 1`);
+    if (policy.catalog_version !== catalog.catalog_version) errors.push(`${name} policy catalog_version must match catalog`);
+  }
+  return errors;
+}
+
+// node_modules/@blockrun/model-catalog/runtime/index.js
+var gateways = {
+  solana: "https://sol.blockrun.ai/api/v1/models?format=json",
+  base: "https://blockrun.ai/api/v1/models?format=json"
+};
+var isNumber = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+function validateModels(rows) {
+  if (!Array.isArray(rows) || !rows.length) throw new Error("Empty or malformed model catalog");
+  const ids = /* @__PURE__ */ new Set();
+  for (const row of rows) {
+    if (!row || typeof row.id !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._+/-]*$/.test(row.id) || ids.has(row.id)) throw new Error("Invalid or duplicate model ID");
+    ids.add(row.id);
+    if (typeof row.name !== "string" || !row.name || !Array.isArray(row.categories) || !row.categories.every((x) => typeof x === "string")) throw new Error(`Invalid metadata: ${row.id}`);
+    if (!row.pricing || typeof row.pricing !== "object" || Array.isArray(row.pricing) || typeof row.billing_mode !== "string") throw new Error(`Invalid pricing: ${row.id}`);
+    if (row.billing_mode === "paid" && (!isNumber(row.pricing.input) || !isNumber(row.pricing.output))) throw new Error(`Invalid token price: ${row.id}`);
+    if (row.billing_mode === "flat" && !isNumber(row.pricing.flat)) throw new Error(`Invalid flat price: ${row.id}`);
+    if (row.billing_mode === "free" && ((row.pricing.input ?? 0) !== 0 || (row.pricing.output ?? 0) !== 0)) throw new Error(`Nonzero free price: ${row.id}`);
+    for (const key3 of ["context_window", "max_output"]) if (row[key3] !== void 0 && (!Number.isInteger(row[key3]) || row[key3] <= 0)) throw new Error(`Invalid ${key3}: ${row.id}`);
+  }
+  return rows;
+}
+function validateSnapshot(value) {
+  if (!value?.catalog || !value.picker_policy || !value.router_policy) throw new Error("Incomplete catalog snapshot");
+  const errors = validateAll(value.catalog, value.picker_policy, value.router_policy);
+  if (errors.length) throw new Error(errors.join("; "));
+  return value;
+}
+function snapshotModels(snapshot, network) {
+  return validateModels(snapshot.catalog.models.filter((m) => ["active", "preview"].includes(m.lifecycle) && m.networks[network]?.listed).map((m) => ({
+    id: m.id,
+    name: m.name,
+    owned_by: m.provider,
+    description: m.description,
+    ...m.networks[network]
+  })));
+}
+function projectCatalog(models, policy) {
+  const chat = models.filter((m) => m.categories.includes("chat") && m.available !== false);
+  const byId = new Map(chat.map((m) => [m.id, m]));
+  const view = policy.views.default_chat;
+  const used = /* @__PURE__ */ new Set();
+  const groups = (view.groups ?? []).map((group) => ({
+    id: group.id,
+    title: group.title,
+    models: group.model_ids.filter((id2) => byId.has(id2) && !used.has(id2) && used.add(id2)).map((id2) => byId.get(id2))
+  })).filter((group) => group.models.length);
+  const remaining = chat.filter((m) => !used.has(m.id));
+  const free = remaining.filter((m) => m.billing_mode === "free");
+  const paid = remaining.filter((m) => m.billing_mode !== "free");
+  if (free.length) {
+    const group = groups.find((g) => g.id === "free");
+    if (group) group.models.push(...free);
+    else groups.push({ id: "free", title: "Free (no USDC needed)", models: free });
+  }
+  if (paid.length) groups.push({ id: "other", title: "All other available models", models: paid });
+  const virtual = new Set(view.virtual_entries);
+  const shortcuts = Object.fromEntries(Object.entries(view.shortcuts).filter(([, target]) => byId.has(target) || virtual.has(target)));
+  for (const model of chat) {
+    shortcuts[model.id] = model.id;
+  }
+  const pricing = Object.fromEntries(models.flatMap((m) => {
+    if (m.available === false) return [];
+    if (m.billing_mode === "free") return [[m.id, { input: 0, output: 0 }]];
+    if (m.billing_mode === "paid") return [[m.id, { input: m.pricing.input, output: m.pricing.output }]];
+    if (m.billing_mode === "flat") return [[m.id, { input: 0, output: 0, perCall: m.pricing.flat }]];
+    return [];
+  }));
+  return { groups, shortcuts, pricing, virtualEntries: [...virtual] };
+}
+function createCatalogClient(options = {}) {
+  const network = options.network ?? "solana";
+  if (!(network in gateways)) throw new Error(`Unknown catalog network: ${network}`);
+  let snapshot = validateSnapshot(options.snapshot ?? snapshot_v1_default);
+  let models = snapshotModels(snapshot, network);
+  let source = "bundled";
+  let lastError;
+  let expiresAt = 0;
+  let inflight;
+  let etag;
+  const now2 = options.now ?? Date.now;
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const listeners = /* @__PURE__ */ new Set();
+  const current = () => ({ network, version: snapshot.catalog.catalog_version, models, source, lastError, ...projectCatalog(models, snapshot.picker_policy) });
+  async function json(url2, headers = {}) {
+    const response = await fetcher(url2, { headers: { Accept: "application/json", ...headers }, signal: AbortSignal.timeout(options.timeoutMs ?? 4e3) });
+    if (response.status === 304) return { unchanged: true };
+    if (!response.ok) throw new Error(`Catalog HTTP ${response.status}`);
+    return { body: await response.json(), etag: response.headers.get("etag") };
+  }
+  return {
+    current,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    refresh({ force = false } = {}) {
+      if (inflight) return inflight;
+      if (!force && now2() < expiresAt) return Promise.resolve(current());
+      inflight = (async () => {
+        try {
+          const [policy, gateway] = await Promise.allSettled([
+            options.catalogUrl ? json(options.catalogUrl, etag ? { "If-None-Match": etag } : {}).then((result) => result.unchanged ? { snapshot, etag } : { snapshot: validateSnapshot(result.body), etag: result.etag }) : Promise.resolve({ snapshot, etag }),
+            json(options.gatewayUrl ?? gateways[network])
+          ]);
+          if (gateway.status === "rejected") throw gateway.reason;
+          if (gateway.value.unchanged) throw new Error("Unexpected gateway 304");
+          const nextModels = validateModels(gateway.value.body?.data).filter((m) => m.available !== false);
+          if (!nextModels.length) throw new Error("No available models");
+          projectCatalog(nextModels, policy.status === "fulfilled" ? policy.value.snapshot.picker_policy : snapshot.picker_policy);
+          models = nextModels;
+          source = "live";
+          if (policy.status === "fulfilled") {
+            snapshot = policy.value.snapshot;
+            etag = policy.value.etag;
+            lastError = void 0;
+            expiresAt = now2() + (options.ttlMs ?? 3e5);
+          } else {
+            const reason = policy.reason;
+            lastError = `Catalog policy: ${reason instanceof Error ? reason.message : String(reason)}`;
+            expiresAt = now2() + Math.min(options.ttlMs ?? 3e5, 15e3);
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : String(error);
+          expiresAt = now2() + Math.min(options.ttlMs ?? 3e5, 15e3);
+        }
+        const value = current();
+        for (const listener of listeners) listener(value);
+        return value;
+      })().finally(() => {
+        inflight = void 0;
+      });
+      return inflight;
+    }
+  };
+}
+
+// src/api-key.ts
+import { writeFile, mkdir, rm } from "fs/promises";
+import { join } from "path";
+import { homedir } from "os";
+
+// src/fs-read.ts
+import { open } from "fs/promises";
+import { openSync, readSync, closeSync, fstatSync } from "fs";
+async function readTextFile(filePath) {
+  const fh = await open(filePath, "r");
+  try {
+    const size5 = (await fh.stat()).size;
+    const buf = Buffer.alloc(size5);
+    let offset = 0;
+    while (offset < size5) {
+      const { bytesRead } = await fh.read(buf, offset, size5 - offset, offset);
+      if (bytesRead === 0) break;
+      offset += bytesRead;
+    }
+    return buf.subarray(0, offset).toString("utf-8");
+  } finally {
+    await fh.close();
+  }
+}
+function readTextFileSync(filePath) {
+  const fd = openSync(filePath, "r");
+  try {
+    const size5 = fstatSync(fd).size;
+    const buf = Buffer.alloc(size5);
+    let offset = 0;
+    while (offset < size5) {
+      const bytesRead = readSync(fd, buf, offset, size5 - offset, offset);
+      if (bytesRead === 0) break;
+      offset += bytesRead;
+    }
+    return buf.subarray(0, offset).toString("utf-8");
+  } finally {
+    closeSync(fd);
+  }
+}
+
+// src/api-key.ts
+var API_KEY_FILE = join(homedir(), ".openclaw", "blockrun", "api-key");
+var CORE_API_KEY_FILE = join(homedir(), ".blockrun", ".api-key");
+var PORTAL_URL = "https://user.blockrun.ai";
+var PORTAL_KEYS_URL = `${PORTAL_URL}/dashboard/keys`;
+var PORTAL_CREDITS_URL = `${PORTAL_URL}/dashboard/credits`;
+var BLOCKRUN_API_KEY_API = process["env"].BLOCKRUN_API_BASE_URL?.replace(/\/+$/, "").replace(/\/v1$/, "") || "https://api.blockrun.ai";
+function isValidApiKey(value) {
+  if (typeof value !== "string") return false;
+  return /^brk_[A-Za-z0-9_-]{8,}$/.test(value.trim());
+}
+function maskApiKey(key3) {
+  const trimmed = key3.trim();
+  if (trimmed.length <= 18) return `${trimmed.slice(0, 8)}\u2026`;
+  return `${trimmed.slice(0, 14)}\u2026${trimmed.slice(-4)}`;
+}
+async function readOptional(path8) {
+  try {
+    return (await readTextFile(path8)).trim() || void 0;
+  } catch (error) {
+    if (error.code === "ENOENT") return void 0;
+    throw new Error(
+      `Cannot read BlockRun API key file ${path8}; refusing to fall back to another account or wallet.`,
+      { cause: error }
+    );
+  }
+}
+async function resolveApiKey() {
+  const envKey = process["env"].BLOCKRUN_API_KEY?.trim();
+  if (envKey) {
+    if (isValidApiKey(envKey)) return { key: envKey, source: "env" };
+    throw new Error(
+      `BLOCKRUN_API_KEY is malformed (expected brk_\u2026). Mint one at ${PORTAL_KEYS_URL}, or unset it to pay from the wallet. Refusing to fall back silently.`
+    );
+  }
+  for (const [path8, source] of [
+    [CORE_API_KEY_FILE, "core"],
+    [API_KEY_FILE, "saved"]
+  ]) {
+    const stored = await readOptional(path8);
+    if (stored === void 0) continue;
+    if (isValidApiKey(stored)) return { key: stored, source };
+    throw new Error(
+      `${path8} does not contain a BlockRun key (expected brk_\u2026). Run "clawrouter login" with a valid key, or "clawrouter logout" to return to wallet billing. Refusing to fall back silently: the next source could bill a different account or spend from a wallet.`
+    );
+  }
+  return void 0;
+}
+async function fetchCreditBalance(apiKey, timeoutMs = 5e3) {
+  try {
+    const controller = new AbortController();
+    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(`${BLOCKRUN_API_KEY_API}/v1/credits`, {
+      headers: { authorization: `Bearer ${apiKey}` },
+      signal: controller.signal
+    });
+    clearTimeout(timer2);
+    if (!res.ok) return void 0;
+    const b = await res.json();
+    const num2 = (v) => typeof v === "number" ? v : null;
+    return {
+      accountId: typeof b.account_id === "string" ? b.account_id : void 0,
+      billingMode: typeof b.billing_mode === "string" ? b.billing_mode : void 0,
+      currency: typeof b.currency === "string" ? b.currency : "USD",
+      grantedUsd: num2(b.granted_usd),
+      spentUsd: num2(b.spent_usd),
+      remainingUsd: num2(b.remaining_usd),
+      blocked: b.blocked === true,
+      blockedReason: typeof b.blocked_reason === "string" ? b.blocked_reason : void 0
+    };
+  } catch {
+    return void 0;
+  }
+}
+function formatCreditBalance(b) {
+  const money = (v) => v === null ? void 0 : `$${v.toFixed(v < 0.01 && v > 0 ? 6 : 2)}`;
+  const remaining = money(b.remainingUsd);
+  const spent = money(b.spentUsd);
+  if (remaining) return `${remaining} remaining${spent ? ` (spent ${spent})` : ""}`;
+  const mode = b.billingMode === "ungated" ? "no prepaid limit" : b.billingMode ?? "unknown";
+  return `${spent ? `spent ${spent}` : "unknown"} \u2014 ${mode}`;
+}
+function normalizeApiKeyBase(raw) {
+  const base4 = raw.replace(/\/+$/, "").replace(/\/v1$/, "");
+  const url2 = new URL(base4);
+  if (url2.username || url2.password || url2.search || url2.hash || url2.protocol !== "https:" && !(url2.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url2.hostname))) {
+    throw new Error(
+      "BlockRun account API URL requires HTTPS (except localhost) and no credentials, query or fragment."
+    );
+  }
+  return base4;
+}
+function createApiKeyFetch(apiKey, baseFetch = fetch, apiBase = BLOCKRUN_API_KEY_API) {
+  const base4 = new URL(normalizeApiKeyBase(apiBase));
+  return async (input, init2) => {
+    const request2 = input instanceof Request ? input : void 0;
+    const url2 = new URL(request2?.url ?? String(input), `${base4}/`);
+    if (url2.origin !== base4.origin || url2.username || url2.password) {
+      throw new Error("Refusing to forward a BlockRun account key to another origin.");
+    }
+    if (base4.pathname === "/" && url2.pathname.startsWith("/api/v1/")) {
+      url2.pathname = url2.pathname.slice(4);
+    }
+    const headers = new Headers(init2?.headers ?? request2?.headers);
+    for (const name of [...headers.keys()]) {
+      if (/payment/i.test(name) || name.toLowerCase() === "x-api-key") headers.delete(name);
+    }
+    headers.set("authorization", `Bearer ${apiKey}`);
+    const response = await baseFetch(request2 ? new Request(url2, request2) : url2.href, {
+      ...init2,
+      headers,
+      redirect: "error"
+    });
+    return response.ok ? response : explainApiKeyFailure(response);
+  };
+}
+async function pollApiKeyJob(response, payFetch, apiBase, signal, intervalMs = 2e3) {
+  if (response.status !== 202) return response;
+  const initial = await response.clone().json();
+  if (!initial.poll_url) throw new Error("Async account response missing poll_url");
+  const pollUrl = new URL(initial.poll_url, `${normalizeApiKeyBase(apiBase)}/`).href;
+  const abort = AbortSignal.any([signal, AbortSignal.timeout(15 * 6e4)]);
+  while (!abort.aborted) {
+    const polled = await payFetch(pollUrl, { signal: abort });
+    if ([502, 503, 504, 522, 524].includes(polled.status)) {
+      await polled.body?.cancel();
+    } else {
+      if (!polled.ok) return polled;
+      const data = await polled.clone().json();
+      if (data.status === "completed") return polled;
+      if (data.status === "failed") return polled;
+      await polled.body?.cancel();
+    }
+    await new Promise((resolve2) => setTimeout(resolve2, intervalMs));
+  }
+  throw new Error("Async account job did not complete before the client aborted or timed out.");
+}
+async function explainApiKeyFailure(response) {
+  const hint = HINTS[response.status];
+  if (!hint) return response;
+  if (!(response.headers.get("content-type") ?? "").includes("json")) return response;
+  let parsed;
+  try {
+    parsed = await response.clone().json();
+  } catch {
+    return response;
+  }
+  if (!parsed?.error || typeof parsed.error.message !== "string") return response;
+  if (response.status === 404 && !/unsupported endpoint/i.test(parsed.error.message)) {
+    return response;
+  }
+  parsed.error.message = `${parsed.error.message} ${hint}`;
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  return new Response(JSON.stringify(parsed), {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+var HINTS = {
+  401: `Check BLOCKRUN_API_KEY, or mint a new key at ${PORTAL_KEYS_URL}.`,
+  402: `Top up your BlockRun credit at ${PORTAL_CREDITS_URL}.`,
+  404: `api.blockrun.ai does not serve this endpoint. Chat, Anthropic-shaped messages, images, speech, video and the partner APIs (Surf, Exa, prediction markets, phone lookup) all work on an API key. The wallet-only exceptions are the routes that bind a lease or a position to a payer address \u2014 buying/renewing/releasing phone numbers, and Polymarket trading \u2014 which need a wallet to own the thing being bought. For those, unset BLOCKRUN_API_KEY and run "clawrouter logout".`
+};
+
+// src/model-catalog.ts
+function fallbackCatalog() {
+  return {
+    models: BLOCKRUN_MODELS,
+    openclaw: OPENCLAW_MODELS,
+    visible: VISIBLE_OPENCLAW_MODELS,
+    freeIds: new Set(BLOCKRUN_MODELS.filter((m) => m.id.startsWith("free/")).map((m) => m.id))
+  };
+}
+function upstreamId(id2) {
+  if (id2 === "free/north-mini-code") return "cohere/north-mini-code";
+  if (id2 === "free/laguna-xs-2.1") return "poolside/laguna-xs-2.1";
+  return id2.startsWith("free/") ? `nvidia/${id2.slice(5)}` : id2;
+}
+function projectClawCatalog(state) {
+  const models = BLOCKRUN_MODELS.map((m) => ({ ...m }));
+  const byUpstream = new Map(models.map((m) => [upstreamId(m.id), m]));
+  const additions = /* @__PURE__ */ new Set();
+  const freeIds = new Set(fallbackCatalog().freeIds);
+  for (const row of state.models) {
+    if (!row.id.includes("/") || row.id.startsWith("blockrun/")) continue;
+    if (!row.categories.includes("chat") || row.available === false) continue;
+    if (!["paid", "free", "flat"].includes(row.billing_mode)) continue;
+    const old = byUpstream.get(row.id);
+    if (old?.id.startsWith("free/") && row.billing_mode !== "free") {
+      throw new Error("Gateway changed billing of a pinned free model");
+    }
+    if (!old && Object.hasOwn(MODEL_ALIASES, row.id)) continue;
+    const model = old ?? {
+      id: row.id,
+      name: row.name,
+      inputPrice: 0,
+      outputPrice: 0,
+      contextWindow: row.context_window ?? 32768,
+      maxOutput: row.max_output ?? 4096,
+      // A catalog's "coding" category is not proof of working structured tools.
+      // New models are explicit picks, not automatic routing candidates.
+      toolCalling: false,
+      agentic: false,
+      reasoning: row.categories.includes("reasoning"),
+      vision: row.categories.includes("vision")
+    };
+    if (row.billing_mode === "flat" && (typeof row.pricing.flat !== "number" || !Number.isFinite(row.pricing.flat) || row.pricing.flat < 0)) {
+      throw new Error("Invalid flat model price");
+    }
+    model.name = row.name;
+    model.inputPrice = row.billing_mode === "paid" ? row.pricing.input : 0;
+    model.outputPrice = row.billing_mode === "paid" ? row.pricing.output : 0;
+    delete model.promo;
+    delete model.flatPrice;
+    if (row.billing_mode === "flat") model.flatPrice = row.pricing.flat;
+    if (row.context_window) model.contextWindow = row.context_window;
+    if (row.max_output) model.maxOutput = row.max_output;
+    if (!old) {
+      models.push(model);
+      additions.add(model.id);
+    }
+  }
+  const byId = new Map(models.map((m) => [m.id, m]));
+  const openclaw = models.filter((m) => !Object.hasOwn(MODEL_ALIASES, m.id)).map(toOpenClawModel);
+  for (const [alias, target] of Object.entries(MODEL_ALIASES)) {
+    const model = byId.get(target);
+    if (!alias.includes("/") && model)
+      openclaw.push(toOpenClawModel({ ...model, id: alias, name: `${alias} \u2192 ${model.name}` }));
+  }
+  const definitions = new Map(openclaw.map((m) => [m.id, m]));
+  const visibleIds = new Set(VISIBLE_OPENCLAW_MODELS.map((m) => m.id));
+  for (const group of state.groups)
+    for (const row of group.models) if (additions.has(row.id)) visibleIds.add(row.id);
+  const visible = [...visibleIds].flatMap(
+    (id2) => definitions.has(id2) ? [definitions.get(id2)] : []
+  );
+  return { models, openclaw, visible, freeIds };
+}
+function createClawCatalog(options) {
+  const gatewayUrl = `${options.apiBase.replace(/\/$/, "")}/v1/models?format=json`;
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const gatewayFetch = options.apiKey ? createApiKeyFetch(options.apiKey, fetcher, options.apiBase) : fetcher;
+  const client = createCatalogClient({
+    network: options.network,
+    gatewayUrl,
+    // No remote policy by default: the bundled snapshot orders new models, and
+    // every running proxy fetching a mutable GitHub branch every few minutes
+    // would be a third-party request and a trust input for a cosmetic order.
+    catalogUrl: options.catalogUrl ?? process.env.BLOCKRUN_MODEL_CATALOG_URL,
+    timeoutMs: options.timeoutMs ?? 4e3,
+    // Shorter than the proxy's 5-minute refresh tick, so every tick fetches
+    // instead of every other one landing on a still-fresh cache entry.
+    ttlMs: options.ttlMs ?? 24e4,
+    fetch: (url2, init2) => String(url2) === gatewayUrl ? gatewayFetch(url2, { ...init2, redirect: "error" }) : fetcher(url2, { ...init2, redirect: "error" })
+  });
+  let view = fallbackCatalog();
+  let inflight;
+  let lastReported;
+  const report = (message) => {
+    if (message === lastReported) return;
+    lastReported = message;
+    console.warn(
+      `[ClawRouter] Model catalog refresh failed, keeping the last good view: ${message}`
+    );
+  };
+  return {
+    current: () => view,
+    refresh() {
+      if (inflight) return inflight;
+      inflight = (async () => {
+        try {
+          const state = await client.refresh();
+          if (state.lastError) report(state.lastError);
+          if (state.source === "live") {
+            const next = projectClawCatalog(state);
+            if (fingerprint(next) !== fingerprint(view)) view = next;
+            if (!state.lastError) lastReported = void 0;
+          }
+        } catch (err) {
+          report(err instanceof Error ? err.message : String(err));
+        }
+        return view;
+      })().finally(() => {
+        inflight = void 0;
+      });
+      return inflight;
+    }
+  };
+}
+function fingerprint(view) {
+  return JSON.stringify([
+    view.models.map((m) => [
+      m.id,
+      m.inputPrice,
+      m.outputPrice,
+      m.flatPrice ?? null,
+      m.contextWindow,
+      m.maxOutput
+    ]),
+    view.visible.map((m) => m.id),
+    [...view.freeIds].sort()
+  ]);
+}
+
 // src/proxy.ts
 import { AsyncLocalStorage as AsyncLocalStorage2 } from "async_hooks";
 import { createHmac } from "crypto";
@@ -232358,7 +238930,7 @@ import { finished, Readable } from "stream";
 import { pipeline } from "stream/promises";
 import { homedir as homedir13 } from "os";
 import { join as join18 } from "path";
-import { mkdir as mkdir6, writeFile as writeFile4, readFile as readFile2, stat as fsStat } from "fs/promises";
+import { mkdir as mkdir6, writeFile as writeFile4, readFile as readFile3, stat as fsStat } from "fs/promises";
 import { readFileSync as readFileSync8 } from "fs";
 
 // node_modules/viem/_esm/utils/getAction.js
@@ -243619,46 +250191,8 @@ function resolveMaxTokens(parsed, fallback2 = DEFAULT_MAX_TOKENS) {
 // src/spend-control.ts
 import * as fs from "fs";
 import * as path from "path";
-import { homedir } from "os";
-
-// src/fs-read.ts
-import { open } from "fs/promises";
-import { openSync, readSync, closeSync, fstatSync } from "fs";
-async function readTextFile(filePath) {
-  const fh = await open(filePath, "r");
-  try {
-    const size5 = (await fh.stat()).size;
-    const buf = Buffer.alloc(size5);
-    let offset = 0;
-    while (offset < size5) {
-      const { bytesRead } = await fh.read(buf, offset, size5 - offset, offset);
-      if (bytesRead === 0) break;
-      offset += bytesRead;
-    }
-    return buf.subarray(0, offset).toString("utf-8");
-  } finally {
-    await fh.close();
-  }
-}
-function readTextFileSync(filePath) {
-  const fd = openSync(filePath, "r");
-  try {
-    const size5 = fstatSync(fd).size;
-    const buf = Buffer.alloc(size5);
-    let offset = 0;
-    while (offset < size5) {
-      const bytesRead = readSync(fd, buf, offset, size5 - offset, offset);
-      if (bytesRead === 0) break;
-      offset += bytesRead;
-    }
-    return buf.subarray(0, offset).toString("utf-8");
-  } finally {
-    closeSync(fd);
-  }
-}
-
-// src/spend-control.ts
-var WALLET_DIR = path.join(homedir(), ".openclaw", "blockrun");
+import { homedir as homedir2 } from "os";
+var WALLET_DIR = path.join(homedir2(), ".openclaw", "blockrun");
 var HOUR_MS = 60 * 60 * 1e3;
 var DAY_MS = 24 * HOUR_MS;
 var CAIP2_BASE = "eip155:8453";
@@ -246019,14 +252553,14 @@ function calculateModelCost(model, modelPricing, estimatedInputTokens, maxOutput
   const savings = routingProfile === "premium" ? 0 : baselineCost > 0 ? Math.max(0, (baselineCost - costEstimate) / baselineCost) : 0;
   return { costEstimate, baselineCost, savings };
 }
-function filterByToolCalling(models, hasTools, supportsToolCalling2) {
+function filterByToolCalling(models, hasTools, supportsToolCalling) {
   if (!hasTools) return models;
-  const filtered = models.filter(supportsToolCalling2);
+  const filtered = models.filter(supportsToolCalling);
   return filtered.length > 0 ? filtered : models;
 }
-function filterByVision(models, hasVision, supportsVision2) {
+function filterByVision(models, hasVision, supportsVision) {
   if (!hasVision) return models;
-  const filtered = models.filter(supportsVision2);
+  const filtered = models.filter(supportsVision);
   return filtered.length > 0 ? filtered : models;
 }
 function filterByExcludeList(models, excludeList) {
@@ -249499,21 +256033,21 @@ function route(prompt, systemPrompt, maxOutputTokens, options) {
 }
 
 // src/logger.ts
-import { appendFile, mkdir } from "fs/promises";
-import { join as join3 } from "path";
-import { homedir as homedir2 } from "os";
-var LOG_DIR = join3(homedir2(), ".openclaw", "blockrun", "logs");
+import { appendFile, mkdir as mkdir2 } from "fs/promises";
+import { join as join4 } from "path";
+import { homedir as homedir3 } from "os";
+var LOG_DIR = join4(homedir3(), ".openclaw", "blockrun", "logs");
 var dirReady = false;
 async function ensureDir() {
   if (dirReady) return;
-  await mkdir(LOG_DIR, { recursive: true });
+  await mkdir2(LOG_DIR, { recursive: true });
   dirReady = true;
 }
 async function logUsage(entry) {
   try {
     await ensureDir();
     const date = entry.timestamp.slice(0, 10);
-    const file = join3(LOG_DIR, `usage-${date}.jsonl`);
+    const file = join4(LOG_DIR, `usage-${date}.jsonl`);
     await appendFile(file, JSON.stringify(entry) + "\n");
   } catch {
   }
@@ -249521,17 +256055,17 @@ async function logUsage(entry) {
 
 // src/stats.ts
 import { readdir, unlink } from "fs/promises";
-import { join as join5 } from "path";
-import { homedir as homedir3 } from "os";
+import { join as join6 } from "path";
+import { homedir as homedir4 } from "os";
 
 // src/version.ts
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
-import { dirname, join as join4 } from "path";
+import { dirname, join as join5 } from "path";
 var __filename2 = fileURLToPath(import.meta.url);
 var __dirname = dirname(__filename2);
 var require2 = createRequire(import.meta.url);
-var pkg = require2(join4(__dirname, "..", "package.json"));
+var pkg = require2(join5(__dirname, "..", "package.json"));
 var VERSION = pkg.version;
 function clientTag() {
   const raw = (process.env.CLAWROUTER_CLIENT ?? "").trim();
@@ -249542,7 +256076,7 @@ function clientTag() {
 var USER_AGENT = `clawrouter/${VERSION}${clientTag()}`;
 
 // src/stats.ts
-var LOG_DIR2 = join5(homedir3(), ".openclaw", "blockrun", "logs");
+var LOG_DIR2 = join6(homedir4(), ".openclaw", "blockrun", "logs");
 var DEFAULT_STATS_DAYS = 7;
 var MAX_STATS_DAYS = 30;
 function resolveStatsDays(raw) {
@@ -249623,7 +256157,7 @@ async function getStats(days = 7) {
   let totalLatency = 0;
   for (const file of filesToRead) {
     const date = file.replace("usage-", "").replace(".jsonl", "");
-    const filePath = join5(LOG_DIR2, file);
+    const filePath = join6(LOG_DIR2, file);
     const entries = await parseLogFile(filePath);
     if (entries.length === 0) continue;
     const dayStats = aggregateDay(date, entries);
@@ -249741,7 +256275,7 @@ async function clearStats() {
   try {
     const files = await readdir(LOG_DIR2);
     const logFiles = files.filter((f) => f.startsWith("usage-") && f.endsWith(".jsonl"));
-    await Promise.all(logFiles.map((f) => unlink(join5(LOG_DIR2, f))));
+    await Promise.all(logFiles.map((f) => unlink(join6(LOG_DIR2, f))));
     return { deletedFiles: logFiles.length };
   } catch {
     return { deletedFiles: 0 };
@@ -249749,7 +256283,7 @@ async function clearStats() {
 }
 
 // src/dedup.ts
-import { createHash } from "crypto";
+import { createHash as createHash2 } from "crypto";
 
 // src/timestamp-strip.ts
 var TIMESTAMP_PATTERN = /^\[\w{3}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s+\w+\]\s*/;
@@ -249817,7 +256351,7 @@ var RequestDeduplicator = class {
       content = Buffer.from(JSON.stringify(canonical));
     } catch {
     }
-    return createHash("sha256").update(content).digest("hex").slice(0, 16);
+    return createHash2("sha256").update(content).digest("hex").slice(0, 16);
   }
   /** Check if a response is cached for this key. */
   getCached(key3) {
@@ -249890,7 +256424,7 @@ var RequestDeduplicator = class {
 };
 
 // src/response-cache.ts
-import { createHash as createHash2 } from "crypto";
+import { createHash as createHash3 } from "crypto";
 var DEFAULT_CONFIG = {
   maxSize: 200,
   defaultTTL: 600,
@@ -249962,10 +256496,10 @@ var ResponseCache = class {
       const normalized = normalizeForCache(parsed);
       const canonical = canonicalize2(normalized);
       const keyContent = JSON.stringify(canonical);
-      return createHash2("sha256").update(keyContent).digest("hex").slice(0, 32);
+      return createHash3("sha256").update(keyContent).digest("hex").slice(0, 32);
     } catch {
       const content = typeof body === "string" ? body : body.toString();
-      return createHash2("sha256").update(content).digest("hex").slice(0, 32);
+      return createHash3("sha256").update(content).digest("hex").slice(0, 32);
     }
   }
   /**
@@ -250316,20 +256850,20 @@ var ApiKeyBalanceMonitor = class _ApiKeyBalanceMonitor {
 
 // src/auth.ts
 import { createPrivateKey, createPublicKey } from "crypto";
-import { writeFile as writeFile2, mkdir as mkdir3 } from "fs/promises";
+import { writeFile as writeFile3, mkdir as mkdir4 } from "fs/promises";
 init_esm4();
 init_accounts();
 init_wallet();
-import { join as join7 } from "path";
-import { homedir as homedir4 } from "os";
-var WALLET_DIR2 = join7(homedir4(), ".openclaw", "blockrun");
-var WALLET_FILE = join7(WALLET_DIR2, "wallet.key");
-var MNEMONIC_FILE = join7(WALLET_DIR2, "mnemonic");
-var CHAIN_FILE = join7(WALLET_DIR2, "payment-chain");
-var CORE_WALLET_DIR = join7(homedir4(), ".blockrun");
-var CORE_WALLET_FILE = join7(CORE_WALLET_DIR, ".session");
-var CORE_SOLANA_WALLET_FILE = join7(CORE_WALLET_DIR, ".solana-session");
-var CORE_CHAIN_FILE = join7(CORE_WALLET_DIR, ".chain");
+import { join as join8 } from "path";
+import { homedir as homedir5 } from "os";
+var WALLET_DIR2 = join8(homedir5(), ".openclaw", "blockrun");
+var WALLET_FILE = join8(WALLET_DIR2, "wallet.key");
+var MNEMONIC_FILE = join8(WALLET_DIR2, "mnemonic");
+var CHAIN_FILE = join8(WALLET_DIR2, "payment-chain");
+var CORE_WALLET_DIR = join8(homedir5(), ".blockrun");
+var CORE_WALLET_FILE = join8(CORE_WALLET_DIR, ".session");
+var CORE_SOLANA_WALLET_FILE = join8(CORE_WALLET_DIR, ".solana-session");
+var CORE_CHAIN_FILE = join8(CORE_WALLET_DIR, ".chain");
 async function loadSavedWallet() {
   try {
     const key3 = (await readTextFile(WALLET_FILE)).trim();
@@ -250378,8 +256912,8 @@ async function loadMnemonic() {
   return void 0;
 }
 async function saveMnemonic(mnemonic) {
-  await mkdir3(WALLET_DIR2, { recursive: true });
-  await writeFile2(MNEMONIC_FILE, mnemonic + "\n", { mode: 384 });
+  await mkdir4(WALLET_DIR2, { recursive: true });
+  await writeFile3(MNEMONIC_FILE, mnemonic + "\n", { mode: 384 });
 }
 async function migrateLegacyWalletToCore() {
   const migrated = { base: false, solana: false, chain: false };
@@ -250405,7 +256939,7 @@ async function migrateLegacyWalletToCore() {
     }
   }
   if (coreChain === void 0) {
-    const legacyChain = await readOptional(CHAIN_FILE);
+    const legacyChain = await readOptional2(CHAIN_FILE);
     if (legacyChain === "base" || legacyChain === "solana") {
       migrated.chain = await writeCoreFileIfMissing(CORE_CHAIN_FILE, legacyChain + "\n");
     }
@@ -250417,9 +256951,9 @@ async function migrateLegacyWalletToCore() {
   return migrated;
 }
 async function writeCoreFileIfMissing(path8, value) {
-  await mkdir3(CORE_WALLET_DIR, { recursive: true });
+  await mkdir4(CORE_WALLET_DIR, { recursive: true });
   try {
-    await writeFile2(path8, value, { mode: 384, flag: "wx" });
+    await writeFile3(path8, value, { mode: 384, flag: "wx" });
     return true;
   } catch (error) {
     if (error.code === "EEXIST") return false;
@@ -250457,10 +256991,10 @@ Then run: npx @blockrun/clawrouter`
   }
   const mnemonic = generateWalletMnemonic();
   const derived = deriveAllKeys(mnemonic);
-  await mkdir3(WALLET_DIR2, { recursive: true });
-  await writeFile2(WALLET_FILE, derived.evmPrivateKey + "\n", { mode: 384 });
+  await mkdir4(WALLET_DIR2, { recursive: true });
+  await writeFile3(WALLET_FILE, derived.evmPrivateKey + "\n", { mode: 384 });
   if (!existingCoreSolanaKey) {
-    await writeFile2(MNEMONIC_FILE, mnemonic + "\n", { mode: 384 });
+    await writeFile3(MNEMONIC_FILE, mnemonic + "\n", { mode: 384 });
   }
   await writeCoreFileIfMissing(CORE_WALLET_FILE, derived.evmPrivateKey + "\n");
   if (!existingCoreSolanaKey) {
@@ -250646,7 +257180,7 @@ async function loadCoreSolanaKey() {
     );
   }
 }
-async function readOptional(path8) {
+async function readOptional2(path8) {
   try {
     return (await readTextFile(path8)).trim() || void 0;
   } catch {
@@ -250683,16 +257217,16 @@ async function setupSolana() {
   return { mnemonic, solanaPrivateKeyBytes: solanaKeyBytes };
 }
 async function savePaymentChain(chain3) {
-  await mkdir3(WALLET_DIR2, { recursive: true });
-  await mkdir3(CORE_WALLET_DIR, { recursive: true });
+  await mkdir4(WALLET_DIR2, { recursive: true });
+  await mkdir4(CORE_WALLET_DIR, { recursive: true });
   await Promise.all([
-    writeFile2(CHAIN_FILE, chain3 + "\n", { mode: 384 }),
-    writeFile2(CORE_CHAIN_FILE, chain3 + "\n", { mode: 384 })
+    writeFile3(CHAIN_FILE, chain3 + "\n", { mode: 384 }),
+    writeFile3(CORE_CHAIN_FILE, chain3 + "\n", { mode: 384 })
   ]);
 }
 async function loadPaymentChain() {
-  const core = await readOptional(CORE_CHAIN_FILE);
-  const legacy = await readOptional(CHAIN_FILE);
+  const core = await readOptional2(CORE_CHAIN_FILE);
+  const legacy = await readOptional2(CHAIN_FILE);
   if (core === "solana" || core === "base") {
     if ((legacy === "solana" || legacy === "base") && legacy !== core) {
       warnChainOverride(core, legacy);
@@ -250718,8 +257252,8 @@ function warnChainOverride(core, legacy) {
 async function hasExistingWallet() {
   if (process["env"].BLOCKRUN_WALLET_KEY?.trim()) return true;
   const [core, legacy] = await Promise.all([
-    readOptional(CORE_WALLET_FILE),
-    readOptional(WALLET_FILE)
+    readOptional2(CORE_WALLET_FILE),
+    readOptional2(WALLET_FILE)
   ]);
   return Boolean(core || legacy);
 }
@@ -250728,175 +257262,6 @@ async function resolvePaymentChain() {
   if (process["env"].CLAWROUTER_PAYMENT_CHAIN === "base") return "base";
   return loadPaymentChain();
 }
-
-// src/api-key.ts
-import { writeFile as writeFile3, mkdir as mkdir4, rm } from "fs/promises";
-import { join as join8 } from "path";
-import { homedir as homedir5 } from "os";
-var API_KEY_FILE = join8(homedir5(), ".openclaw", "blockrun", "api-key");
-var CORE_API_KEY_FILE = join8(homedir5(), ".blockrun", ".api-key");
-var PORTAL_URL = "https://user.blockrun.ai";
-var PORTAL_KEYS_URL = `${PORTAL_URL}/dashboard/keys`;
-var PORTAL_CREDITS_URL = `${PORTAL_URL}/dashboard/credits`;
-var BLOCKRUN_API_KEY_API = process["env"].BLOCKRUN_API_BASE_URL?.replace(/\/+$/, "").replace(/\/v1$/, "") || "https://api.blockrun.ai";
-function isValidApiKey(value) {
-  if (typeof value !== "string") return false;
-  return /^brk_[A-Za-z0-9_-]{8,}$/.test(value.trim());
-}
-function maskApiKey(key3) {
-  const trimmed = key3.trim();
-  if (trimmed.length <= 18) return `${trimmed.slice(0, 8)}\u2026`;
-  return `${trimmed.slice(0, 14)}\u2026${trimmed.slice(-4)}`;
-}
-async function readOptional2(path8) {
-  try {
-    return (await readTextFile(path8)).trim() || void 0;
-  } catch (error) {
-    if (error.code === "ENOENT") return void 0;
-    throw new Error(
-      `Cannot read BlockRun API key file ${path8}; refusing to fall back to another account or wallet.`,
-      { cause: error }
-    );
-  }
-}
-async function resolveApiKey() {
-  const envKey = process["env"].BLOCKRUN_API_KEY?.trim();
-  if (envKey) {
-    if (isValidApiKey(envKey)) return { key: envKey, source: "env" };
-    throw new Error(
-      `BLOCKRUN_API_KEY is malformed (expected brk_\u2026). Mint one at ${PORTAL_KEYS_URL}, or unset it to pay from the wallet. Refusing to fall back silently.`
-    );
-  }
-  for (const [path8, source] of [
-    [CORE_API_KEY_FILE, "core"],
-    [API_KEY_FILE, "saved"]
-  ]) {
-    const stored = await readOptional2(path8);
-    if (stored === void 0) continue;
-    if (isValidApiKey(stored)) return { key: stored, source };
-    throw new Error(
-      `${path8} does not contain a BlockRun key (expected brk_\u2026). Run "clawrouter login" with a valid key, or "clawrouter logout" to return to wallet billing. Refusing to fall back silently: the next source could bill a different account or spend from a wallet.`
-    );
-  }
-  return void 0;
-}
-async function fetchCreditBalance(apiKey, timeoutMs = 5e3) {
-  try {
-    const controller = new AbortController();
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(`${BLOCKRUN_API_KEY_API}/v1/credits`, {
-      headers: { authorization: `Bearer ${apiKey}` },
-      signal: controller.signal
-    });
-    clearTimeout(timer2);
-    if (!res.ok) return void 0;
-    const b = await res.json();
-    const num2 = (v) => typeof v === "number" ? v : null;
-    return {
-      accountId: typeof b.account_id === "string" ? b.account_id : void 0,
-      billingMode: typeof b.billing_mode === "string" ? b.billing_mode : void 0,
-      currency: typeof b.currency === "string" ? b.currency : "USD",
-      grantedUsd: num2(b.granted_usd),
-      spentUsd: num2(b.spent_usd),
-      remainingUsd: num2(b.remaining_usd),
-      blocked: b.blocked === true,
-      blockedReason: typeof b.blocked_reason === "string" ? b.blocked_reason : void 0
-    };
-  } catch {
-    return void 0;
-  }
-}
-function formatCreditBalance(b) {
-  const money = (v) => v === null ? void 0 : `$${v.toFixed(v < 0.01 && v > 0 ? 6 : 2)}`;
-  const remaining = money(b.remainingUsd);
-  const spent = money(b.spentUsd);
-  if (remaining) return `${remaining} remaining${spent ? ` (spent ${spent})` : ""}`;
-  const mode = b.billingMode === "ungated" ? "no prepaid limit" : b.billingMode ?? "unknown";
-  return `${spent ? `spent ${spent}` : "unknown"} \u2014 ${mode}`;
-}
-function normalizeApiKeyBase(raw) {
-  const base4 = raw.replace(/\/+$/, "").replace(/\/v1$/, "");
-  const url2 = new URL(base4);
-  if (url2.username || url2.password || url2.search || url2.hash || url2.protocol !== "https:" && !(url2.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url2.hostname))) {
-    throw new Error(
-      "BlockRun account API URL requires HTTPS (except localhost) and no credentials, query or fragment."
-    );
-  }
-  return base4;
-}
-function createApiKeyFetch(apiKey, baseFetch = fetch, apiBase = BLOCKRUN_API_KEY_API) {
-  const base4 = new URL(normalizeApiKeyBase(apiBase));
-  return async (input, init2) => {
-    const request2 = input instanceof Request ? input : void 0;
-    const url2 = new URL(request2?.url ?? String(input), `${base4}/`);
-    if (url2.origin !== base4.origin || url2.username || url2.password) {
-      throw new Error("Refusing to forward a BlockRun account key to another origin.");
-    }
-    if (base4.pathname === "/" && url2.pathname.startsWith("/api/v1/")) {
-      url2.pathname = url2.pathname.slice(4);
-    }
-    const headers = new Headers(init2?.headers ?? request2?.headers);
-    for (const name of [...headers.keys()]) {
-      if (/payment/i.test(name) || name.toLowerCase() === "x-api-key") headers.delete(name);
-    }
-    headers.set("authorization", `Bearer ${apiKey}`);
-    const response = await baseFetch(request2 ? new Request(url2, request2) : url2.href, {
-      ...init2,
-      headers,
-      redirect: "error"
-    });
-    return response.ok ? response : explainApiKeyFailure(response);
-  };
-}
-async function pollApiKeyJob(response, payFetch, apiBase, signal, intervalMs = 2e3) {
-  if (response.status !== 202) return response;
-  const initial = await response.clone().json();
-  if (!initial.poll_url) throw new Error("Async account response missing poll_url");
-  const pollUrl = new URL(initial.poll_url, `${normalizeApiKeyBase(apiBase)}/`).href;
-  const abort = AbortSignal.any([signal, AbortSignal.timeout(15 * 6e4)]);
-  while (!abort.aborted) {
-    const polled = await payFetch(pollUrl, { signal: abort });
-    if ([502, 503, 504, 522, 524].includes(polled.status)) {
-      await polled.body?.cancel();
-    } else {
-      if (!polled.ok) return polled;
-      const data = await polled.clone().json();
-      if (data.status === "completed") return polled;
-      if (data.status === "failed") return polled;
-      await polled.body?.cancel();
-    }
-    await new Promise((resolve2) => setTimeout(resolve2, intervalMs));
-  }
-  throw new Error("Async account job did not complete before the client aborted or timed out.");
-}
-async function explainApiKeyFailure(response) {
-  const hint = HINTS[response.status];
-  if (!hint) return response;
-  if (!(response.headers.get("content-type") ?? "").includes("json")) return response;
-  let parsed;
-  try {
-    parsed = await response.clone().json();
-  } catch {
-    return response;
-  }
-  if (!parsed?.error || typeof parsed.error.message !== "string") return response;
-  if (response.status === 404 && !/unsupported endpoint/i.test(parsed.error.message)) {
-    return response;
-  }
-  parsed.error.message = `${parsed.error.message} ${hint}`;
-  const headers = new Headers(response.headers);
-  headers.delete("content-length");
-  return new Response(JSON.stringify(parsed), {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  });
-}
-var HINTS = {
-  401: `Check BLOCKRUN_API_KEY, or mint a new key at ${PORTAL_KEYS_URL}.`,
-  402: `Top up your BlockRun credit at ${PORTAL_CREDITS_URL}.`,
-  404: `api.blockrun.ai does not serve this endpoint. Chat, Anthropic-shaped messages, images, speech, video and the partner APIs (Surf, Exa, prediction markets, phone lookup) all work on an API key. The wallet-only exceptions are the routes that bind a lease or a position to a payer address \u2014 buying/renewing/releasing phone numbers, and Polymarket trading \u2014 which need a wallet to own the thing being bought. For those, unset BLOCKRUN_API_KEY and run "clawrouter logout".`
-};
 
 // src/session-spend.ts
 function parseMicros(raw) {
@@ -251791,7 +258156,7 @@ function shouldCompress(messages) {
 }
 
 // src/session.ts
-import { createHash as createHash3 } from "crypto";
+import { createHash as createHash4 } from "crypto";
 var DEFAULT_SESSION_CONFIG = {
   enabled: true,
   timeoutMs: 30 * 60 * 1e3,
@@ -252031,12 +258396,12 @@ function deriveSessionId(messages) {
   const firstUser = messages.find((m) => m.role === "user");
   if (!firstUser) return void 0;
   const content = typeof firstUser.content === "string" ? firstUser.content : JSON.stringify(firstUser.content);
-  return createHash3("sha256").update(content).digest("hex").slice(0, 8);
+  return createHash4("sha256").update(content).digest("hex").slice(0, 8);
 }
 function hashRequestContent(lastUserContent, toolCallNames) {
   const normalized = lastUserContent.replace(/\s+/g, " ").trim().slice(0, 500);
   const toolSuffix = toolCallNames?.length ? `|tools:${toolCallNames.sort().join(",")}` : "";
-  return createHash3("sha256").update(normalized + toolSuffix).digest("hex").slice(0, 12);
+  return createHash4("sha256").update(normalized + toolSuffix).digest("hex").slice(0, 12);
 }
 
 // src/updater.ts
@@ -252967,7 +259332,7 @@ function extractTextualToolCalls(content, options) {
 }
 
 // src/response-store.ts
-import { appendFile as appendFile2, mkdir as mkdir5, readFile, readdir as readdir2 } from "fs/promises";
+import { appendFile as appendFile2, mkdir as mkdir5, readFile as readFile2, readdir as readdir2 } from "fs/promises";
 import { homedir as homedir12 } from "os";
 import { join as join17 } from "path";
 import { randomBytes as randomBytes7 } from "crypto";
@@ -253010,7 +259375,7 @@ async function appendResponse(entry) {
 }
 async function readDailyFile(file) {
   try {
-    const text = await readFile(file, "utf8");
+    const text = await readFile2(file, "utf8");
     return text.split("\n").filter((l2) => l2.trim().length > 0).map((line) => {
       try {
         return JSON.parse(line);
@@ -253495,11 +259860,8 @@ var GATEWAY_CATALOG_TIMEOUT_MS = 5e3;
 var DEFAULT_REQUEST_TIMEOUT_MS = 3e5;
 var PER_MODEL_TIMEOUT_MS = 6e4;
 var REASONING_MODEL_TIMEOUT_MS = 18e4;
-var REASONING_MODEL_IDS = new Set(
-  BLOCKRUN_MODELS.filter((m) => m.reasoning).map((m) => m.id)
-);
-function timeoutForModel(modelId) {
-  return REASONING_MODEL_IDS.has(modelId) ? REASONING_MODEL_TIMEOUT_MS : PER_MODEL_TIMEOUT_MS;
+function timeoutForModel(modelId, models) {
+  return models.get(modelId)?.reasoning ? REASONING_MODEL_TIMEOUT_MS : PER_MODEL_TIMEOUT_MS;
 }
 var MAX_FALLBACK_ATTEMPTS = 5;
 var HEALTH_CHECK_TIMEOUT_MS = 2e3;
@@ -254113,9 +260475,9 @@ function stripThinkingTokens(content) {
 function forwardToolCallProse() {
   return process.env.CLAWROUTER_TOOL_CALL_PROSE?.trim().toLowerCase() !== "off";
 }
-function buildModelPricing() {
+function buildModelPricing(models = BLOCKRUN_MODELS) {
   const map = /* @__PURE__ */ new Map();
-  for (const m of BLOCKRUN_MODELS) {
+  for (const m of models) {
     if (m.id === AUTO_MODEL) continue;
     const promoPrice = getActivePromoPrice(m);
     map.set(m.id, {
@@ -254126,9 +260488,9 @@ function buildModelPricing() {
   }
   return map;
 }
-function buildModelCapabilities() {
+function buildModelCapabilities(models = BLOCKRUN_MODELS) {
   return Object.fromEntries(
-    BLOCKRUN_MODELS.map((model) => [
+    models.map((model) => [
       model.id,
       {
         contextWindow: model.contextWindow,
@@ -254139,15 +260501,15 @@ function buildModelCapabilities() {
     ])
   );
 }
-function buildProxyModelList(createdAt = Math.floor(Date.now() / 1e3)) {
+function buildProxyModelList(createdAt = Math.floor(Date.now() / 1e3), catalog = fallbackCatalog()) {
   const seen = /* @__PURE__ */ new Set();
-  return OPENCLAW_MODELS.filter((model) => {
+  return catalog.openclaw.filter((model) => {
     if (seen.has(model.id)) return false;
     seen.add(model.id);
     return true;
   }).map((model) => {
     const targetId = MODEL_ALIASES[model.id] ?? model.id;
-    const canonical = BLOCKRUN_MODELS.find((entry) => entry.id === targetId);
+    const canonical = catalog.models.find((entry) => entry.id === targetId);
     return {
       id: model.id,
       object: "model",
@@ -254215,8 +260577,8 @@ function buildCostBreakdown(params) {
   };
 }
 var BLOCKRUN_MODEL_BY_ID = new Map(BLOCKRUN_MODELS.map((m) => [m.id, m]));
-function estimateAmount(modelId, bodyLength, maxTokens) {
-  const model = BLOCKRUN_MODEL_BY_ID.get(modelId);
+function estimateAmount(modelId, bodyLength, maxTokens, models = BLOCKRUN_MODEL_BY_ID) {
+  const model = models.get(modelId);
   if (!model) return void 0;
   let costUsd;
   const promoPrice = getActivePromoPrice(model);
@@ -254231,12 +260593,12 @@ function estimateAmount(modelId, bodyLength, maxTokens) {
   const amountMicros = Math.max(1e3, Math.ceil(costUsd * 1.2 * 1e6));
   return amountMicros.toString();
 }
-function estimateBalancePreflightAmount(modelId, bodyLength, maxTokens) {
+function estimateBalancePreflightAmount(modelId, bodyLength, maxTokens, models = BLOCKRUN_MODEL_BY_ID) {
   const preflightMaxTokens = Math.min(
     maxTokens || BALANCE_PREFLIGHT_OUTPUT_TOKEN_CAP,
     BALANCE_PREFLIGHT_OUTPUT_TOKEN_CAP
   );
-  return estimateAmount(modelId, bodyLength, preflightMaxTokens);
+  return estimateAmount(modelId, bodyLength, preflightMaxTokens, models);
 }
 var IMAGE_PRICING = {
   "openai/gpt-image-1": {
@@ -254879,10 +261241,30 @@ async function startProxy(options) {
   }
   const routingConfig = mergeRoutingConfig(options.routingConfig);
   const modelPricing = buildModelPricing();
-  const routerOpts = {
+  let routerOpts = {
     config: routingConfig,
     modelPricing,
     modelCapabilities: buildModelCapabilities()
+  };
+  const catalog = createClawCatalog({
+    network: paymentChain === "solana" && (apiKey || solanaPrivateKeyBytes) ? "solana" : "base",
+    apiBase,
+    apiKey
+  });
+  let catalogClosed = false;
+  const refreshCatalog = async () => {
+    const previous = catalog.current();
+    const view = await catalog.refresh();
+    if (catalogClosed || view === previous) return;
+    routerOpts = {
+      ...routerOpts,
+      modelPricing: buildModelPricing(view.models),
+      modelCapabilities: buildModelCapabilities(view.models)
+    };
+    try {
+      options.onCatalogUpdated?.(view.visible);
+    } catch {
+    }
   };
   const deduplicator = new RequestDeduplicator();
   const responseCache2 = new ResponseCache(options.cacheConfig);
@@ -255040,7 +261422,7 @@ async function startProxy(options) {
         return;
       }
       if (req.url === "/v1/models" && req.method === "GET") {
-        const models = buildProxyModelList();
+        const models = buildProxyModelList(void 0, catalog.current());
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ object: "list", data: models }));
         return;
@@ -255154,7 +261536,7 @@ async function startProxy(options) {
             webp: "image/webp",
             gif: "image/gif"
           };
-          const data = await readFile2(filePath);
+          const data = await readFile3(filePath);
           res.writeHead(200, {
             "Content-Type": mime[ext] ?? "application/octet-stream",
             "Content-Length": data.length
@@ -255184,7 +261566,7 @@ async function startProxy(options) {
             ogg: "audio/ogg",
             m4a: "audio/mp4"
           };
-          const data = await readFile2(filePath);
+          const data = await readFile3(filePath);
           res.writeHead(200, {
             "Content-Type": mime[ext] ?? "audio/mpeg",
             "Content-Length": data.length
@@ -255213,7 +261595,7 @@ async function startProxy(options) {
             webm: "video/webm",
             mov: "video/quicktime"
           };
-          const data = await readFile2(filePath);
+          const data = await readFile3(filePath);
           res.writeHead(200, {
             "Content-Type": mime[ext] ?? "video/mp4",
             "Content-Length": data.length
@@ -255883,7 +262265,8 @@ async function startProxy(options) {
           balanceMonitor,
           sessionStore,
           responseCache2,
-          sessionJournal
+          sessionJournal,
+          catalog.current()
         );
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -256000,6 +262383,11 @@ async function startProxy(options) {
   if (lastError) {
     throw lastError;
   }
+  void refreshCatalog();
+  const catalogTimer = setInterval(() => {
+    void refreshCatalog();
+  }, 3e5);
+  catalogTimer.unref();
   const addr = server.address();
   const port = addr.port;
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -256034,6 +262422,7 @@ async function startProxy(options) {
   return {
     port,
     baseUrl,
+    getCatalogModels: () => catalog.current().visible,
     walletAddress: account?.address ?? "",
     solanaAddress,
     authMode,
@@ -256043,6 +262432,8 @@ async function startProxy(options) {
       const timeout = setTimeout(() => {
         rej(new Error("[ClawRouter] Close timeout after 4s"));
       }, 4e3);
+      catalogClosed = true;
+      clearInterval(catalogTimer);
       sessionStore.close();
       for (const socket of connections) {
         socket.destroy();
@@ -256077,7 +262468,7 @@ function isDegenerateCompletion(bodyBuf) {
     return false;
   }
 }
-async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxTokens, payFetch, balanceMonitor, signal) {
+async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxTokens, payFetch, balanceMonitor, signal, catalogReasoning = false) {
   let requestBody = body;
   try {
     const parsed = JSON.parse(body.toString());
@@ -256098,7 +262489,7 @@ async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxT
     if (isGoogleModel(modelId) && Array.isArray(parsed.messages)) {
       parsed.messages = normalizeMessagesForGoogle(parsed.messages);
     }
-    const hasThinkingEnabled = !!(parsed.thinking || parsed.extended_thinking || isReasoningModel(modelId));
+    const hasThinkingEnabled = !!(parsed.thinking || parsed.extended_thinking || catalogReasoning || isReasoningModel(modelId));
     if (hasThinkingEnabled && Array.isArray(parsed.messages)) {
       parsed.messages = normalizeMessagesForThinking(parsed.messages);
     }
@@ -256194,8 +262585,11 @@ async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxT
     };
   }
 }
-async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, deduplicator, balanceMonitor, sessionStore, responseCache2, sessionJournal) {
+async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, deduplicator, balanceMonitor, sessionStore, responseCache2, sessionJournal, catalog = fallbackCatalog()) {
   const startTime = Date.now();
+  const modelsById = new Map(catalog.models.map((m) => [m.id, m]));
+  const estimate = (id2, length, tokens) => estimateAmount(id2, length, tokens, modelsById);
+  const estimatePreflight = (id2, length, tokens) => estimateBalancePreflightAmount(id2, length, tokens, modelsById);
   const upstreamUrl = `${apiBase}${req.url}`;
   const bodyChunks = [];
   for await (const chunk of req) {
@@ -257188,11 +263582,11 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
   }
   deduplicator.markInflight(dedupKey);
   let estimatedCostMicros;
-  let isFreeModel = FREE_MODELS.has(modelId ?? "");
+  let isFreeModel = catalog.freeIds.has(modelId ?? "");
   const paidFromChannel = options._solanaBatchActive === true && isChatCompletion;
   if (modelId && !options.skipBalanceCheck && !isFreeModel && !paidFromChannel) {
-    const estimated = estimateAmount(modelId, body.length, maxTokens);
-    const preflightEstimated = estimateBalancePreflightAmount(modelId, body.length, maxTokens);
+    const estimated = estimate(modelId, body.length, maxTokens);
+    const preflightEstimated = estimatePreflight(modelId, body.length, maxTokens);
     if (estimated) {
       estimatedCostMicros = BigInt(estimated);
     }
@@ -257253,7 +263647,7 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
   }
   let sessionSpend;
   if (options.maxCostPerRunUsd && effectiveSessionId && !isFreeModel && (options.maxCostPerRunMode ?? "graceful") === "strict") {
-    const thisReqEstStr = estimatedCostMicros !== void 0 ? estimatedCostMicros.toString() : modelId ? estimateAmount(modelId, body.length, maxTokens) : void 0;
+    const thisReqEstStr = estimatedCostMicros !== void 0 ? estimatedCostMicros.toString() : modelId ? estimate(modelId, body.length, maxTokens) : void 0;
     const admission = SessionSpend.admit(
       sessionStore,
       effectiveSessionId,
@@ -257296,9 +263690,9 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
     const remainingUsd = options.maxCostPerRunUsd - runCostUsd;
     const isComplexOrAgentic = hasTools || routingDecision?.tier === "COMPLEX" || routingDecision?.tier === "REASONING";
     if (isComplexOrAgentic) {
-      const canAffordAnyNonFreeModel = BLOCKRUN_MODELS.some((m) => {
-        if (FREE_MODELS.has(m.id)) return false;
-        const est = estimateAmount(m.id, body.length, maxTokens);
+      const canAffordAnyNonFreeModel = catalog.models.some((m) => {
+        if (catalog.freeIds.has(m.id)) return false;
+        const est = estimate(m.id, body.length, maxTokens);
         return est !== void 0 && Number(est) / 1e6 <= remainingUsd;
       });
       if (!canAffordAnyNonFreeModel) {
@@ -257322,8 +263716,8 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
         deduplicator.removeInflight(dedupKey);
         return;
       }
-    } else if (!routingDecision && modelId && !FREE_MODELS.has(modelId)) {
-      const est = estimateAmount(modelId, body.length, maxTokens);
+    } else if (!routingDecision && modelId && !catalog.freeIds.has(modelId)) {
+      const est = estimate(modelId, body.length, maxTokens);
       const canAfford = !est || Number(est) / 1e6 <= remainingUsd;
       if (!canAfford) {
         console.log(
@@ -257433,7 +263827,7 @@ async function proxyRequest(req, res, apiBase, payFetch, options, routerOpts, de
         estimatedInputTokens,
         maxTokens,
         (modelId2) => {
-          const model = BLOCKRUN_MODEL_BY_ID.get(modelId2);
+          const model = modelsById.get(modelId2);
           return model ? { contextWindow: model.contextWindow, maxOutput: model.maxOutput } : void 0;
         }
       );
@@ -257479,7 +263873,11 @@ data: [DONE]
           `[ClawRouter] Exclude filter: excluded ${excludeExcluded.join(", ")} (user preference)`
         );
       }
-      let toolFiltered = filterByToolCalling(excludeFiltered, hasTools, supportsToolCalling);
+      let toolFiltered = filterByToolCalling(
+        excludeFiltered,
+        hasTools,
+        (id2) => modelsById.get(id2)?.toolCalling === true
+      );
       const toolExcluded = excludeFiltered.filter((m) => !toolFiltered.includes(m));
       if (toolExcluded.length > 0) {
         console.log(
@@ -257501,7 +263899,11 @@ data: [DONE]
           toolFiltered = compliant;
         }
       }
-      const visionFiltered = filterByVision(toolFiltered, hasVision, supportsVision);
+      const visionFiltered = filterByVision(
+        toolFiltered,
+        hasVision,
+        (id2) => modelsById.get(id2)?.vision === true
+      );
       const visionExcluded = toolFiltered.filter((m) => !visionFiltered.includes(m));
       if (visionExcluded.length > 0) {
         console.log(
@@ -257523,7 +263925,9 @@ data: [DONE]
       modelsToTry = modelId ? [modelId] : [];
     }
     if (modelsToTry.length > 0) {
-      const unservedFree = modelsToTry.filter((m) => FREE_MODELS.has(m) && !isServedByGateway(m));
+      const unservedFree = modelsToTry.filter(
+        (m) => catalog.freeIds.has(m) && !isServedByGateway(m)
+      );
       if (unservedFree.length > 0) {
         const servedFree = [...FREE_MODELS].filter(
           (m) => isServedByGateway(m) && !excludeList?.has(m)
@@ -257549,14 +263953,14 @@ data: [DONE]
       const remainingUsd = options.maxCostPerRunUsd - runCostUsd;
       const beforeFilter = [...modelsToTry];
       modelsToTry = modelsToTry.filter((m) => {
-        if (FREE_MODELS.has(m)) return true;
-        const est = estimateAmount(m, body.length, maxTokens);
+        if (catalog.freeIds.has(m)) return true;
+        const est = estimate(m, body.length, maxTokens);
         if (!est) return true;
         return Number(est) / 1e6 <= remainingUsd;
       });
       const excluded = beforeFilter.filter((m) => !modelsToTry.includes(m));
       const isComplexOrAgenticFilter = hasTools || routingDecision?.tier === "COMPLEX" || routingDecision?.tier === "REASONING" || routingDecision === void 0;
-      const filteredToFreeOnly = modelsToTry.length > 0 && modelsToTry.every((m) => FREE_MODELS.has(m));
+      const filteredToFreeOnly = modelsToTry.length > 0 && modelsToTry.every((m) => catalog.freeIds.has(m));
       if (isComplexOrAgenticFilter && filteredToFreeOnly) {
         const budgetSummary = `$${Math.max(0, remainingUsd).toFixed(4)} remaining (limit: $${options.maxCostPerRunUsd})`;
         console.log(
@@ -257596,7 +264000,7 @@ data: [DONE]
           `[ClawRouter] Budget downgrade (${budgetSummary}): excluded ${excluded.join(", ")}`
         );
         const fromModel = excluded[0];
-        const usingFree = modelsToTry.length === 1 && FREE_MODELS.has(modelsToTry[0]);
+        const usingFree = modelsToTry.length === 1 && catalog.freeIds.has(modelsToTry[0]);
         if (usingFree) {
           budgetDowngradeNotice = `> **\u26A0\uFE0F Budget cap reached** ($${runCostUsd.toFixed(4)}/$${options.maxCostPerRunUsd}) \u2014 downgraded to free model. Quality may be reduced. Increase \`maxCostPerRun\` to continue with ${fromModel}.
 
@@ -257632,9 +264036,9 @@ data: [DONE]
         throw abortError();
       }
       console.log(`[ClawRouter] Trying model ${i + 1}/${modelsToTry.length}: ${tryModel}`);
-      const attemptEst = FREE_MODELS.has(tryModel) ? void 0 : estimateAmount(tryModel, body.length, maxTokens);
+      const attemptEst = catalog.freeIds.has(tryModel) ? void 0 : estimate(tryModel, body.length, maxTokens);
       publishDispatchCost(attemptEst ? Number(attemptEst) / 1e6 : 0);
-      const perAttemptTimeoutMs = timeoutForModel(tryModel);
+      const perAttemptTimeoutMs = timeoutForModel(tryModel, modelsById);
       const modelController = new AbortController();
       const modelTimeoutId = setTimeout(() => modelController.abort(), perAttemptTimeoutMs);
       const combinedSignal = AbortSignal.any([globalController.signal, modelController.signal]);
@@ -257647,7 +264051,8 @@ data: [DONE]
         maxTokens,
         payFetch,
         balanceMonitor,
-        combinedSignal
+        combinedSignal,
+        modelsById.get(tryModel)?.reasoning
       );
       clearTimeout(modelTimeoutId);
       if (result.paymentInDoubt && !clientDisconnected()) {
@@ -257699,8 +264104,8 @@ data: [DONE]
         actualModelUsed = tryModel;
         recordOutcome(tryModel, requestKind, true);
         console.log(`[ClawRouter] Success with model: ${tryModel}`);
-        if (sessionSpend && !FREE_MODELS.has(tryModel)) {
-          const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+        if (sessionSpend && !catalog.freeIds.has(tryModel)) {
+          const costEst = parseMicros(estimate(tryModel, body.length, maxTokens));
           if (costEst !== void 0) sessionSpend.recordSuccess(costEst);
         }
         break;
@@ -257717,12 +264122,12 @@ data: [DONE]
       });
       const isPaymentErr = isPaymentFailure(result.errorBody);
       recordAttempt(tryModel, result, false);
-      if (isPaymentErr && !FREE_MODELS.has(tryModel) && !isLastAttempt) {
+      if (isPaymentErr && !catalog.freeIds.has(tryModel) && !isLastAttempt) {
         failedAttempts.push({
           ...failedAttempts[failedAttempts.length - 1],
           reason: "payment_error"
         });
-        const freeInChain = modelsToTry.findIndex((m, idx) => idx > i && FREE_MODELS.has(m));
+        const freeInChain = modelsToTry.findIndex((m, idx) => idx > i && catalog.freeIds.has(m));
         if (freeInChain > i + 1) {
           console.log(
             `[ClawRouter] Payment error \u2014 skipping to free model: ${modelsToTry[freeInChain]}`
@@ -257751,7 +264156,7 @@ data: [DONE]
           const retryController = new AbortController();
           const retryTimeoutId = setTimeout(
             () => retryController.abort(),
-            timeoutForModel(tryModel)
+            timeoutForModel(tryModel, modelsById)
           );
           const retrySignal = AbortSignal.any([globalController.signal, retryController.signal]);
           const retryResult = await tryModelRequest(
@@ -257763,7 +264168,8 @@ data: [DONE]
             maxTokens,
             payFetch,
             balanceMonitor,
-            retrySignal
+            retrySignal,
+            modelsById.get(tryModel)?.reasoning
           );
           clearTimeout(retryTimeoutId);
           recordAttempt(
@@ -257788,8 +264194,8 @@ data: [DONE]
             upstream = retryResult.response;
             actualModelUsed = tryModel;
             console.log(`[ClawRouter] Explicit-pin retry succeeded for: ${tryModel}`);
-            if (sessionSpend && !FREE_MODELS.has(tryModel)) {
-              const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+            if (sessionSpend && !catalog.freeIds.has(tryModel)) {
+              const costEst = parseMicros(estimate(tryModel, body.length, maxTokens));
               if (costEst !== void 0) sessionSpend.recordSuccess(costEst);
             }
             break;
@@ -257830,7 +264236,7 @@ data: [DONE]
               const retryController = new AbortController();
               const retryTimeoutId = setTimeout(
                 () => retryController.abort(),
-                timeoutForModel(tryModel)
+                timeoutForModel(tryModel, modelsById)
               );
               const retrySignal = AbortSignal.any([
                 globalController.signal,
@@ -257845,7 +264251,8 @@ data: [DONE]
                 maxTokens,
                 payFetch,
                 balanceMonitor,
-                retrySignal
+                retrySignal,
+                modelsById.get(tryModel)?.reasoning
               );
               clearTimeout(retryTimeoutId);
               recordAttempt(
@@ -257870,8 +264277,8 @@ data: [DONE]
                 upstream = retryResult.response;
                 actualModelUsed = tryModel;
                 console.log(`[ClawRouter] Rate-limit retry succeeded for: ${tryModel}`);
-                if (sessionSpend && !FREE_MODELS.has(tryModel)) {
-                  const costEst = parseMicros(estimateAmount(tryModel, body.length, maxTokens));
+                if (sessionSpend && !catalog.freeIds.has(tryModel)) {
+                  const costEst = parseMicros(estimate(tryModel, body.length, maxTokens));
                   if (costEst !== void 0) sessionSpend.recordSuccess(costEst);
                 }
                 break;
@@ -258450,7 +264857,7 @@ data: [DONE]
     if (actualPayment > 0) {
       logCost2 = actualPayment;
       const chargedInputTokens = Math.ceil(body.length / 4);
-      const modelDef = BLOCKRUN_MODEL_BY_ID.get(logModel);
+      const modelDef = modelsById.get(logModel);
       const chargedOutputTokens = modelDef ? Math.min(maxTokens, modelDef.maxOutput) : maxTokens;
       const baseline = calculateModelCost(
         logModel,
@@ -258471,7 +264878,7 @@ data: [DONE]
         routingProfile ?? void 0
       );
       const apiKeyPricing = options.apiKey ? routerOpts.modelPricing.get(logModel) : void 0;
-      if (FREE_MODELS.has(logModel)) {
+      if (catalog.freeIds.has(logModel)) {
         logCost2 = 0;
         logSavings = 1;
       } else if (apiKeyPricing) {
@@ -258522,7 +264929,10 @@ var blockrunProvider = {
   // async config persistence writes the correct baseUrl to openclaw.json.
   get models() {
     if (activeProxy) {
-      return buildProviderModels(activeProxy.baseUrl);
+      return {
+        ...buildProviderModels(activeProxy.baseUrl),
+        models: activeProxy.getCatalogModels?.() ?? buildProviderModels(activeProxy.baseUrl).models
+      };
     }
     const port = getProxyPort();
     return buildProviderModels(`http://127.0.0.1:${port}/v1`);
@@ -260996,7 +267406,7 @@ function isArrayBufferView(val) {
 }
 var isString = typeOfTest("string");
 var isFunction = typeOfTest("function");
-var isNumber = typeOfTest("number");
+var isNumber2 = typeOfTest("number");
 var isObject2 = (thing) => thing !== null && typeof thing === "object";
 var isBoolean = (thing) => thing === true || thing === false;
 var isPlainObject4 = (val) => {
@@ -261226,7 +267636,7 @@ var toArray = (thing) => {
   if (!thing) return null;
   if (isArray(thing)) return thing;
   let i = thing.length;
-  if (!isNumber(i)) return null;
+  if (!isNumber2(i)) return null;
   const arr = new Array(i);
   while (i-- > 0) {
     arr[i] = thing[i];
@@ -261377,7 +267787,7 @@ var utils_default = {
   isFormData,
   isArrayBufferView,
   isString,
-  isNumber,
+  isNumber: isNumber2,
   isBoolean,
   isObject: isObject2,
   isPlainObject: isPlainObject4,
@@ -270501,6 +276911,8 @@ function legacyPackageIsBlockRun() {
   return false;
 }
 function injectModelsConfig(logger48, options = {}) {
+  const visibleModels = options.catalogModels ?? VISIBLE_OPENCLAW_MODELS;
+  const visibleIds = visibleModels.map((model2) => model2.id);
   const configDir = join20(homedir15(), ".openclaw");
   const configPath = join20(configDir, "openclaw.json");
   let config = {};
@@ -270561,7 +276973,7 @@ function injectModelsConfig(logger48, options = {}) {
       // apiKey is required by pi-coding-agent's ModelRegistry for providers with models.
       // We use a placeholder since the proxy handles real x402 auth internally.
       apiKey: "x402-proxy-handles-auth",
-      models: VISIBLE_OPENCLAW_MODELS
+      models: visibleModels
     };
     logger48.info("Injected BlockRun provider config");
     needsWrite = true;
@@ -270584,13 +276996,13 @@ function injectModelsConfig(logger48, options = {}) {
     const currentModelIds = new Set(
       Array.isArray(currentModels) ? currentModels.map((m) => m?.id).filter((id2) => typeof id2 === "string") : []
     );
-    const expectedModelIds = VISIBLE_OPENCLAW_MODELS.map((m) => m.id);
+    const expectedModelIds = visibleModels.map((m) => m.id);
     const expectedSet = new Set(expectedModelIds);
-    const needsModelUpdate = !currentModels || !Array.isArray(currentModels) || currentModels.length !== VISIBLE_OPENCLAW_MODELS.length || expectedModelIds.some((id2) => !currentModelIds.has(id2)) || Array.from(currentModelIds).some((id2) => !expectedSet.has(id2));
+    const needsModelUpdate = JSON.stringify(currentModels) !== JSON.stringify(visibleModels) || !currentModels || !Array.isArray(currentModels) || currentModels.length !== visibleModels.length || expectedModelIds.some((id2) => !currentModelIds.has(id2)) || Array.from(currentModelIds).some((id2) => !expectedSet.has(id2));
     if (needsModelUpdate) {
-      blockrun.models = VISIBLE_OPENCLAW_MODELS;
+      blockrun.models = visibleModels;
       fixed = true;
-      logger48.info(`Updated models list (${VISIBLE_OPENCLAW_MODELS.length} visible models)`);
+      logger48.info(`Updated models list (${visibleModels.length} visible models)`);
     }
     if (fixed) {
       logger48.info("Fixed incomplete BlockRun provider config");
@@ -270635,7 +277047,7 @@ function injectModelsConfig(logger48, options = {}) {
     needsWrite = true;
     logger48.info(`Removed ${removedDeprecatedCount} deprecated model entries from allowlist`);
   }
-  const expectedBlockrunKeys = new Set(TOP_MODELS.map((id2) => `blockrun/${id2}`));
+  const expectedBlockrunKeys = new Set(visibleIds.map((id2) => `blockrun/${id2}`));
   let addedCount = 0;
   let prunedCount = 0;
   for (const key3 of Object.keys(allowlist)) {
@@ -270644,7 +277056,7 @@ function injectModelsConfig(logger48, options = {}) {
       prunedCount++;
     }
   }
-  for (const id2 of TOP_MODELS) {
+  for (const id2 of visibleIds) {
     const key3 = `blockrun/${id2}`;
     if (!allowlist[key3]) {
       allowlist[key3] = {};
@@ -270657,7 +277069,7 @@ function injectModelsConfig(logger48, options = {}) {
       logger48.info(`Pruned ${prunedCount} stale blockrun/* entries from allowlist`);
     }
     if (addedCount > 0) {
-      logger48.info(`Added ${addedCount} models to allowlist (${TOP_MODELS.length} total)`);
+      logger48.info(`Added ${addedCount} models to allowlist (${visibleIds.length} total)`);
     }
   }
   const legacyEntry = config.plugins?.entries?.clawrouter;
@@ -270723,6 +277135,7 @@ function injectModelsConfig(logger48, options = {}) {
 }
 function syncAgentModelCache(logger48, options = {}) {
   if (!isGatewayMode() && !options.forceWrite) return;
+  const visibleModels = options.catalogModels ?? VISIBLE_OPENCLAW_MODELS;
   const agentsDir = join20(homedir15(), ".openclaw", "agents");
   if (!existsSync7(agentsDir)) return;
   let agentDirs;
@@ -270731,7 +277144,7 @@ function syncAgentModelCache(logger48, options = {}) {
   } catch {
     return;
   }
-  const expectedIds = VISIBLE_OPENCLAW_MODELS.map((m) => m.id);
+  const expectedIds = visibleModels.map((m) => m.id);
   for (const agent of agentDirs) {
     const cachePath2 = join20(agentsDir, agent, "agent", "models.json");
     if (!existsSync7(cachePath2)) continue;
@@ -270744,10 +277157,10 @@ function syncAgentModelCache(logger48, options = {}) {
       if (!blockrun || typeof blockrun !== "object" || Array.isArray(blockrun)) continue;
       const entry = blockrun;
       const current = entry.models;
-      const upToDate = Array.isArray(current) && current.length === expectedIds.length && current.every((m, i) => m?.id === expectedIds[i]);
+      const upToDate = Array.isArray(current) && JSON.stringify(current) === JSON.stringify(visibleModels) && current.length === expectedIds.length && current.every((m, i) => m?.id === expectedIds[i]);
       if (upToDate) continue;
       const staleCount = Array.isArray(current) ? current.length : 0;
-      entry.models = VISIBLE_OPENCLAW_MODELS;
+      entry.models = visibleModels;
       const tmpPath = `${cachePath2}.tmp.${process.pid}`;
       writeFileSync8(tmpPath, JSON.stringify(cache2, null, 2), { mode: 384 });
       renameSync3(tmpPath, cachePath2);
@@ -270992,6 +277405,11 @@ async function startProxyInBackground(api, startupGeneration) {
     // registered below use the same instance, so hourly/daily/session windows
     // cover every surface and a /policy write reaches the live signer.
     spendControl: sharedControl,
+    onCatalogUpdated: (catalogModels) => {
+      if (startupGeneration !== void 0 && !isProxyStartupCurrent(startupGeneration)) return;
+      injectModelsConfig(api.logger, { catalogModels });
+      syncAgentModelCache(api.logger, { catalogModels });
+    },
     onReady: (port) => {
       api.logger.info(`BlockRun ${apiKey ? "API-key" : "x402"} proxy listening on port ${port}`);
     },
