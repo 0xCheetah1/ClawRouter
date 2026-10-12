@@ -47,7 +47,20 @@ import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { x402Client } from "@x402/fetch";
-import { createPayFetchWithPreAuth } from "./payment-preauth.js";
+import { createPayFetchWithPreAuth, type SolanaBatchRoute } from "./payment-preauth.js";
+
+/** The Solana RPC the batch payer reads chain state from when none is configured. */
+const SOLANA_PUBLIC_RPC = "https://api.mainnet-beta.solana.com";
+
+/** What ClawRouter's signing hooks read off a payment being created. */
+type PaymentHookContext = {
+  selectedRequirements: { network: string; amount?: string; maxAmountRequired?: string };
+};
+/** The hook surface shared by our x402 client and the Solana batch payer's. */
+type PaymentHookClient = {
+  onBeforePaymentCreation(hook: (context: PaymentHookContext) => Promise<void>): unknown;
+  onAfterPaymentCreation(hook: (context: PaymentHookContext) => Promise<void>): unknown;
+};
 import { withBuilderCodeServiceCode } from "./builder-code.js";
 import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { toClientEvmSigner } from "@x402/evm";
@@ -133,7 +146,12 @@ import {
 import { checkForUpdates } from "./updater.js";
 import { loadExcludeList } from "./exclude-models.js";
 import { demoteUnreliable, recordOutcome } from "./outcome-memory.js";
-import { PROXY_PORT } from "./config.js";
+import { PROXY_PORT, SOLANA_BATCH_ENV } from "./config.js";
+import {
+  createSolanaBatchPayer,
+  resolveSolanaBatchSettings,
+  type SolanaBatchSettings,
+} from "./solana-batch.js";
 import { SessionJournal } from "./journal.js";
 import { readLocalImageAsDataUri, ssrfSafeFetch, untrustedRequestReason } from "./local-guard.js";
 import { applyUpstreamProxy } from "./upstream-proxy.js";
@@ -1595,6 +1613,14 @@ export type ProxyOptions = {
    */
   spendControl?: SpendControl;
   /**
+   * Solana batch-settlement for chat calls on the Solana rail: one deposit
+   * opens a payment channel with BlockRun, then each call is charged what it
+   * actually cost instead of its ceiling. `true` turns it on with the default
+   * escrow cap; an object sets `maxDeposit`. Default: off, unless
+   * CLAWROUTER_SOLANA_BATCH is set.
+   */
+  solanaBatch?: boolean | SolanaBatchSettings;
+  /**
    * Upstream proxy URL for all outgoing requests.
    * Supports http://, https://, and socks5:// schemes.
    * Also readable via BLOCKRUN_UPSTREAM_PROXY environment variable.
@@ -2821,26 +2847,30 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   // the cap — a retry or fallback inside one request signs again (ET-20261010).
   // Registered BEFORE the spend-policy hook: x402 does not run failure hooks
   // when a before-hook throws, so refusing after SpendControl reserved would
-  // leak its reservation.
-  x402?.onBeforePaymentCreation(async (context) => {
-    const spend = paymentStore.getStore()?.sessionSpend;
-    if (!spend?.isStrict) return;
-    // v2 `amount` or v1 `maxAmountRequired` — the v1 SVM schemes are registered too.
-    const quote = parseQuotedAmountMicros(context.selectedRequirements);
-    if (quote === undefined) {
-      // Fail closed: an amount we cannot read cannot be shown to fit the cap.
-      throw new CostCapError("ClawRouter cost cap: unreadable payment amount in the 402 quote");
-    }
-    if (!spend.coverPayment(quote)) {
-      throw new CostCapError(
-        `ClawRouter cost cap exceeded: signing $${microsToUsd(quote).toFixed(6)} would push this session past its maxCostPerRun limit`,
-      );
-    }
-  });
-  if (x402 && account) {
+  // leak its reservation. A function, because the Solana batch payer's own
+  // client registers the same hook (see below).
+  const registerCostCapHook = (client: PaymentHookClient) =>
+    client.onBeforePaymentCreation(async (context) => {
+      const spend = paymentStore.getStore()?.sessionSpend;
+      if (!spend?.isStrict) return;
+      // v2 `amount` or v1 `maxAmountRequired` — the v1 SVM schemes are registered too.
+      const quote = parseQuotedAmountMicros(context.selectedRequirements);
+      if (quote === undefined) {
+        // Fail closed: an amount we cannot read cannot be shown to fit the cap.
+        throw new CostCapError("ClawRouter cost cap: unreadable payment amount in the 402 quote");
+      }
+      if (!spend.coverPayment(quote)) {
+        throw new CostCapError(
+          `ClawRouter cost cap exceeded: signing $${microsToUsd(quote).toFixed(6)} would push this session past its maxCostPerRun limit`,
+        );
+      }
+    });
+  if (x402) registerCostCapHook(x402 as unknown as PaymentHookClient);
+  const spendControl =
+    x402 && account ? (options.spendControl ?? getSharedSpendControl()) : undefined;
+  if (x402 && account && spendControl) {
     const evmPublicClient = createPublicClient({ chain: base, transport: http() });
     const evmSigner = toClientEvmSigner(account, evmPublicClient);
-    const spendControl = options.spendControl ?? getSharedSpendControl();
     registerSpendPolicyHook(x402, spendControl);
     registerExactEvmScheme(x402, { signer: evmSigner });
   }
@@ -2901,32 +2931,89 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     payload.extensions = withBuilderCodeServiceCode(payload.extensions);
   });
 
-  // Log which chain is used for each payment and capture actual payment amount
-  x402?.onAfterPaymentCreation(async (context) => {
-    const network = context.selectedRequirements.network;
-    const chain = network.startsWith("eip155")
-      ? "Base (EVM)"
-      : network.startsWith("solana")
-        ? "Solana"
-        : network;
-    // Capture actual payment amount in USD (amount is in USDC micro units, 6 decimals)
-    const amountMicros = parseInt(context.selectedRequirements.amount || "0", 10);
-    const amountUsd = amountMicros / 1_000_000;
-    // Write to request-scoped store (if available)
-    const store = paymentStore.getStore();
-    if (store) store.amountUsd = amountUsd;
-    console.log(`[ClawRouter] Payment signed on ${chain} (${network}) — $${amountUsd.toFixed(6)}`);
-  });
+  // Log which chain is used for each payment and capture actual payment amount,
+  // then record it against the session's maxCostPerRun budget. Shared with the
+  // Solana batch payer's client, like the cost-cap hook.
+  const registerSigningRecorders = (client: PaymentHookClient) => {
+    client.onAfterPaymentCreation(async (context) => {
+      const network = context.selectedRequirements.network;
+      const chain = network.startsWith("eip155")
+        ? "Base (EVM)"
+        : network.startsWith("solana")
+          ? "Solana"
+          : network;
+      // Capture actual payment amount in USD (amount is in USDC micro units, 6 decimals)
+      const amountMicros = parseInt(context.selectedRequirements.amount || "0", 10);
+      const amountUsd = amountMicros / 1_000_000;
+      // Write to request-scoped store (if available)
+      const store = paymentStore.getStore();
+      if (store) store.amountUsd = amountUsd;
+      console.log(
+        `[ClawRouter] Payment signed on ${chain} (${network}) — $${amountUsd.toFixed(6)}`,
+      );
+    });
 
-  // Signed: the payment counts against the session's maxCostPerRun budget now,
-  // whatever the response turns out to be (session-spend.ts). Registered LAST
-  // among the after-hooks: if an earlier one throws, x402 never returns the
-  // payment, and nothing that was never sent gets recorded as spend.
-  x402?.onAfterPaymentCreation(async (context) => {
-    const spend = paymentStore.getStore()?.sessionSpend;
-    const amount = parseQuotedAmountMicros(context.selectedRequirements);
-    if (spend && amount !== undefined) spend.recordSigned(amount);
-  });
+    // Signed: the payment counts against the session's maxCostPerRun budget now,
+    // whatever the response turns out to be (session-spend.ts). Registered LAST
+    // among the after-hooks: if an earlier one throws, x402 never returns the
+    // payment, and nothing that was never sent gets recorded as spend.
+    client.onAfterPaymentCreation(async (context) => {
+      const spend = paymentStore.getStore()?.sessionSpend;
+      const amount = parseQuotedAmountMicros(context.selectedRequirements);
+      if (spend && amount !== undefined) spend.recordSigned(amount);
+    });
+  };
+  if (x402) registerSigningRecorders(x402 as unknown as PaymentHookClient);
+
+  // Solana batch-settlement (opt-in): chat calls on the Solana rail are paid
+  // through @blockrun/llm's SolanaBatchPayer instead of one exact transfer
+  // each. Its client gets the same hooks as ours, so SpendControl and the
+  // strict session cap apply to batch payments exactly as to exact ones, and
+  // only when the user configured them.
+  const solanaBatchSettings =
+    x402 && paymentChain === "solana" && solanaPrivateKeyBytes && solanaAddress
+      ? resolveSolanaBatchSettings(options.solanaBatch, SOLANA_BATCH_ENV)
+      : undefined;
+  let solanaBatch: SolanaBatchRoute | undefined;
+  if (solanaBatchSettings && solanaPrivateKeyBytes && solanaAddress) {
+    const payer = await createSolanaBatchPayer({
+      seed: solanaPrivateKeyBytes,
+      address: solanaAddress,
+      rpcUrl: process["env"].CLAWROUTER_SOLANA_RPC_URL || SOLANA_PUBLIC_RPC,
+      settings: solanaBatchSettings,
+      configureClient: (client) => {
+        const hooks = client as unknown as PaymentHookClient;
+        registerCostCapHook(hooks);
+        if (spendControl) registerSpendPolicyHook(client as unknown as x402Client, spendControl);
+        registerSigningRecorders(hooks);
+      },
+    });
+    solanaBatch = {
+      // @blockrun/llm types the challenge with its own PaymentRequired (an
+      // optional `resource`); it is the same x402 v2 object on the wire.
+      payer: payer as unknown as SolanaBatchRoute["payer"],
+      begin: () => paymentStore.getStore()?.sessionSpend?.signatureMark(),
+      settle: (mark, outcome) => {
+        const store = paymentStore.getStore();
+        const spend = store?.sessionSpend;
+        if (outcome.kind === "paid") {
+          if (store) store.amountUsd = microsToUsd(outcome.chargedMicros);
+          if (spend && mark !== undefined && spend.signatureMark() > mark) {
+            spend.voidSignedSince(mark, true);
+            spend.settleLastSigned(outcome.chargedMicros);
+          }
+        } else if (outcome.kind === "not_charged") {
+          if (store) store.amountUsd = 0;
+          if (spend && mark !== undefined) spend.voidSignedSince(mark, false);
+        } else if (spend && mark !== undefined) {
+          spend.voidSignedSince(mark, true);
+        }
+      },
+    };
+    console.log(
+      `[ClawRouter] Solana batch-settlement on (BlockRun operator, max deposit ${solanaBatchSettings.maxDeposit ?? "$1"})`,
+    );
+  }
 
   // The upstream fetch. Same signature on both rails, which is what lets every
   // handler below stay unaware of how the call is being paid for: one settles a
@@ -2962,6 +3049,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           // A 402 answer to a signed payment means the gateway declined it and
           // nothing settled — take it back off the session's budget.
           onPaymentDeclined: () => paymentStore.getStore()?.sessionSpend?.voidLastSigned(),
+          solanaBatch,
         });
 
   // Create balance monitor for pre-request checks (lazy import to avoid loading @solana/kit on Base chain)
@@ -4664,6 +4752,20 @@ async function tryModelRequest(
     return { success: true, response };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    if (err instanceof Error && err.name === "BatchPaymentUnresolvedError") {
+      // A Solana batch payment was sent and its outcome is unknown. Paying the
+      // same request again (a retry, the next model in the chain) could charge
+      // twice, so the chain stops here and the caller is told.
+      return {
+        success: false,
+        errorBody: JSON.stringify({
+          error: { message: errorMsg, type: "payment_in_doubt", code: "payment_in_doubt" },
+        }),
+        errorStatus: 502,
+        isProviderError: false,
+        errorCategory: "payment_error",
+      };
+    }
     if (err instanceof CostCapError) {
       // The strict session cap refused to sign this attempt (a retry or
       // fallback after earlier spend). Same finality as a policy refusal, but

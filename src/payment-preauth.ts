@@ -49,6 +49,52 @@ type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respons
 
 export type PaymentNotification = { model: string; amount: string; network: string };
 
+/** Structural slice of @blockrun/llm's SolanaBatchPayer that this layer drives. */
+export interface BatchPayerLike {
+  pay(
+    paymentRequired: PaymentRequired,
+    send: (headers: Record<string, string>) => Promise<Response>,
+    rechallenge: () => Promise<
+      | { kind: "challenge"; paymentRequired: PaymentRequired }
+      | { kind: "served"; response: Response }
+    >,
+    closesAtStart?: number,
+  ): Promise<
+    | { kind: "paid"; response: Response; chargedUsd: number }
+    | { kind: "fallback"; reason: string; paymentRequired?: PaymentRequired }
+    | { kind: "served"; response: Response }
+    | { kind: "failed"; error: unknown }
+  >;
+  closeFence(): Promise<number | undefined>;
+}
+
+/** How a batch `pay()` ended, for the caller's accounting. */
+export type BatchOutcome =
+  { kind: "paid"; chargedMicros: bigint } | { kind: "not_charged" } | { kind: "in_doubt" };
+
+/**
+ * Solana batch-settlement for chat completions. `begin` is called before the
+ * payer signs anything and returns a marker; `settle` reports how that `pay()`
+ * ended. Every signature it made was recorded by the signing hooks at its
+ * per-call ceiling; `settle` lets the caller void the ones proven not charged
+ * and book the charged one at what it actually cost.
+ */
+export interface SolanaBatchRoute {
+  payer: BatchPayerLike;
+  begin(): number | undefined;
+  settle(mark: number | undefined, outcome: BatchOutcome): void;
+}
+
+/** Only non-streaming chat completions are paid in batch (they carry a receipt). */
+function batchEligible(method: string, urlPath: string, bodyStr: string): boolean {
+  if (method !== "POST" || !urlPath.endsWith("/v1/chat/completions") || !bodyStr) return false;
+  try {
+    return (JSON.parse(bodyStr) as { stream?: unknown }).stream !== true;
+  } catch {
+    return false;
+  }
+}
+
 export function createPayFetchWithPreAuth(
   baseFetch: FetchFn,
   client: x402Client,
@@ -61,6 +107,8 @@ export function createPayFetchWithPreAuth(
      *  nothing settled. No amount is passed — a v1 payload does not carry the
      *  accepted quote — so the receiver reverses the signature it recorded. */
     onPaymentDeclined?: () => void;
+    /** Opt-in Solana batch-settlement for chat completions (see {@link SolanaBatchRoute}). */
+    solanaBatch?: SolanaBatchRoute;
   },
 ): FetchFn {
   const httpClient = new x402HTTPClient(client);
@@ -77,6 +125,7 @@ export function createPayFetchWithPreAuth(
     let requestModel = "";
     let bodyLength = 0;
     let maxTokens = 0;
+    let requestBody = "";
     if (init?.body) {
       try {
         const bodyStr =
@@ -86,6 +135,7 @@ export function createPayFetchWithPreAuth(
               ? init.body
               : "";
         if (bodyStr) {
+          requestBody = bodyStr;
           bodyLength = bodyStr.length;
           const parsed = JSON.parse(bodyStr) as Record<string, unknown>;
           requestModel = (parsed.model as string) ?? "";
@@ -206,6 +256,14 @@ export function createPayFetchWithPreAuth(
     }
 
     // Normal flow: make a clean (un-paid) request and handle the 402 if needed.
+    const batch =
+      options?.solanaBatch && batchEligible(request.method, urlPath, requestBody)
+        ? options.solanaBatch
+        : undefined;
+    // Taken before the first request: a channel close that completes while
+    // this call waits for its 402 keeps it from opening a new channel.
+    const closesAtStart = batch ? await batch.payer.closeFence() : undefined;
+    const batchTemplate = batch ? request.clone() : undefined;
     const clonedRequest = request.clone();
     const response = await baseFetch(request);
     if (response.status !== 402) {
@@ -239,6 +297,21 @@ export function createPayFetchWithPreAuth(
       );
     }
 
+    if (batch && batchTemplate) {
+      const outcome = await payInBatch(
+        batch,
+        batchTemplate,
+        paymentRequired,
+        closesAtStart,
+        baseFetch,
+        httpClient,
+      );
+      if (outcome.kind === "done") return outcome.response;
+      // Proven not charged, or batch unavailable: pay exact, against the
+      // freshest challenge the batch attempt saw.
+      paymentRequired = outcome.paymentRequired;
+    }
+
     // Sign payment and retry
     const payload = await client.createPaymentPayload(paymentRequired);
     const paymentHeaders = httpClient.encodePaymentSignatureHeader(payload);
@@ -250,4 +323,77 @@ export function createPayFetchWithPreAuth(
     notifyAcceptedPayment(paidResponse, payload);
     return paidResponse;
   };
+}
+
+/**
+ * Pay one chat request in batch. Returns the response to hand back, or the
+ * challenge to pay with `exact` when the payer fell back (nothing was charged).
+ * A payment in doubt throws (the payer's BatchPaymentUnresolvedError) and is
+ * never replaced by an exact payment.
+ */
+async function payInBatch(
+  batch: SolanaBatchRoute,
+  template: Request,
+  paymentRequired: PaymentRequired,
+  closesAtStart: number | undefined,
+  fetchPaid: FetchFn,
+  httpClient: x402HTTPClient,
+): Promise<
+  { kind: "done"; response: Response } | { kind: "exact"; paymentRequired: PaymentRequired }
+> {
+  // A fresh challenge that answered neither 402 nor 2xx: handed back as is.
+  let unpaidAnswer: Response | undefined;
+  const mark = batch.begin();
+  let attempt: Awaited<ReturnType<BatchPayerLike["pay"]>>;
+  try {
+    attempt = await batch.payer.pay(
+      paymentRequired,
+      (headers) => {
+        const paid = template.clone();
+        for (const [key, value] of Object.entries(headers)) paid.headers.set(key, value);
+        return fetchPaid(paid);
+      },
+      async () => {
+        const fresh = await fetchPaid(template.clone());
+        if (fresh.status === 402) {
+          const text = await fresh.text().catch(() => "");
+          let body: unknown;
+          try {
+            body = text ? JSON.parse(text) : undefined;
+          } catch {
+            /* header-only challenge */
+          }
+          return {
+            kind: "challenge",
+            paymentRequired: httpClient.getPaymentRequiredResponse(
+              (name) => fresh.headers.get(name),
+              body,
+            ),
+          };
+        }
+        if (fresh.ok) return { kind: "served", response: fresh };
+        unpaidAnswer = fresh;
+        throw new Error(`fresh challenge answered HTTP ${fresh.status}`);
+      },
+      closesAtStart,
+    );
+  } catch (error) {
+    // Thrown after a payment was sent: in doubt, never paid again.
+    batch.settle(mark, { kind: "in_doubt" });
+    throw error;
+  }
+  if (attempt.kind === "paid") {
+    batch.settle(mark, {
+      kind: "paid",
+      chargedMicros: BigInt(Math.round(attempt.chargedUsd * 1_000_000)),
+    });
+    return { kind: "done", response: attempt.response };
+  }
+  batch.settle(mark, { kind: "not_charged" });
+  if (attempt.kind === "served") return { kind: "done", response: attempt.response };
+  if (attempt.kind === "failed") {
+    if (unpaidAnswer) return { kind: "done", response: unpaidAnswer };
+    throw attempt.error;
+  }
+  return { kind: "exact", paymentRequired: attempt.paymentRequired ?? paymentRequired };
 }

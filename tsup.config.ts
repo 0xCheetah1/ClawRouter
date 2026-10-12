@@ -24,6 +24,12 @@ export default defineConfig({
       ...options.alias,
       "@blockrun/clawrouter": fileURLToPath(new URL("src/index.ts", import.meta.url)),
     };
+    // @blockrun/llm lazy-imports the Anthropic SDK for its own AnthropicClient,
+    // which ClawRouter never uses. Inlined it is ~0.6MB, including an agent bash
+    // tool built on child_process; external, it loads from node_modules (an
+    // @blockrun/llm dependency) in the unlikely case it ever runs. Set here, not
+    // in `external`: `noExternal: [/.*/]` wins over tsup's own external list.
+    options.external = [...(options.external ?? []), "@anthropic-ai/sdk"];
   },
   // The identifier must not be `__cjs_createRequire`: the stale bundle above carries
   // its own `import { createRequire as __cjs_createRequire }`, and esbuild cannot
