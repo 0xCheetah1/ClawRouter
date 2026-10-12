@@ -4,6 +4,44 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.286 — October 12, 2026
+
+### Solana batch-settlement (opt-in)
+
+**Pay Solana chat calls for what they actually cost.** With
+`CLAWROUTER_SOLANA_BATCH=1`, chat calls on the Solana rail use x402
+batch-settlement instead of one `exact` transfer per call. The first call
+opens a payment channel with BlockRun using a small deposit. Each call after
+that carries an authorization for its ceiling, and the gateway charges only
+the tokens the call used. One on-chain transaction covers many calls. It is
+off by default.
+
+- ClawRouter uses `@blockrun/llm`'s `SolanaBatchPayer`, the same payer
+  `SolanaLLMClient` ships, with BlockRun's operator key pinned as the only
+  trusted operator.
+- The deposit is escrow, capped by `CLAWROUTER_SOLANA_BATCH_MAX_DEPOSIT`
+  (`$1` by default). A channel idle for 3 days is closed by BlockRun and the
+  unused escrow returns to the wallet automatically.
+- Spend limits work the same: `maxCostPerRun` and the spend policy check each
+  batch payment before it is signed, and only if you set them.
+  `maxCostPerRun` books what each call was actually charged.
+- A batch payment whose outcome is unknown is never paid again: no `exact`
+  fallback, no retry, no next model. The request fails with
+  `payment_in_doubt`.
+- Only non-streaming chat completions use batch. Images, audio, video and
+  other endpoints stay on `exact`.
+
+### Dependencies
+
+- `@x402/*` 2.28 and `@blockrun/llm` 3.23.1. The SDK's new default spend
+  controls are switched off; ClawRouter keeps enforcing its own limits, as
+  before.
+- `dist` no longer bundles the Anthropic SDK, which ClawRouter does not use
+  (0.65MB smaller).
+
+- Thanks to @SkinGem, whose #435 started Solana batch-settlement in
+  ClawRouter.
+
 ## v0.12.285 — October 12, 2026
 
 ### Security: patched HTTP libraries
