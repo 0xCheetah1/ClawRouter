@@ -150,7 +150,14 @@ describe("shared catalog adapter", () => {
     });
     expect(old.inputPrice).not.toBe(3);
     expect(view.models.some((m) => m.id === "test/image")).toBe(false);
-    expect(view.freeIds.has("test/free")).toBe(true);
+    // Priced at 0, but not "free": only ClawRouter's own free/* products gate
+    // the cost cap and balance checks, never a gateway listing's say-so.
+    expect(view.models.find((m) => m.id === "test/free")).toMatchObject({
+      inputPrice: 0,
+      outputPrice: 0,
+    });
+    expect(view.freeIds.has("test/free")).toBe(false);
+    expect([...view.freeIds].every((id) => id.startsWith("free/"))).toBe(true);
   });
 
   it("serves a newly discovered model through the real API-key proxy without a wallet or signing", async () => {

@@ -11,12 +11,18 @@ import {
 } from "./models.js";
 import type { ModelDefinitionConfig } from "./types.js";
 
-const POLICY_URL =
-  "https://raw.githubusercontent.com/BlockRunAI/model-catalog/main/dist/snapshot.v1.json";
 export type ModelCatalogView = {
   models: BlockRunModel[];
   openclaw: ModelDefinitionConfig[];
   visible: ModelDefinitionConfig[];
+  /**
+   * Models ClawRouter treats as free: its own `free/*` products, and only
+   * those. This set gates the strict cost cap, the balance preflight and the
+   * budget filters, so it never takes a gateway listing's word for it: a
+   * model the listing calls free but whose 402 quotes a price would otherwise
+   * be signed with no cap check. A gateway-free model is still priced at 0
+   * here, so its estimates are 0 and the signing hooks check its real quote.
+   */
   freeIds: ReadonlySet<string>;
 };
 export function fallbackCatalog(): ModelCatalogView {
@@ -79,7 +85,6 @@ export function projectClawCatalog(state: CatalogState): ModelCatalogView {
     if (row.billing_mode === "flat") model.flatPrice = row.pricing.flat;
     if (row.context_window) model.contextWindow = row.context_window;
     if (row.max_output) model.maxOutput = row.max_output;
-    if (row.billing_mode === "free") freeIds.add(model.id);
     if (!old) {
       models.push(model);
       additions.add(model.id);
@@ -122,9 +127,14 @@ export function createClawCatalog(options: {
   const client = createCatalogClient({
     network: options.network,
     gatewayUrl,
-    catalogUrl: options.catalogUrl ?? process.env.BLOCKRUN_MODEL_CATALOG_URL ?? POLICY_URL,
+    // No remote policy by default: the bundled snapshot orders new models, and
+    // every running proxy fetching a mutable GitHub branch every few minutes
+    // would be a third-party request and a trust input for a cosmetic order.
+    catalogUrl: options.catalogUrl ?? process.env.BLOCKRUN_MODEL_CATALOG_URL,
     timeoutMs: options.timeoutMs ?? 4000,
-    ttlMs: options.ttlMs ?? 300000,
+    // Shorter than the proxy's 5-minute refresh tick, so every tick fetches
+    // instead of every other one landing on a still-fresh cache entry.
+    ttlMs: options.ttlMs ?? 240000,
     fetch: (url, init) =>
       String(url) === gatewayUrl
         ? gatewayFetch(url, { ...init, redirect: "error" })
@@ -132,6 +142,16 @@ export function createClawCatalog(options: {
   });
   let view = fallbackCatalog();
   let inflight: Promise<ModelCatalogView> | undefined;
+  let lastReported: string | undefined;
+  // One line per distinct failure, not one per tick: a frozen catalog (a
+  // malformed listing, a pinned free model turning paid) must be visible.
+  const report = (message: string) => {
+    if (message === lastReported) return;
+    lastReported = message;
+    console.warn(
+      `[ClawRouter] Model catalog refresh failed, keeping the last good view: ${message}`,
+    );
+  };
   return {
     current: () => view,
     refresh(): Promise<ModelCatalogView> {
@@ -139,9 +159,17 @@ export function createClawCatalog(options: {
       inflight = (async () => {
         try {
           const state = await client.refresh();
-          if (state.source === "live") view = projectClawCatalog(state);
-        } catch {
-          /* Keep the previous complete view on malformed data or network failure. */
+          if (state.lastError) report(state.lastError);
+          if (state.source === "live") {
+            const next = projectClawCatalog(state);
+            // Same content, same object: callers compare by identity to skip
+            // rebuilding routing and re-writing openclaw.json for nothing.
+            if (fingerprint(next) !== fingerprint(view)) view = next;
+            if (!state.lastError) lastReported = undefined;
+          }
+        } catch (err) {
+          // Keep the previous complete view on malformed data or network failure.
+          report(err instanceof Error ? err.message : String(err));
         }
         return view;
       })().finally(() => {
@@ -150,4 +178,20 @@ export function createClawCatalog(options: {
       return inflight;
     },
   };
+}
+
+/** What a view says, for change detection: ids, prices, limits, visibility, free set. */
+function fingerprint(view: ModelCatalogView): string {
+  return JSON.stringify([
+    view.models.map((m) => [
+      m.id,
+      m.inputPrice,
+      m.outputPrice,
+      m.flatPrice ?? null,
+      m.contextWindow,
+      m.maxOutput,
+    ]),
+    view.visible.map((m) => m.id),
+    [...view.freeIds].sort(),
+  ]);
 }
