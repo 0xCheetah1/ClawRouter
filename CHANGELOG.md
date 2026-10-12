@@ -4,6 +4,33 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.287 — October 12, 2026
+
+### Live model catalog
+
+**Prices and new models follow the gateway without a ClawRouter release.**
+The proxy now reads the active gateway's model listing (`/v1/models`) at
+start and every 5 minutes:
+
+- Prices and context limits of known models track the gateway.
+- New chat models the gateway lists can be picked by name. They are never
+  routed to automatically until they are added to ClawRouter on purpose.
+- Aliases, the free models and their order, and every model's capabilities
+  stay as ClawRouter defines them.
+
+Built through `@blockrun/model-catalog` (bundled), and it does not touch
+payment signing.
+
+- Only ClawRouter's own `free/*` models count as free for `maxCostPerRun`
+  and the balance check. A model the gateway lists as free is priced at 0, but
+  its real price is still checked when the gateway asks for payment.
+- If the listing cannot be fetched or read, the last good catalog is kept and
+  the failure is logged once.
+- No request goes anywhere but the gateway you already use. A remote ordering
+  policy is opt-in through `BLOCKRUN_MODEL_CATALOG_URL`.
+
+- Thanks to @KillerQueen-Z for the live catalog (#413).
+
 ## v0.12.286 — October 12, 2026
 
 ### Solana batch-settlement (opt-in)
