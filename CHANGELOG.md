@@ -4,6 +4,131 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.286 — October 12, 2026
+
+### Solana batch-settlement (opt-in)
+
+**Pay Solana chat calls for what they actually cost.** With
+`CLAWROUTER_SOLANA_BATCH=1`, chat calls on the Solana rail use x402
+batch-settlement instead of one `exact` transfer per call. The first call
+opens a payment channel with BlockRun using a small deposit. Each call after
+that carries an authorization for its ceiling, and the gateway charges only
+the tokens the call used. One on-chain transaction covers many calls. It is
+off by default.
+
+- ClawRouter uses `@blockrun/llm`'s `SolanaBatchPayer`, the same payer
+  `SolanaLLMClient` ships, with BlockRun's operator key pinned as the only
+  trusted operator.
+- The deposit is escrow, capped by `CLAWROUTER_SOLANA_BATCH_MAX_DEPOSIT`
+  (`$1` by default). A channel idle for 3 days is closed by BlockRun and the
+  unused escrow returns to the wallet automatically.
+- Spend limits work the same: `maxCostPerRun` and the spend policy check each
+  batch payment before it is signed, and only if you set them.
+  `maxCostPerRun` books what each call was actually charged.
+- A batch payment whose outcome is unknown is never paid again: no `exact`
+  fallback, no retry, no next model. The request fails with
+  `payment_in_doubt`.
+- Only non-streaming chat completions use batch. Images, audio, video and
+  other endpoints stay on `exact`.
+
+### Dependencies
+
+- `@x402/*` 2.28 and `@blockrun/llm` 3.23.1. The SDK's new default spend
+  controls are switched off; ClawRouter keeps enforcing its own limits, as
+  before.
+- `dist` no longer bundles the Anthropic SDK, which ClawRouter does not use
+  (0.65MB smaller).
+
+- Thanks to @SkinGem, whose #435 started Solana batch-settlement in
+  ClawRouter.
+
+## v0.12.285 — October 12, 2026
+
+### Security: patched HTTP libraries
+
+- **axios 1.20.0** (used by the Polymarket tools) fixes 12 advisories,
+  including header injection, prototype-pollution gadgets that can alter
+  outbound requests, `maxRedirects: 0` being ignored by the fetch adapter, and
+  the HTTP/2 adapter bypassing the configured DNS lookup and proxy.
+- **undici 8.11.2** (the proxy's HTTP client) fixes TLS certificate
+  validation being bypassed on dropped connections, cross-origin cache
+  poisoning, cross-user cookie disclosure, and several denial-of-service bugs.
+- Patched transitive packages: proxy-addr, fast-uri, brace-expansion,
+  ip-address.
+- The Desktop app's bundled runtime gets the same fixes, and moves from
+  ClawRouter 0.12.267 to 0.12.284.
+
+## v0.12.284 — October 11, 2026
+
+### `clawrouter reconcile` no longer reports a partial ledger as complete
+
+`clawrouter reconcile` reads the gateway ledger page by page. If a later page
+failed, the 40-page cap was reached, or the gateway returned a cursor it had
+already sent, the report was built from the pages that did arrive and still
+said everything matched, exiting 0. Charges on the unread pages were never
+compared, so a scheduled check stayed silent.
+
+The report now says when the ledger read is incomplete, above the totals, and
+names the side that is short. New exit codes: 2 when there are charges with no
+local record (even on a partial read), 1 when the read was incomplete, 0 when
+everything matched. A repeated cursor now stops the read instead of adding the
+same rows again.
+
+- Thanks to @erhnysr for the fix (#430).
+
+## v0.12.283 — October 11, 2026
+
+### Security: the strict cost cap holds under concurrency and paid failures
+
+**`maxCostPerRunMode: "strict"` can no longer be exceeded.** EmberTail reported
+two ways past it privately (ET-CLAWROUTER-20261010), with real settlements on
+a local chain and on Base Sepolia. With a $0.012 cap and $0.008 requests:
+
+- three requests sent at the same time all got through, because nothing was
+  reserved for requests still running, and settled $0.024;
+- a payment that settled but came back as a 502 was never counted, so the
+  automatic retry paid again: $0.016.
+
+Now each request reserves its estimated cost when it is admitted, so requests
+running at the same time cannot all pass on the same spent total. Every
+payment is checked against the cap before it is signed, including retries,
+fallbacks and reused pre-auths. A signed payment counts at once, even if its
+response is lost. A payment the gateway declines (402) is taken back. A
+mid-request refusal returns 429 `cost_cap_exceeded` with
+`X-ClawRouter-Cost-Cap-Exceeded: 1`, the same as an admission refusal.
+
+**Graceful mode counts what was actually signed.** The default mode now
+records each signed payment's real amount, including payments whose response
+was lost, instead of the local estimate.
+
+Thanks to EmberTail for the report and the evidence bundle.
+
+## v0.12.282 — October 5, 2026
+
+### Security: the local proxy only answers local clients
+
+**Web pages can no longer spend from your wallet.** The proxy listens on
+127.0.0.1, but a page open in your browser could still send it requests, and
+some paid routes accepted them. The proxy now refuses any request from another
+site, and any request whose `Host` is not a local name, which also blocks
+DNS-rebinding pages. OpenClaw, the CLI, SDKs and `curl` send no `Origin` and
+work as before. A page served from `localhost` is still allowed.
+
+**img2img reads only images.** A local path in an img2img request, or after
+`/img2img --image`, is read only if the file really is a PNG, JPEG or WebP.
+The extension is not trusted. Source image URLs must be public, and every
+redirect is re-checked. To use a local image server, set
+`CLAWROUTER_ALLOW_PRIVATE_FETCH=1`.
+
+**Paid channel commands need an authorized sender.** `/cr-imagegen`,
+`/videogen` and `/cr-call` spend from the wallet, and now follow OpenClaw's
+default of only accepting authorized senders. `/partners` stays open.
+
+**The Predexon endpoint tool stays inside `/pm`.** Encoded path segments are
+checked the way the URL parser resolves them.
+
+---
+
 ## v0.12.281 — October 3, 2026
 
 ### Outcome memory: models that keep failing on a kind of request are tried last
@@ -529,7 +654,7 @@ Both now forward verbatim through the existing paid-passthrough, verified live a
 
 ### Fixed — the API-key docs described a gateway that no longer exists
 
-The 404 hint and the README both said `api.blockrun.ai` "currently carries chat and text completions" and that "image, video, audio and the partner APIs are still wallet-only". Probing the live gateway on 2026-09-05 disproved it: chat, `/v1/messages`, `/v1/models`, image generation, speech, video, Surf, Exa, prediction markets and phone lookup/fraud **all work on an API key**, and so do all <!-- br:models.free -->6<!-- /br:models.free --> free models. The genuine wallet-only exceptions are the routes that bind a lease or a position to a payer address — buying/renewing/releasing phone numbers, and Polymarket trading — and those are now what the hint names.
+The 404 hint and the README both said `api.blockrun.ai` "currently carries chat and text completions" and that "image, video, audio and the partner APIs are still wallet-only". Probing the live gateway on 2026-09-05 disproved it: chat, `/v1/messages`, `/v1/models`, image generation, speech, video, Surf, Exa, prediction markets and phone lookup/fraud **all work on an API key**, and so do all <!-- br:models.free -->7<!-- /br:models.free --> free models. The genuine wallet-only exceptions are the routes that bind a lease or a position to a payer address — buying/renewing/releasing phone numbers, and Polymarket trading — and those are now what the hint names.
 
 ### Changed — Solana is the stated preference, without stranding Base wallets
 

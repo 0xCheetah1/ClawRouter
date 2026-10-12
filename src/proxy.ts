@@ -30,20 +30,41 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 // request-scoped store, and the logging code reads it after payFetch completes.
 // `amountUsd` is what an x402 payment actually signed for; `estimatedUsd` is
 // what THIS attempt is expected to cost, published for the API-key rail's
-// spend-window check, which has no 402 quote to read (#329).
-const paymentStore = new AsyncLocalStorage<{ amountUsd: number; estimatedUsd?: number }>();
+// spend-window check, which has no 402 quote to read (#329). `sessionSpend` is
+// this request's share of its session's `maxCostPerRun` budget: the signing
+// hooks check and record against it (see session-spend.ts).
+const paymentStore = new AsyncLocalStorage<{
+  amountUsd: number;
+  estimatedUsd?: number;
+  sessionSpend?: SessionSpend;
+  /** Signature mark of the Solana batch pay() in progress (see solanaBatch.begin). */
+  batchMark?: number;
+}>();
 import { finished, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { AddressInfo } from "node:net";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { mkdir, writeFile, readFile, stat as fsStat } from "node:fs/promises";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { x402Client } from "@x402/fetch";
-import { createPayFetchWithPreAuth } from "./payment-preauth.js";
+import { createPayFetchWithPreAuth, type SolanaBatchRoute } from "./payment-preauth.js";
+
+/** The Solana RPC the batch payer reads chain state from when none is configured. */
+const SOLANA_PUBLIC_RPC = "https://api.mainnet-beta.solana.com";
+
+/** What ClawRouter's signing hooks read off a payment being created. */
+type PaymentHookContext = {
+  selectedRequirements: { network: string; amount?: string; maxAmountRequired?: string };
+};
+/** The hook surface shared by our x402 client and the Solana batch payer's. */
+type PaymentHookClient = {
+  onBeforePaymentCreation(hook: (context: PaymentHookContext) => Promise<void>): unknown;
+  onAfterPaymentCreation(hook: (context: PaymentHookContext) => Promise<void>): unknown;
+};
 import { withBuilderCodeServiceCode } from "./builder-code.js";
 import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { toClientEvmSigner } from "@x402/evm";
@@ -101,7 +122,15 @@ import {
   POLICY_LISTS,
   SpendControl,
   SpendPolicyError,
+  parseQuotedAmountMicros,
 } from "./spend-control.js";
+import {
+  CostCapError,
+  SessionSpend,
+  microsToUsd,
+  parseMicros,
+  usdToMicros,
+} from "./session-spend.js";
 import { compressContext, shouldCompress, type NormalizedMessage } from "./compression/index.js";
 // Balance error classes are available for programmatic use but not used in the
 // proxy (universal free fallback means we don't throw balance errors anymore):
@@ -118,8 +147,14 @@ import {
 import { checkForUpdates } from "./updater.js";
 import { loadExcludeList } from "./exclude-models.js";
 import { demoteUnreliable, recordOutcome } from "./outcome-memory.js";
-import { PROXY_PORT } from "./config.js";
+import { PROXY_PORT, SOLANA_BATCH_ENV } from "./config.js";
+import {
+  createSolanaBatchPayer,
+  resolveSolanaBatchSettings,
+  type SolanaBatchSettings,
+} from "./solana-batch.js";
 import { SessionJournal } from "./journal.js";
+import { readLocalImageAsDataUri, ssrfSafeFetch, untrustedRequestReason } from "./local-guard.js";
 import { applyUpstreamProxy } from "./upstream-proxy.js";
 import { extractTextualToolCalls } from "./textual-tool-calls.js";
 import {
@@ -1576,6 +1611,16 @@ export type ProxyOptions = {
    */
   spendControl?: SpendControl;
   /**
+   * Solana batch-settlement for chat calls on the Solana rail: one deposit
+   * opens a payment channel with BlockRun, then each call is charged what it
+   * actually cost instead of its ceiling. `true` turns it on with the default
+   * escrow cap; an object sets `maxDeposit`. Default: off, unless
+   * CLAWROUTER_SOLANA_BATCH is set.
+   */
+  solanaBatch?: boolean | SolanaBatchSettings;
+  /** @internal Set by startProxy when Solana batch-settlement is active. */
+  _solanaBatchActive?: boolean;
+  /**
    * Upstream proxy URL for all outgoing requests.
    * Supports http://, https://, and socks5:// schemes.
    * Also readable via BLOCKRUN_UPSTREAM_PROXY environment variable.
@@ -2493,29 +2538,6 @@ async function proxyPaidApiRequest(
 }
 
 /**
- * Read a local image file and return it as a base64 data URI.
- * Supports ~/ home directory expansion.
- */
-function readImageFileAsDataUri(filePath: string): string {
-  const resolved = filePath.startsWith("~/") ? join(homedir(), filePath.slice(2)) : filePath;
-
-  if (!existsSync(resolved)) {
-    throw new Error(`Image file not found: ${resolved}`);
-  }
-
-  const ext = resolved.split(".").pop()?.toLowerCase() ?? "png";
-  const mimeMap: Record<string, string> = {
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    webp: "image/webp",
-  };
-  const mime = mimeMap[ext] ?? "image/png";
-  const data = readFileSync(resolved);
-  return `data:${mime};base64,${data.toString("base64")}`;
-}
-
-/**
  * Upload a base64 data URI to catbox.moe and return a public URL.
  * Google image models (nano-banana) return data URIs instead of hosted URLs,
  * which breaks Telegram and other clients that can't render raw base64.
@@ -2822,11 +2844,40 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   // pay", and we pay no one — the gateway bills the account server-side).
   // `account` stays undefined and every wallet-shaped field reads off it.
   const account = walletKey ? privateKeyToAccount(walletKey as `0x${string}`) : undefined;
-  const x402 = authMode === "wallet" ? new x402Client() : undefined;
-  if (x402 && account) {
+  // @x402/core 2.28 added its own spend controls, on by default: $1 per payment
+  // and default assets only. ClawRouter has its own (SpendControl, the session
+  // cap) and BlockRun prices long-context and reasoning calls above $1, so the
+  // SDK's are switched off to keep the pre-2.28 behavior exactly.
+  const x402 = authMode === "wallet" ? new x402Client().setSpendControls(false) : undefined;
+  // The strict `maxCostPerRun` cap, enforced where the money is: before every
+  // payment is created, against the quoted amount. Admission alone cannot hold
+  // the cap — a retry or fallback inside one request signs again (ET-20261010).
+  // Registered BEFORE the spend-policy hook: x402 does not run failure hooks
+  // when a before-hook throws, so refusing after SpendControl reserved would
+  // leak its reservation. A function, because the Solana batch payer's own
+  // client registers the same hook (see below).
+  const registerCostCapHook = (client: PaymentHookClient) =>
+    client.onBeforePaymentCreation(async (context) => {
+      const spend = paymentStore.getStore()?.sessionSpend;
+      if (!spend?.isStrict) return;
+      // v2 `amount` or v1 `maxAmountRequired` — the v1 SVM schemes are registered too.
+      const quote = parseQuotedAmountMicros(context.selectedRequirements);
+      if (quote === undefined) {
+        // Fail closed: an amount we cannot read cannot be shown to fit the cap.
+        throw new CostCapError("ClawRouter cost cap: unreadable payment amount in the 402 quote");
+      }
+      if (!spend.coverPayment(quote)) {
+        throw new CostCapError(
+          `ClawRouter cost cap exceeded: signing $${microsToUsd(quote).toFixed(6)} would push this session past its maxCostPerRun limit`,
+        );
+      }
+    });
+  if (x402) registerCostCapHook(x402 as unknown as PaymentHookClient);
+  const spendControl =
+    x402 && account ? (options.spendControl ?? getSharedSpendControl()) : undefined;
+  if (x402 && account && spendControl) {
     const evmPublicClient = createPublicClient({ chain: base, transport: http() });
     const evmSigner = toClientEvmSigner(account, evmPublicClient);
-    const spendControl = options.spendControl ?? getSharedSpendControl();
     registerSpendPolicyHook(x402, spendControl);
     registerExactEvmScheme(x402, { signer: evmSigner });
   }
@@ -2887,22 +2938,111 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     payload.extensions = withBuilderCodeServiceCode(payload.extensions);
   });
 
-  // Log which chain is used for each payment and capture actual payment amount
-  x402?.onAfterPaymentCreation(async (context) => {
-    const network = context.selectedRequirements.network;
-    const chain = network.startsWith("eip155")
-      ? "Base (EVM)"
-      : network.startsWith("solana")
-        ? "Solana"
-        : network;
-    // Capture actual payment amount in USD (amount is in USDC micro units, 6 decimals)
-    const amountMicros = parseInt(context.selectedRequirements.amount || "0", 10);
-    const amountUsd = amountMicros / 1_000_000;
-    // Write to request-scoped store (if available)
-    const store = paymentStore.getStore();
-    if (store) store.amountUsd = amountUsd;
-    console.log(`[ClawRouter] Payment signed on ${chain} (${network}) — $${amountUsd.toFixed(6)}`);
-  });
+  // Log which chain is used for each payment and capture actual payment amount,
+  // then record it against the session's maxCostPerRun budget. Shared with the
+  // Solana batch payer's client, like the cost-cap hook.
+  const registerSigningRecorders = (client: PaymentHookClient) => {
+    client.onAfterPaymentCreation(async (context) => {
+      const network = context.selectedRequirements.network;
+      const chain = network.startsWith("eip155")
+        ? "Base (EVM)"
+        : network.startsWith("solana")
+          ? "Solana"
+          : network;
+      // Capture actual payment amount in USD (amount is in USDC micro units, 6 decimals)
+      const amountMicros = parseInt(context.selectedRequirements.amount || "0", 10);
+      const amountUsd = amountMicros / 1_000_000;
+      // Write to request-scoped store (if available)
+      const store = paymentStore.getStore();
+      if (store) store.amountUsd = amountUsd;
+      console.log(
+        `[ClawRouter] Payment signed on ${chain} (${network}) — $${amountUsd.toFixed(6)}`,
+      );
+    });
+
+    // Signed: the payment counts against the session's maxCostPerRun budget now,
+    // whatever the response turns out to be (session-spend.ts). Registered LAST
+    // among the after-hooks: if an earlier one throws, x402 never returns the
+    // payment, and nothing that was never sent gets recorded as spend.
+    client.onAfterPaymentCreation(async (context) => {
+      const spend = paymentStore.getStore()?.sessionSpend;
+      const amount = parseQuotedAmountMicros(context.selectedRequirements);
+      if (spend && amount !== undefined) spend.recordSigned(amount);
+    });
+  };
+  if (x402) registerSigningRecorders(x402 as unknown as PaymentHookClient);
+
+  // Solana batch-settlement (opt-in): chat calls on the Solana rail are paid
+  // through @blockrun/llm's SolanaBatchPayer instead of one exact transfer
+  // each. Its client gets the same hooks as ours, so SpendControl and the
+  // strict session cap apply to batch payments exactly as to exact ones, and
+  // only when the user configured them.
+  const solanaBatchSettings =
+    x402 && paymentChain === "solana" && solanaPrivateKeyBytes && solanaAddress
+      ? resolveSolanaBatchSettings(options.solanaBatch, SOLANA_BATCH_ENV)
+      : undefined;
+  let solanaBatch: SolanaBatchRoute | undefined;
+  if (solanaBatchSettings && solanaPrivateKeyBytes && solanaAddress) {
+    const payer = await createSolanaBatchPayer({
+      seed: solanaPrivateKeyBytes,
+      address: solanaAddress,
+      rpcUrl: process["env"].CLAWROUTER_SOLANA_RPC_URL || SOLANA_PUBLIC_RPC,
+      settings: solanaBatchSettings,
+      configureClient: (client) => {
+        const hooks = client as unknown as PaymentHookClient;
+        // The payer signs again within one pay() only after the gateway proved
+        // the previous attempt was not charged (a 429). Void those signatures
+        // before the cap checks the next one, or an unpaid attempt would crowd
+        // out the payment that replaces it.
+        hooks.onBeforePaymentCreation(async () => {
+          const store = paymentStore.getStore();
+          if (store?.batchMark !== undefined) {
+            store.sessionSpend?.voidSignedSince(store.batchMark, false);
+          }
+        });
+        registerCostCapHook(hooks);
+        if (spendControl) registerSpendPolicyHook(client as unknown as x402Client, spendControl);
+        registerSigningRecorders(hooks);
+      },
+    });
+    solanaBatch = {
+      // @blockrun/llm types the challenge with its own PaymentRequired (an
+      // optional `resource`); it is the same x402 v2 object on the wire.
+      payer: payer as unknown as SolanaBatchRoute["payer"],
+      begin: () => {
+        const store = paymentStore.getStore();
+        const mark = store?.sessionSpend?.signatureMark();
+        if (store) store.batchMark = mark;
+        return mark;
+      },
+      settle: (mark, outcome) => {
+        const store = paymentStore.getStore();
+        if (store) store.batchMark = undefined;
+        const spend = store?.sessionSpend;
+        if (outcome.kind === "paid") {
+          if (store && outcome.chargedMicros !== undefined) {
+            store.amountUsd = microsToUsd(outcome.chargedMicros);
+          }
+          if (spend && mark !== undefined && spend.signatureMark() > mark) {
+            spend.voidSignedSince(mark, true);
+            // No receipt, no proof of the charge: the signed ceiling stays.
+            if (outcome.chargedMicros !== undefined) spend.settleLastSigned(outcome.chargedMicros);
+          }
+        } else if (outcome.kind === "not_charged") {
+          if (store) store.amountUsd = 0;
+          if (spend && mark !== undefined) spend.voidSignedSince(mark, false);
+        } else if (spend && mark !== undefined) {
+          spend.voidSignedSince(mark, true);
+        }
+      },
+    };
+    console.log(
+      `[ClawRouter] Solana batch-settlement on (BlockRun operator, max deposit ${solanaBatchSettings.maxDeposit ?? "$1"})`,
+    );
+  }
+  const requestOptions: ProxyOptions = solanaBatch
+    ? { ...options, _solanaBatchActive: true }
+    : options;
 
   // The upstream fetch. Same signature on both rails, which is what lets every
   // handler below stay unaware of how the call is being paid for: one settles a
@@ -2935,6 +3075,10 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           // server-side against account credit, so there is no per-request
           // settlement for an observer to report.
           onPayment: options.onPayment,
+          // A 402 answer to a signed payment means the gateway declined it and
+          // nothing settled — take it back off the session's budget.
+          onPaymentDeclined: () => paymentStore.getStore()?.sessionSpend?.voidLastSigned(),
+          solanaBatch,
         });
 
   // Create balance monitor for pre-request checks (lazy import to avoid loading @solana/kit on Base chain)
@@ -3026,6 +3170,17 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           console.error(`[ClawRouter] Request finished with error: ${err.message}`);
         }
       });
+
+      // Only local clients. Loopback binding keeps the LAN out but not a web
+      // page in the user's browser (a text/plain POST needs no preflight) or a
+      // DNS-rebinding page. Native clients send no Origin and pass.
+      const untrusted = untrustedRequestReason(req);
+      if (untrusted) {
+        console.warn(`[ClawRouter] Refused request to ${req.url}: ${untrusted}`);
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "forbidden", details: untrusted }));
+        return;
+      }
 
       // Health check with optional balance info
       if (req.url === "/health" || req.url?.startsWith("/health?")) {
@@ -3632,8 +3787,13 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
             if (val.startsWith("data:")) {
               // Already a data URI — pass through
             } else if (val.startsWith("https://") || val.startsWith("http://")) {
-              // Download URL → data URI
-              const imgResp = await fetch(val, { signal: clientAbort.signal });
+              // Download URL → data URI. Public hosts only, every redirect
+              // re-checked: this URL comes from the request body.
+              // CLAWROUTER_ALLOW_PRIVATE_FETCH=1 opts in to a local image server.
+              const imgResp = await ssrfSafeFetch(val, {
+                signal: clientAbort.signal,
+                allowPrivate: process.env.CLAWROUTER_ALLOW_PRIVATE_FETCH === "1",
+              });
               if (!imgResp.ok)
                 throw new Error(`Failed to download ${field} from ${val}: HTTP ${imgResp.status}`);
               const contentType = imgResp.headers.get("content-type") ?? "image/png";
@@ -3644,7 +3804,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
               );
             } else {
               // Local file path → data URI
-              parsed[field] = readImageFileAsDataUri(val);
+              parsed[field] = readLocalImageAsDataUri(val);
               console.log(`[ClawRouter] img2img: read ${field} file → data URI`);
             }
           }
@@ -4221,7 +4381,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           res,
           apiBase,
           payFetch,
-          options,
+          requestOptions,
           routerOpts,
           deduplicator,
           balanceMonitor,
@@ -4501,6 +4661,11 @@ type ModelRequestResult = {
    * ClawRouter-Hermes#38). The id is the only handle the two sides share.
    */
   upstreamRequestId?: string;
+  /**
+   * A payment for this attempt was sent and its outcome is unknown. Nothing
+   * may pay this request again: no retry, no fallback model, no timeout path.
+   */
+  paymentInDoubt?: boolean;
 };
 
 /**
@@ -4656,6 +4821,38 @@ async function tryModelRequest(
     return { success: true, response };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    if (
+      err instanceof Error &&
+      (err.name === "BatchPaymentUnresolvedError" || err.name === "PaymentInDoubtError")
+    ) {
+      // A Solana batch payment was sent and its outcome is unknown. Paying the
+      // same request again (a retry, the next model in the chain) could charge
+      // twice, so the chain stops here and the caller is told.
+      return {
+        success: false,
+        errorBody: JSON.stringify({
+          error: { message: errorMsg, type: "payment_in_doubt", code: "payment_in_doubt" },
+        }),
+        errorStatus: 502,
+        isProviderError: false,
+        errorCategory: "payment_error",
+        paymentInDoubt: true,
+      };
+    }
+    if (err instanceof CostCapError) {
+      // The strict session cap refused to sign this attempt (a retry or
+      // fallback after earlier spend). Same finality as a policy refusal, but
+      // reported the way an over-cap admission is: 429 cost_cap_exceeded.
+      return {
+        success: false,
+        errorBody: JSON.stringify({
+          error: { message: errorMsg, type: "cost_cap_exceeded", code: "cost_cap_exceeded" },
+        }),
+        errorStatus: 429,
+        isProviderError: false,
+        errorCategory: "payment_error",
+      };
+    }
     if (err instanceof SpendPolicyError) {
       // A local refusal, not an upstream fault. Retrying it walks every paid
       // model in the chain (a wasted 402 round trip each) and then lands on a
@@ -5424,8 +5621,8 @@ async function proxyRequest(
         let imageDataUri: string;
         let maskDataUri: string | undefined;
         try {
-          imageDataUri = readImageFileAsDataUri(imagePath);
-          if (maskPath) maskDataUri = readImageFileAsDataUri(maskPath);
+          imageDataUri = readLocalImageAsDataUri(imagePath);
+          if (maskPath) maskDataUri = readLocalImageAsDataUri(maskPath);
         } catch (fileErr) {
           const fileErrMsg = fileErr instanceof Error ? fileErr.message : String(fileErr);
           sendImg2ImgText(`Failed to read image file: ${fileErrMsg}`);
@@ -6043,7 +6240,13 @@ async function proxyRequest(
   // Use `let` so the balance-fallback path can update this when modelId is switched to a free model.
   let isFreeModel = catalog.freeIds.has(modelId ?? "");
 
-  if (modelId && !options.skipBalanceCheck && !isFreeModel) {
+  // With Solana batch-settlement on, a chat call is paid from the channel's
+  // escrow, which the wallet balance does not show: right after a deposit the
+  // liquid balance can be low while the channel has plenty. Leave the decision
+  // to the payment itself (no escrow → exact → a payment failure takes the
+  // free-model fallback below) rather than downgrading on liquid USDC alone.
+  const paidFromChannel = options._solanaBatchActive === true && isChatCompletion;
+  if (modelId && !options.skipBalanceCheck && !isFreeModel && !paidFromChannel) {
     const estimated = estimate(modelId, body.length, maxTokens);
     const preflightEstimated = estimatePreflight(modelId, body.length, maxTokens);
     if (estimated) {
@@ -6129,18 +6332,22 @@ async function proxyRequest(
   }
 
   // --- Cost cap check: strict mode hard-stop ---
-  // In 'strict' mode, reject if the projected session spend (accumulated + this request's
-  // estimate) would exceed the cap. Checking projected cost (not just historical) prevents
-  // a single large request from overshooting the cap before it's recorded.
+  // In 'strict' mode, reject if the projected session spend would exceed the cap:
+  // what the session has spent, plus what its other in-flight requests hold,
+  // plus this request's estimate. Admission HOLDS the estimate in the same
+  // synchronous step, so concurrent requests cannot all pass on the same
+  // spent total, and the signing hooks then check and record every payment
+  // against it (session-spend.ts). Checking projected cost (not just historical)
+  // prevents a single large request from overshooting the cap before it's recorded.
   // In 'graceful' mode (default), the cap is enforced via model downgrade below.
   // Must happen before streaming headers are sent.
+  let sessionSpend: SessionSpend | undefined;
   if (
     options.maxCostPerRunUsd &&
     effectiveSessionId &&
     !isFreeModel &&
     (options.maxCostPerRunMode ?? "graceful") === "strict"
   ) {
-    const runCostUsd = sessionStore.getSessionCostUsd(effectiveSessionId);
     // Include this request's estimated cost so even the first request is blocked
     // if it would push the session over the cap.
     const thisReqEstStr =
@@ -6149,11 +6356,20 @@ async function proxyRequest(
         : modelId
           ? estimate(modelId, body.length, maxTokens)
           : undefined;
-    const thisReqEstUsd = thisReqEstStr ? Number(thisReqEstStr) / 1_000_000 : 0;
-    const projectedCostUsd = runCostUsd + thisReqEstUsd;
-    if (projectedCostUsd > options.maxCostPerRunUsd) {
+    const admission = SessionSpend.admit(
+      sessionStore,
+      effectiveSessionId,
+      usdToMicros(options.maxCostPerRunUsd),
+      parseMicros(thisReqEstStr) ?? 0n,
+    );
+    if (!admission.admitted) {
+      const spentUsd = microsToUsd(admission.spentMicros);
+      const heldUsd = microsToUsd(admission.heldMicros);
+      const estUsd = microsToUsd(admission.estimateMicros);
+      const projectedCostUsd = spentUsd + heldUsd + estUsd;
+      const breakdown = `spent $${spentUsd.toFixed(4)}${heldUsd > 0 ? ` + in flight $${heldUsd.toFixed(4)}` : ""} + est $${estUsd.toFixed(4)}`;
       console.log(
-        `[ClawRouter] Cost cap exceeded for session ${effectiveSessionId.slice(0, 8)}...: projected $${projectedCostUsd.toFixed(4)} (spent $${runCostUsd.toFixed(4)} + est $${thisReqEstUsd.toFixed(4)}) > $${options.maxCostPerRunUsd} limit`,
+        `[ClawRouter] Cost cap exceeded for session ${effectiveSessionId.slice(0, 8)}...: projected $${projectedCostUsd.toFixed(4)} (${breakdown}) > $${options.maxCostPerRunUsd} limit`,
       );
       res.writeHead(429, {
         "Content-Type": "application/json",
@@ -6162,7 +6378,7 @@ async function proxyRequest(
       res.end(
         JSON.stringify({
           error: {
-            message: `ClawRouter cost cap exceeded: projected spend $${projectedCostUsd.toFixed(4)} (spent $${runCostUsd.toFixed(4)} + est $${thisReqEstUsd.toFixed(4)}) would exceed limit $${options.maxCostPerRunUsd}`,
+            message: `ClawRouter cost cap exceeded: projected spend $${projectedCostUsd.toFixed(4)} (${breakdown}) would exceed limit $${options.maxCostPerRunUsd}`,
             type: "cost_cap_exceeded",
             code: "cost_cap_exceeded",
           },
@@ -6171,7 +6387,15 @@ async function proxyRequest(
       deduplicator.removeInflight(dedupKey);
       return;
     }
+    sessionSpend = admission.spend;
+  } else if (options.maxCostPerRunUsd && effectiveSessionId) {
+    // Graceful mode (and a free model in strict mode) refuses nothing, but a
+    // signed payment is still spend — including one whose response was lost —
+    // so it is recorded the same way.
+    sessionSpend = SessionSpend.track(sessionStore, effectiveSessionId);
   }
+  const requestStore = paymentStore.getStore();
+  if (requestStore) requestStore.sessionSpend = sessionSpend;
 
   // --- Budget pre-check: block when remaining budget can't cover the request ---
   // Must happen BEFORE streaming headers (429 can't be sent after SSE headers are flushed).
@@ -6729,6 +6953,26 @@ async function proxyRequest(
       );
       clearTimeout(modelTimeoutId);
 
+      // A payment for this attempt may have been charged: stop here. Checked
+      // before the timeout branch, which would otherwise move to the next model
+      // and sign a new payment for the same request, and before the global
+      // deadline, which would report a generic timeout and drop the dedup
+      // entry so an identical retry could pay again. A client that left still
+      // gets the disconnect cleanup below.
+      if (result.paymentInDoubt && !clientDisconnected()) {
+        lastError = {
+          body: result.errorBody || "payment outcome unknown",
+          status: result.errorStatus || 502,
+          requestId: result.upstreamRequestId,
+        };
+        failedAttempts.push({
+          model: tryModel,
+          reason: "payment_in_doubt",
+          status: lastError.status,
+        });
+        break;
+      }
+
       // If the global deadline fired during this attempt (or the client left), bail out entirely
       if (globalController.signal.aborted) {
         throw abortError();
@@ -6776,12 +7020,12 @@ async function proxyRequest(
         actualModelUsed = tryModel;
         recordOutcome(tryModel, requestKind, true);
         console.log(`[ClawRouter] Success with model: ${tryModel}`);
-        // Accumulate estimated cost to session for maxCostPerRun tracking
-        if (options.maxCostPerRunUsd && effectiveSessionId && !catalog.freeIds.has(tryModel)) {
-          const costEst = estimate(tryModel, body.length, maxTokens);
-          if (costEst) {
-            sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-          }
+        // Record this success against the session's maxCostPerRun budget. A
+        // signed payment was already recorded at its real amount when it was
+        // created; only an unsigned success (API-key rail) records the estimate.
+        if (sessionSpend && !catalog.freeIds.has(tryModel)) {
+          const costEst = parseMicros(estimate(tryModel, body.length, maxTokens));
+          if (costEst !== undefined) sessionSpend.recordSuccess(costEst);
         }
         break;
       }
@@ -6877,15 +7121,26 @@ async function proxyRequest(
             retryResult,
             !retryResult.success && retryController.signal.aborted,
           );
+          if (retryResult.paymentInDoubt) {
+            lastError = {
+              body: retryResult.errorBody || "payment outcome unknown",
+              status: retryResult.errorStatus || 502,
+              requestId: retryResult.upstreamRequestId,
+            };
+            failedAttempts.push({
+              model: tryModel,
+              reason: "payment_in_doubt (retry)",
+              status: lastError.status,
+            });
+            break;
+          }
           if (retryResult.success && retryResult.response) {
             upstream = retryResult.response;
             actualModelUsed = tryModel;
             console.log(`[ClawRouter] Explicit-pin retry succeeded for: ${tryModel}`);
-            if (options.maxCostPerRunUsd && effectiveSessionId && !catalog.freeIds.has(tryModel)) {
-              const costEst = estimate(tryModel, body.length, maxTokens);
-              if (costEst) {
-                sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-              }
+            if (sessionSpend && !catalog.freeIds.has(tryModel)) {
+              const costEst = parseMicros(estimate(tryModel, body.length, maxTokens));
+              if (costEst !== undefined) sessionSpend.recordSuccess(costEst);
             }
             break;
           }
@@ -6961,19 +7216,26 @@ async function proxyRequest(
                 retryResult,
                 !retryResult.success && retryController.signal.aborted,
               );
+              if (retryResult.paymentInDoubt) {
+                lastError = {
+                  body: retryResult.errorBody || "payment outcome unknown",
+                  status: retryResult.errorStatus || 502,
+                  requestId: retryResult.upstreamRequestId,
+                };
+                failedAttempts.push({
+                  model: tryModel,
+                  reason: "payment_in_doubt (retry)",
+                  status: lastError.status,
+                });
+                break;
+              }
               if (retryResult.success && retryResult.response) {
                 upstream = retryResult.response;
                 actualModelUsed = tryModel;
                 console.log(`[ClawRouter] Rate-limit retry succeeded for: ${tryModel}`);
-                if (
-                  options.maxCostPerRunUsd &&
-                  effectiveSessionId &&
-                  !catalog.freeIds.has(tryModel)
-                ) {
-                  const costEst = estimate(tryModel, body.length, maxTokens);
-                  if (costEst) {
-                    sessionStore.addSessionCost(effectiveSessionId, BigInt(costEst));
-                  }
+                if (sessionSpend && !catalog.freeIds.has(tryModel)) {
+                  const costEst = parseMicros(estimate(tryModel, body.length, maxTokens));
+                  if (costEst !== undefined) sessionSpend.recordSuccess(costEst);
                 }
                 break;
               }
@@ -7104,6 +7366,9 @@ async function proxyRequest(
       );
       const rawErrBody = lastError?.body || structuredMessage;
       const errStatus = lastError?.status || 502;
+      // The strict cap refused to sign mid-request (a retry or fallback after
+      // earlier spend): flag it the way an admission refusal is flagged.
+      const costCapRefusal = errStatus === 429 && rawErrBody.includes('"cost_cap_exceeded"');
 
       // Transform payment errors into user-friendly messages
       const transformedErr = transformPaymentError(rawErrBody);
@@ -7156,6 +7421,7 @@ async function proxyRequest(
           "x-context-used-kb": String(originalContextSizeKB),
           "x-context-limit-kb": String(CONTEXT_LIMIT_KB),
           ...(lastError?.requestId ? { "x-blockrun-request-id": lastError.requestId } : {}),
+          ...(costCapRefusal ? { "X-ClawRouter-Cost-Cap-Exceeded": "1" } : {}),
         });
         res.end(transformedErr);
 
@@ -7780,6 +8046,10 @@ async function proxyRequest(
     }
 
     throw err;
+  } finally {
+    // Return whatever budget this request still holds. Spend it signed stays
+    // recorded; only the unspent part of the admission hold is released.
+    sessionSpend?.release();
   }
 
   // --- Usage logging (fire-and-forget) ---

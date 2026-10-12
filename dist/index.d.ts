@@ -359,119 +359,8 @@ type OpenClawPluginDefinition = {
     };
 };
 
-/**
- * BlockRun Model Definitions for OpenClaw
- *
- * Maps BlockRun's model catalog to OpenClaw's ModelDefinitionConfig format.
- * All models use the "openai-completions" API since BlockRun is OpenAI-compatible.
- *
- * Pricing is in USD per 1M tokens. Operators pay these rates via x402;
- * they set their own markup when reselling to end users (Phase 2).
- */
-
-/**
- * Model aliases for convenient shorthand access.
- * Users can type `/model claude` instead of `/model blockrun/anthropic/claude-sonnet-4-6`.
- */
-declare const MODEL_ALIASES: Record<string, string>;
-/**
- * Resolve a model alias to its full model ID.
- * Also strips "blockrun/" prefix for direct model paths.
- * Examples:
- *   - "claude" -> "anthropic/claude-sonnet-4-6" (alias)
- *   - "blockrun/claude" -> "anthropic/claude-sonnet-4-6" (alias with prefix)
- *   - "blockrun/anthropic/claude-sonnet-4-6" -> "anthropic/claude-sonnet-4-6" (prefix stripped)
- *   - "openai/gpt-4o" -> "openai/gpt-4o" (unchanged)
- */
-declare function resolveModelAlias(model: string): string;
-type BlockRunModel = {
-    id: string;
-    name: string;
-    /** Model version (e.g., "4.6", "3.1", "5.2") for tracking updates */
-    version?: string;
-    inputPrice: number;
-    outputPrice: number;
-    contextWindow: number;
-    maxOutput: number;
-    reasoning?: boolean;
-    vision?: boolean;
-    /** Models optimized for agentic workflows (multi-step autonomous tasks) */
-    agentic?: boolean;
-    /**
-     * Model supports OpenAI-compatible structured function/tool calling.
-     * Models without this flag output tool invocations as plain text JSON,
-     * which leaks raw {"command":"..."} into visible chat messages.
-     * Default: false (must opt-in to prevent silent regressions on new models).
-     */
-    toolCalling?: boolean;
-    /** Model is deprecated — will be routed to fallbackModel if set */
-    deprecated?: boolean;
-    /** Model ID to route to when this model is deprecated */
-    fallbackModel?: string;
-    /** Time-limited promotional pricing — auto-expires after endDate */
-    promo?: {
-        /** Flat price per request in USD (replaces token-based pricing) */
-        flatPrice: number;
-        /** ISO date, promo starts (inclusive). e.g. "2026-04-01" */
-        startDate: string;
-        /** ISO date, promo ends (exclusive). e.g. "2026-04-15" */
-        endDate: string;
-    };
-    /**
-     * Permanent flat per-request price in USD (backend billingMode: "flat").
-     * Unlike promo, this never expires. Takes precedence over promo.
-     */
-    flatPrice?: number;
-};
-declare const BLOCKRUN_MODELS: BlockRunModel[];
-/**
- * All BlockRun models in OpenClaw format (including aliases).
- * Used for proxy-side resolution (alias → target ID), tool routing, etc.
- *
- * Catalog entries shadowed by an identically-keyed alias are excluded:
- * resolveModelAlias checks MODEL_ALIASES first, so those catalog entries are
- * unreachable and their metadata (name/pricing) would misadvertise what
- * callers actually get. The alias-derived entry carries the redirect
- * target's real metadata instead.
- */
-declare const OPENCLAW_MODELS: ModelDefinitionConfig[];
-declare const VISIBLE_OPENCLAW_MODELS: ModelDefinitionConfig[];
-/**
- * Build a ModelProviderConfig for BlockRun.
- *
- * Returns only the TOP_MODELS-listed subset so the OpenClaw picker stays
- * focused. Hidden models are still resolvable through the proxy.
- *
- * @param baseUrl - The proxy's local base URL (e.g., "http://127.0.0.1:12345")
- */
-declare function buildProviderModels(baseUrl: string): ModelProviderConfig;
-/**
- * Check if a model is optimized for agentic workflows.
- * Agentic models continue autonomously with multi-step tasks
- * instead of stopping and waiting for user input.
- */
-declare function isAgenticModel(modelId: string): boolean;
-/**
- * Get all agentic-capable models.
- */
-declare function getAgenticModels(): string[];
-/**
- * Get context window size for a model.
- * Returns undefined if model not found.
- */
-declare function getModelContextWindow(modelId: string): number | undefined;
-
 /** OpenClaw's bundled router owns `clawrouter`; BlockRun must never claim it. */
 declare const BLOCKRUN_PLUGIN_ID = "blockrun-clawrouter";
-
-/** Model metadata only. This client has no wallet or payment-signing capability. */
-
-type ModelCatalogView = {
-    models: BlockRunModel[];
-    openclaw: ModelDefinitionConfig[];
-    visible: ModelDefinitionConfig[];
-    freeIds: ReadonlySet<string>;
-};
 
 /**
  * Response Cache for LLM Completions
@@ -1077,6 +966,7 @@ declare const DEFAULT_SESSION_CONFIG: SessionConfig;
  */
 declare class SessionStore {
     private sessions;
+    private sessionHolds;
     private config;
     private cleanupInterval;
     constructor(config?: Partial<SessionConfig>);
@@ -1148,6 +1038,19 @@ declare class SessionStore {
      */
     getSessionCostUsd(sessionId: string): number;
     /**
+     * Get the total accumulated cost for a session in USDC micros.
+     */
+    getSessionCostMicros(sessionId: string): bigint;
+    /**
+     * Budget held by a session's in-flight requests (USDC micros) — admitted
+     * against the strict cap but not yet spent. See session-spend.ts.
+     */
+    getSessionHoldMicros(sessionId: string): bigint;
+    /**
+     * Grow (positive) or release (negative) a session's in-flight hold.
+     */
+    adjustSessionHold(sessionId: string, deltaMicros: bigint): void;
+    /**
      * Stop the cleanup interval.
      */
     close(): void;
@@ -1162,6 +1065,66 @@ declare function getSessionId(headers: Record<string, string | string[] | undefi
  * Normalizes whitespace to avoid false negatives from minor formatting diffs.
  */
 declare function hashRequestContent(lastUserContent: string, toolCallNames?: string[]): string;
+
+/**
+ * Solana batch-settlement, paid by @blockrun/llm's SolanaBatchPayer.
+ *
+ * `exact` signs one SPL transfer per call at the call's ceiling (the quote for
+ * `max_tokens`). `batch-settlement` opens a deposit-backed channel once; each
+ * call then carries a signed authorization for its ceiling, and the gateway
+ * charges what the call actually cost. ClawRouter does not implement the
+ * protocol: it uses the same payer `SolanaLLMClient` ships, so both clients
+ * share one hardened path (in-doubt payments are never replaced, the channel
+ * file is locked across processes, 429s cool the wallet down, a refused
+ * deposit parks the wallet on exact).
+ *
+ * The channel's voucher signer is BlockRun's operator key, pinned here as the
+ * only trusted operator. The deposit is escrow under that key, bounded by
+ * `maxDeposit`; spend is the per-call charge. ClawRouter's own spend rules
+ * (SpendControl, the strict session cap) see each batch payment at its
+ * per-call ceiling through `configureClient`, exactly as they see `exact`
+ * payments, and only when the user configured them.
+ */
+
+interface SolanaBatchSettings {
+    /** Escrow cap per channel, e.g. "$5". Unset: @x402/svm's default ("$1"). */
+    maxDeposit?: string | number;
+    /**
+     * Operator keys trusted to sign vouchers. Default: BlockRun's
+     * (`BLOCKRUN_SOL_OPERATOR`). Only for a key rotation, when both keys are
+     * valid for a while. Never trust the operator a 402 names.
+     */
+    operators?: string[];
+    /**
+     * Where open-channel state is kept: a file path, or `false` for memory only.
+     * Default: @blockrun/llm's `~/.blockrun/solana-batch/<address>.json`, locked
+     * to one process at a time.
+     */
+    channelStore?: string | false;
+    /** @internal Replay budget for a payment in doubt, in ms (tests shorten it). */
+    inDoubtMaxWaitMs?: number;
+}
+
+/**
+ * Local x402 Proxy Server
+ *
+ * Sits between OpenClaw's pi-ai (which makes standard OpenAI-format requests)
+ * and BlockRun's API (which requires x402 micropayments).
+ *
+ * Flow:
+ *   pi-ai → http://localhost:{port}/v1/chat/completions
+ *        → proxy forwards to https://blockrun.ai/api/v1/chat/completions
+ *        → gets 402 → @x402/fetch signs payment → retries
+ *        → streams response back to pi-ai
+ *
+ * Optimizations (v0.3.0):
+ *   - SSE heartbeat: for streaming requests, sends headers + heartbeat immediately
+ *     before the x402 flow, preventing OpenClaw's 10-15s timeout from firing.
+ *   - Response dedup: hashes request bodies and caches responses for 30s,
+ *     preventing double-charging when OpenClaw retries after timeout.
+ *   - Smart routing: when model is "blockrun/auto", classify query and pick cheapest model.
+ *   - Usage logging: log every request as JSON line to ~/.openclaw/blockrun/logs/
+ */
 
 /** Union type for chain- and auth-agnostic balance monitoring */
 type AnyBalanceMonitor = BalanceMonitor | SolanaBalanceMonitor | ApiKeyBalanceMonitor;
@@ -1277,7 +1240,6 @@ type ProxyOptions = {
      * Loaded from ~/.openclaw/blockrun/exclude-models.json
      */
     excludeModels?: Set<string>;
-    onCatalogUpdated?: (models: ModelCatalogView["visible"]) => void;
     onReady?: (port: number) => void;
     onError?: (error: Error) => void;
     onPayment?: (info: {
@@ -1305,6 +1267,16 @@ type ProxyOptions = {
      */
     spendControl?: SpendControl;
     /**
+     * Solana batch-settlement for chat calls on the Solana rail: one deposit
+     * opens a payment channel with BlockRun, then each call is charged what it
+     * actually cost instead of its ceiling. `true` turns it on with the default
+     * escrow cap; an object sets `maxDeposit`. Default: off, unless
+     * CLAWROUTER_SOLANA_BATCH is set.
+     */
+    solanaBatch?: boolean | SolanaBatchSettings;
+    /** @internal Set by startProxy when Solana batch-settlement is active. */
+    _solanaBatchActive?: boolean;
+    /**
      * Upstream proxy URL for all outgoing requests.
      * Supports http://, https://, and socks5:// schemes.
      * Also readable via BLOCKRUN_UPSTREAM_PROXY environment variable.
@@ -1313,8 +1285,6 @@ type ProxyOptions = {
     upstreamProxy?: string;
 };
 type ProxyHandle = {
-    /** Current proxy-owned picker view; credentials are never exposed here. */
-    getCatalogModels?: () => ModelCatalogView["visible"];
     port: number;
     baseUrl: string;
     /** The x402 signer's address, or "" in API-key mode (there is no wallet). */
@@ -1402,6 +1372,108 @@ declare function resolvePaymentChain(): Promise<"base" | "solana">;
  * BlockRun provider plugin definition.
  */
 declare const blockrunProvider: ProviderPlugin;
+
+/**
+ * BlockRun Model Definitions for OpenClaw
+ *
+ * Maps BlockRun's model catalog to OpenClaw's ModelDefinitionConfig format.
+ * All models use the "openai-completions" API since BlockRun is OpenAI-compatible.
+ *
+ * Pricing is in USD per 1M tokens. Operators pay these rates via x402;
+ * they set their own markup when reselling to end users (Phase 2).
+ */
+
+/**
+ * Model aliases for convenient shorthand access.
+ * Users can type `/model claude` instead of `/model blockrun/anthropic/claude-sonnet-4-6`.
+ */
+declare const MODEL_ALIASES: Record<string, string>;
+/**
+ * Resolve a model alias to its full model ID.
+ * Also strips "blockrun/" prefix for direct model paths.
+ * Examples:
+ *   - "claude" -> "anthropic/claude-sonnet-4-6" (alias)
+ *   - "blockrun/claude" -> "anthropic/claude-sonnet-4-6" (alias with prefix)
+ *   - "blockrun/anthropic/claude-sonnet-4-6" -> "anthropic/claude-sonnet-4-6" (prefix stripped)
+ *   - "openai/gpt-4o" -> "openai/gpt-4o" (unchanged)
+ */
+declare function resolveModelAlias(model: string): string;
+type BlockRunModel = {
+    id: string;
+    name: string;
+    /** Model version (e.g., "4.6", "3.1", "5.2") for tracking updates */
+    version?: string;
+    inputPrice: number;
+    outputPrice: number;
+    contextWindow: number;
+    maxOutput: number;
+    reasoning?: boolean;
+    vision?: boolean;
+    /** Models optimized for agentic workflows (multi-step autonomous tasks) */
+    agentic?: boolean;
+    /**
+     * Model supports OpenAI-compatible structured function/tool calling.
+     * Models without this flag output tool invocations as plain text JSON,
+     * which leaks raw {"command":"..."} into visible chat messages.
+     * Default: false (must opt-in to prevent silent regressions on new models).
+     */
+    toolCalling?: boolean;
+    /** Model is deprecated — will be routed to fallbackModel if set */
+    deprecated?: boolean;
+    /** Model ID to route to when this model is deprecated */
+    fallbackModel?: string;
+    /** Time-limited promotional pricing — auto-expires after endDate */
+    promo?: {
+        /** Flat price per request in USD (replaces token-based pricing) */
+        flatPrice: number;
+        /** ISO date, promo starts (inclusive). e.g. "2026-04-01" */
+        startDate: string;
+        /** ISO date, promo ends (exclusive). e.g. "2026-04-15" */
+        endDate: string;
+    };
+    /**
+     * Permanent flat per-request price in USD (backend billingMode: "flat").
+     * Unlike promo, this never expires. Takes precedence over promo.
+     */
+    flatPrice?: number;
+};
+declare const BLOCKRUN_MODELS: BlockRunModel[];
+/**
+ * All BlockRun models in OpenClaw format (including aliases).
+ * Used for proxy-side resolution (alias → target ID), tool routing, etc.
+ *
+ * Catalog entries shadowed by an identically-keyed alias are excluded:
+ * resolveModelAlias checks MODEL_ALIASES first, so those catalog entries are
+ * unreachable and their metadata (name/pricing) would misadvertise what
+ * callers actually get. The alias-derived entry carries the redirect
+ * target's real metadata instead.
+ */
+declare const OPENCLAW_MODELS: ModelDefinitionConfig[];
+declare const VISIBLE_OPENCLAW_MODELS: ModelDefinitionConfig[];
+/**
+ * Build a ModelProviderConfig for BlockRun.
+ *
+ * Returns only the TOP_MODELS-listed subset so the OpenClaw picker stays
+ * focused. Hidden models are still resolvable through the proxy.
+ *
+ * @param baseUrl - The proxy's local base URL (e.g., "http://127.0.0.1:12345")
+ */
+declare function buildProviderModels(baseUrl: string): ModelProviderConfig;
+/**
+ * Check if a model is optimized for agentic workflows.
+ * Agentic models continue autonomously with multi-step tasks
+ * instead of stopping and waiting for user input.
+ */
+declare function isAgenticModel(modelId: string): boolean;
+/**
+ * Get all agentic-capable models.
+ */
+declare function getAgenticModels(): string[];
+/**
+ * Get context window size for a model.
+ * Returns undefined if model not found.
+ */
+declare function getModelContextWindow(modelId: string): number | undefined;
 
 /**
  * Usage Logger
@@ -1796,7 +1868,6 @@ declare function injectModelsConfig(logger: {
     info: (msg: string) => void;
 }, options?: {
     forceWrite?: boolean;
-    catalogModels?: typeof VISIBLE_OPENCLAW_MODELS;
 }): void;
 /**
  * Repair the per-agent model cache OpenClaw keeps at
@@ -1823,7 +1894,6 @@ declare function syncAgentModelCache(logger: {
     info: (msg: string) => void;
 }, options?: {
     forceWrite?: boolean;
-    catalogModels?: typeof VISIBLE_OPENCLAW_MODELS;
 }): void;
 /**
  * Inject dummy auth profile for BlockRun into agent auth stores.

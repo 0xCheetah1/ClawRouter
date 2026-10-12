@@ -516,7 +516,8 @@ export function createDoctorX402Client(opts: {
   const account = privateKeyToAccount(opts.walletKey as `0x${string}`);
   const publicClient = createPublicClient({ chain: base, transport: http() });
   const evmSigner = toClientEvmSigner(account, publicClient);
-  const x402 = new x402Client();
+  // Same as the proxy: ClawRouter enforces its own limits, not the SDK's $1 default.
+  const x402 = new x402Client().setSpendControls(false);
   registerSpendPolicyHook(x402, opts.spendControl ?? getSharedSpendControl());
   registerExactEvmScheme(x402, { signer: evmSigner });
   return x402;
