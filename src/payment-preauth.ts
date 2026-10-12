@@ -70,7 +70,25 @@ export interface BatchPayerLike {
 
 /** How a batch `pay()` ended, for the caller's accounting. */
 export type BatchOutcome =
-  { kind: "paid"; chargedMicros: bigint } | { kind: "not_charged" } | { kind: "in_doubt" };
+  /** `chargedMicros` is undefined when no receipt states the charge: keep the ceiling. */
+  | { kind: "paid"; chargedMicros: bigint | undefined }
+  | { kind: "not_charged" }
+  | { kind: "in_doubt" };
+
+/**
+ * A batch payment was sent and then the call failed in a way that proves
+ * nothing (an abort, a transport error). It may have been charged, so the
+ * request must not be paid again: no exact, no retry, no next model.
+ */
+export class PaymentInDoubtError extends Error {
+  constructor(cause: unknown) {
+    super(
+      `batch-settlement payment sent, outcome unknown: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { cause },
+    );
+    this.name = "PaymentInDoubtError";
+  }
+}
 
 /**
  * Solana batch-settlement for chat completions. `begin` is called before the
@@ -306,7 +324,20 @@ export function createPayFetchWithPreAuth(
         baseFetch,
         httpClient,
       );
-      if (outcome.kind === "done") return outcome.response;
+      if (outcome.kind === "done") {
+        if (outcome.charged && options?.onPayment) {
+          try {
+            options.onPayment({ model: requestModel, ...outcome.charged });
+          } catch (error) {
+            // Same rule as exact: the observer runs after settlement and must
+            // not turn a paid response into a retryable failure.
+            console.error(
+              `[ClawRouter] onPayment callback failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
+        return outcome.response;
+      }
       // Proven not charged, or batch unavailable: pay exact, against the
       // freshest challenge the batch attempt saw.
       paymentRequired = outcome.paymentRequired;
@@ -339,11 +370,13 @@ async function payInBatch(
   fetchPaid: FetchFn,
   httpClient: x402HTTPClient,
 ): Promise<
-  { kind: "done"; response: Response } | { kind: "exact"; paymentRequired: PaymentRequired }
+  | { kind: "done"; response: Response; charged?: { amount: string; network: string } }
+  | { kind: "exact"; paymentRequired: PaymentRequired }
 > {
   // A fresh challenge that answered neither 402 nor 2xx: handed back as is.
   let unpaidAnswer: Response | undefined;
   const mark = batch.begin();
+  let sent = false;
   let attempt: Awaited<ReturnType<BatchPayerLike["pay"]>>;
   try {
     attempt = await batch.payer.pay(
@@ -351,6 +384,7 @@ async function payInBatch(
       (headers) => {
         const paid = template.clone();
         for (const [key, value] of Object.entries(headers)) paid.headers.set(key, value);
+        sent = true;
         return fetchPaid(paid);
       },
       async () => {
@@ -378,16 +412,34 @@ async function payInBatch(
       closesAtStart,
     );
   } catch (error) {
-    // Thrown after a payment was sent: in doubt, never paid again.
+    if (!sent) {
+      // Nothing left this process carrying a payment: an ordinary failure.
+      batch.settle(mark, { kind: "not_charged" });
+      throw error;
+    }
+    // A payment was sent: in doubt, never paid again. The payer's own
+    // BatchPaymentUnresolvedError says so; anything else (an abort, a
+    // transport error) is wrapped so the caller treats it the same way.
     batch.settle(mark, { kind: "in_doubt" });
-    throw error;
+    if (error instanceof Error && error.name === "BatchPaymentUnresolvedError") throw error;
+    throw new PaymentInDoubtError(error);
   }
   if (attempt.kind === "paid") {
-    batch.settle(mark, {
-      kind: "paid",
-      chargedMicros: BigInt(Math.round(attempt.chargedUsd * 1_000_000)),
-    });
-    return { kind: "done", response: attempt.response };
+    // The charge is known only from a receipt. A 200 without one makes the
+    // payer report 0, which proves nothing: the ceiling then keeps counting.
+    const hasReceipt =
+      attempt.response.headers.has("payment-response") ||
+      attempt.response.headers.has("x-payment-response");
+    const chargedMicros = hasReceipt
+      ? BigInt(Math.round(attempt.chargedUsd * 1_000_000))
+      : undefined;
+    batch.settle(mark, { kind: "paid", chargedMicros });
+    const accept = paymentRequired.accepts.find((a) => a.scheme === "batch-settlement");
+    const charged =
+      chargedMicros !== undefined
+        ? { amount: chargedMicros.toString(), network: accept?.network ?? "solana" }
+        : undefined;
+    return { kind: "done", response: attempt.response, charged };
   }
   batch.settle(mark, { kind: "not_charged" });
   if (attempt.kind === "served") return { kind: "done", response: attempt.response };

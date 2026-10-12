@@ -66,6 +66,12 @@ function quote(amount = "5000"): Response {
 }
 
 const ok = (tag: string) => new Response(JSON.stringify({ tag }), { status: 200 });
+/** A served batch call, with the receipt that states its charge. */
+const okWithReceipt = (tag: string) =>
+  new Response(JSON.stringify({ tag }), {
+    status: 200,
+    headers: { "PAYMENT-RESPONSE": Buffer.from("{}").toString("base64") },
+  });
 
 type Pay = BatchPayerLike["pay"];
 
@@ -109,7 +115,7 @@ describe("Solana batch-settlement routing", () => {
     });
     h.answers.push(
       () => quote(),
-      () => ok("batch"),
+      () => okWithReceipt("batch"),
     );
 
     const res = await h.payFetch(CHAT, chatInit());
@@ -196,6 +202,72 @@ describe("Solana batch-settlement routing", () => {
     // One send, the batch one: no exact payment followed.
     expect(h.sent.filter(paid)).toHaveLength(1);
     expect(h.sent.filter(paid)[0].headers.get("payment-signature")).toBe("batch-auth");
+  });
+
+  it("treats a failure after the batch payment was sent as in doubt, whatever it is", async () => {
+    const abort = Object.assign(new Error("This operation was aborted"), { name: "AbortError" });
+    const h = harness(async (_pr, send) => {
+      await send({ "PAYMENT-SIGNATURE": "batch-auth" });
+      throw abort;
+    });
+    h.answers.push(
+      () => quote(),
+      () => ok("lost"),
+    );
+
+    const err = await h.payFetch(CHAT, chatInit()).catch((e: unknown) => e);
+
+    expect((err as Error).name).toBe("PaymentInDoubtError");
+    expect((err as Error).cause).toBe(abort);
+    expect(h.outcomes).toEqual([{ kind: "in_doubt" }]);
+    expect(h.sent.filter(paid)).toHaveLength(1);
+  });
+
+  it("passes a failure through as unpaid when nothing was sent", async () => {
+    const boom = new Error("channel store unwritable");
+    const h = harness(async () => {
+      throw boom;
+    });
+    h.answers.push(() => quote());
+
+    await expect(h.payFetch(CHAT, chatInit())).rejects.toBe(boom);
+    expect(h.outcomes).toEqual([{ kind: "not_charged" }]);
+  });
+
+  it("keeps the ceiling when a paid response carries no receipt", async () => {
+    // The payer reports chargedUsd 0 for a 200 without a receipt. Zero proves
+    // nothing, so the outcome says "unknown" and the caller keeps the ceiling.
+    const h = harness(async (_pr, send) => {
+      const response = await send({ "PAYMENT-SIGNATURE": "batch-auth" });
+      return { kind: "paid", response, chargedUsd: 0 };
+    });
+    h.answers.push(
+      () => quote(),
+      () => ok("no-receipt"),
+    );
+
+    await h.payFetch(CHAT, chatInit());
+
+    expect(h.outcomes).toEqual([{ kind: "paid", chargedMicros: undefined }]);
+  });
+
+  it("books a stated zero charge when the receipt says so", async () => {
+    const h = harness(async (_pr, send) => {
+      const response = await send({ "PAYMENT-SIGNATURE": "batch-auth" });
+      return { kind: "paid", response, chargedUsd: 0 };
+    });
+    h.answers.push(
+      () => quote(),
+      () =>
+        new Response("{}", {
+          status: 200,
+          headers: { "PAYMENT-RESPONSE": Buffer.from("{}").toString("base64") },
+        }),
+    );
+
+    await h.payFetch(CHAT, chatInit());
+
+    expect(h.outcomes).toEqual([{ kind: "paid", chargedMicros: 0n }]);
   });
 
   it("keeps streaming chat and other endpoints on exact", async () => {

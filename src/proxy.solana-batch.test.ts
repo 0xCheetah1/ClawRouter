@@ -124,7 +124,8 @@ let rpc: Server;
 let gateway: Server;
 let proxy: ProxyHandle;
 /** What the gateway does with a paid batch call. */
-let batchMode: "serve" | "lose" = "serve";
+let batchMode: "serve" | "lose" | "no-receipt" = "serve";
+const payments: Array<{ model: string; amount: string; network: string }> = [];
 let schemesPaid: string[] = [];
 /** Cumulative charged per channel, as the gateway tracks it. */
 const cumulative = new Map<string, bigint>();
@@ -177,6 +178,12 @@ beforeAll(async () => {
       res.end(JSON.stringify({ error: "upstream lost" }));
       return;
     }
+    if (batchMode === "no-receipt") {
+      // Served, but whatever was charged is not stated anywhere.
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: "batch" } }] }));
+      return;
+    }
     const channelId = payment.payload.authorization!.channelId;
     const total = (cumulative.get(channelId) ?? 0n) + CHARGED;
     cumulative.set(channelId, total);
@@ -226,6 +233,7 @@ beforeAll(async () => {
     maxCostPerRunUsd: CAP_USD,
     maxCostPerRunMode: "strict",
     solanaBatch: { operators: [operator.address], channelStore: false },
+    onPayment: (info) => void payments.push(info),
   });
 }, 30_000);
 
@@ -242,6 +250,7 @@ afterAll(async () => {
 beforeEach(() => {
   batchMode = "serve";
   schemesPaid = [];
+  payments.length = 0;
 });
 
 let seq = 0;
@@ -277,6 +286,9 @@ describe("Solana batch-settlement through the proxy", () => {
 
     expect(statuses).toEqual([200, 200, 200, 429]);
     expect(schemesPaid).toEqual(["batch-settlement", "batch-settlement", "batch-settlement"]);
+    // onPayment hears each confirmed batch charge, at what was charged.
+    expect(payments.map((p) => p.amount)).toEqual(["1200", "1200", "1200"]);
+    expect(payments.every((p) => p.network.startsWith("solana:") && p.model.length > 0)).toBe(true);
   }, 30_000);
 
   it("never pays a batch payment in doubt again: no exact fallback, no retry", async () => {
@@ -300,6 +312,19 @@ describe("Solana batch-settlement through the proxy", () => {
     expect(res.status).not.toBe(200);
     // The caller is told the payment is in doubt, not handed a later model's error.
     expect(text).toMatch(/payment_in_doubt/);
+    expect(schemesPaid).toEqual(["batch-settlement"]);
+  }, 30_000);
+  it("keeps counting the ceiling when a paid batch call comes back without a receipt", async () => {
+    // Cap $0.008, ceiling $0.005. With no receipt the charge is unknown, so the
+    // first call keeps its $0.005 and the second (another $0.005) is refused.
+    batchMode = "no-receipt";
+    const session = `no-receipt-${Date.now()}`;
+    const first = await chat(session);
+    await first.text();
+    const second = await chat(session);
+    await second.text();
+
+    expect([first.status, second.status]).toEqual([200, 429]);
     expect(schemesPaid).toEqual(["batch-settlement"]);
   }, 30_000);
 });

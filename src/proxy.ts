@@ -35,6 +35,8 @@ const paymentStore = new AsyncLocalStorage<{
   amountUsd: number;
   estimatedUsd?: number;
   sessionSpend?: SessionSpend;
+  /** Signature mark of the Solana batch pay() in progress (see solanaBatch.begin). */
+  batchMark?: number;
 }>();
 import { finished, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -2983,6 +2985,16 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       settings: solanaBatchSettings,
       configureClient: (client) => {
         const hooks = client as unknown as PaymentHookClient;
+        // The payer signs again within one pay() only after the gateway proved
+        // the previous attempt was not charged (a 429). Void those signatures
+        // before the cap checks the next one, or an unpaid attempt would crowd
+        // out the payment that replaces it.
+        hooks.onBeforePaymentCreation(async () => {
+          const store = paymentStore.getStore();
+          if (store?.batchMark !== undefined) {
+            store.sessionSpend?.voidSignedSince(store.batchMark, false);
+          }
+        });
         registerCostCapHook(hooks);
         if (spendControl) registerSpendPolicyHook(client as unknown as x402Client, spendControl);
         registerSigningRecorders(hooks);
@@ -2992,15 +3004,24 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       // @blockrun/llm types the challenge with its own PaymentRequired (an
       // optional `resource`); it is the same x402 v2 object on the wire.
       payer: payer as unknown as SolanaBatchRoute["payer"],
-      begin: () => paymentStore.getStore()?.sessionSpend?.signatureMark(),
+      begin: () => {
+        const store = paymentStore.getStore();
+        const mark = store?.sessionSpend?.signatureMark();
+        if (store) store.batchMark = mark;
+        return mark;
+      },
       settle: (mark, outcome) => {
         const store = paymentStore.getStore();
+        if (store) store.batchMark = undefined;
         const spend = store?.sessionSpend;
         if (outcome.kind === "paid") {
-          if (store) store.amountUsd = microsToUsd(outcome.chargedMicros);
+          if (store && outcome.chargedMicros !== undefined) {
+            store.amountUsd = microsToUsd(outcome.chargedMicros);
+          }
           if (spend && mark !== undefined && spend.signatureMark() > mark) {
             spend.voidSignedSince(mark, true);
-            spend.settleLastSigned(outcome.chargedMicros);
+            // No receipt, no proof of the charge: the signed ceiling stays.
+            if (outcome.chargedMicros !== undefined) spend.settleLastSigned(outcome.chargedMicros);
           }
         } else if (outcome.kind === "not_charged") {
           if (store) store.amountUsd = 0;
@@ -4599,6 +4620,11 @@ type ModelRequestResult = {
    * ClawRouter-Hermes#38). The id is the only handle the two sides share.
    */
   upstreamRequestId?: string;
+  /**
+   * A payment for this attempt was sent and its outcome is unknown. Nothing
+   * may pay this request again: no retry, no fallback model, no timeout path.
+   */
+  paymentInDoubt?: boolean;
 };
 
 /**
@@ -4752,7 +4778,10 @@ async function tryModelRequest(
     return { success: true, response };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    if (err instanceof Error && err.name === "BatchPaymentUnresolvedError") {
+    if (
+      err instanceof Error &&
+      (err.name === "BatchPaymentUnresolvedError" || err.name === "PaymentInDoubtError")
+    ) {
       // A Solana batch payment was sent and its outcome is unknown. Paying the
       // same request again (a retry, the next model in the chain) could charge
       // twice, so the chain stops here and the caller is told.
@@ -4764,6 +4793,7 @@ async function tryModelRequest(
         errorStatus: 502,
         isProviderError: false,
         errorCategory: "payment_error",
+        paymentInDoubt: true,
       };
     }
     if (err instanceof CostCapError) {
@@ -6862,6 +6892,23 @@ async function proxyRequest(
         throw abortError();
       }
 
+      // A payment for this attempt may have been charged: stop here. Checked
+      // before the timeout branch, which would otherwise move to the next model
+      // and sign a new payment for the same request.
+      if (result.paymentInDoubt) {
+        lastError = {
+          body: result.errorBody || "payment outcome unknown",
+          status: result.errorStatus || 502,
+          requestId: result.upstreamRequestId,
+        };
+        failedAttempts.push({
+          model: tryModel,
+          reason: "payment_in_doubt",
+          status: lastError.status,
+        });
+        break;
+      }
+
       // If the per-model timeout fired (but not global), treat as fallback-worthy error.
       // Remembered on the last attempt too: it comes back as a network error
       // with no category, which the failure path below would not record.
@@ -7004,6 +7051,19 @@ async function proxyRequest(
             retryResult,
             !retryResult.success && retryController.signal.aborted,
           );
+          if (retryResult.paymentInDoubt) {
+            lastError = {
+              body: retryResult.errorBody || "payment outcome unknown",
+              status: retryResult.errorStatus || 502,
+              requestId: retryResult.upstreamRequestId,
+            };
+            failedAttempts.push({
+              model: tryModel,
+              reason: "payment_in_doubt (retry)",
+              status: lastError.status,
+            });
+            break;
+          }
           if (retryResult.success && retryResult.response) {
             upstream = retryResult.response;
             actualModelUsed = tryModel;
@@ -7085,6 +7145,19 @@ async function proxyRequest(
                 retryResult,
                 !retryResult.success && retryController.signal.aborted,
               );
+              if (retryResult.paymentInDoubt) {
+                lastError = {
+                  body: retryResult.errorBody || "payment outcome unknown",
+                  status: retryResult.errorStatus || 502,
+                  requestId: retryResult.upstreamRequestId,
+                };
+                failedAttempts.push({
+                  model: tryModel,
+                  reason: "payment_in_doubt (retry)",
+                  status: lastError.status,
+                });
+                break;
+              }
               if (retryResult.success && retryResult.response) {
                 upstream = retryResult.response;
                 actualModelUsed = tryModel;

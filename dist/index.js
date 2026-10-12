@@ -244414,6 +244414,15 @@ function formatDuration(seconds) {
 
 // src/payment-preauth.ts
 var DEFAULT_TTL_MS = 36e5;
+var PaymentInDoubtError = class extends Error {
+  constructor(cause) {
+    super(
+      `batch-settlement payment sent, outcome unknown: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { cause }
+    );
+    this.name = "PaymentInDoubtError";
+  }
+};
 function batchEligible(method, urlPath, bodyStr) {
   if (method !== "POST" || !urlPath.endsWith("/v1/chat/completions") || !bodyStr) return false;
   try {
@@ -244546,7 +244555,18 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
         baseFetch,
         httpClient
       );
-      if (outcome.kind === "done") return outcome.response;
+      if (outcome.kind === "done") {
+        if (outcome.charged && options?.onPayment) {
+          try {
+            options.onPayment({ model: requestModel, ...outcome.charged });
+          } catch (error) {
+            console.error(
+              `[ClawRouter] onPayment callback failed: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+        return outcome.response;
+      }
       paymentRequired = outcome.paymentRequired;
     }
     const payload = await client.createPaymentPayload(paymentRequired);
@@ -244563,6 +244583,7 @@ function createPayFetchWithPreAuth(baseFetch, client, ttlMs = DEFAULT_TTL_MS, op
 async function payInBatch(batch, template, paymentRequired, closesAtStart, fetchPaid, httpClient) {
   let unpaidAnswer;
   const mark = batch.begin();
+  let sent = false;
   let attempt;
   try {
     attempt = await batch.payer.pay(
@@ -244570,6 +244591,7 @@ async function payInBatch(batch, template, paymentRequired, closesAtStart, fetch
       (headers) => {
         const paid = template.clone();
         for (const [key3, value] of Object.entries(headers)) paid.headers.set(key3, value);
+        sent = true;
         return fetchPaid(paid);
       },
       async () => {
@@ -244596,15 +244618,21 @@ async function payInBatch(batch, template, paymentRequired, closesAtStart, fetch
       closesAtStart
     );
   } catch (error) {
+    if (!sent) {
+      batch.settle(mark, { kind: "not_charged" });
+      throw error;
+    }
     batch.settle(mark, { kind: "in_doubt" });
-    throw error;
+    if (error instanceof Error && error.name === "BatchPaymentUnresolvedError") throw error;
+    throw new PaymentInDoubtError(error);
   }
   if (attempt.kind === "paid") {
-    batch.settle(mark, {
-      kind: "paid",
-      chargedMicros: BigInt(Math.round(attempt.chargedUsd * 1e6))
-    });
-    return { kind: "done", response: attempt.response };
+    const hasReceipt = attempt.response.headers.has("payment-response") || attempt.response.headers.has("x-payment-response");
+    const chargedMicros = hasReceipt ? BigInt(Math.round(attempt.chargedUsd * 1e6)) : void 0;
+    batch.settle(mark, { kind: "paid", chargedMicros });
+    const accept = paymentRequired.accepts.find((a) => a.scheme === "batch-settlement");
+    const charged = chargedMicros !== void 0 ? { amount: chargedMicros.toString(), network: accept?.network ?? "solana" } : void 0;
+    return { kind: "done", response: attempt.response, charged };
   }
   batch.settle(mark, { kind: "not_charged" });
   if (attempt.kind === "served") return { kind: "done", response: attempt.response };
@@ -254747,6 +254775,12 @@ async function startProxy(options) {
       settings: solanaBatchSettings,
       configureClient: (client) => {
         const hooks = client;
+        hooks.onBeforePaymentCreation(async () => {
+          const store = paymentStore.getStore();
+          if (store?.batchMark !== void 0) {
+            store.sessionSpend?.voidSignedSince(store.batchMark, false);
+          }
+        });
         registerCostCapHook(hooks);
         if (spendControl) registerSpendPolicyHook(client, spendControl);
         registerSigningRecorders(hooks);
@@ -254756,15 +254790,23 @@ async function startProxy(options) {
       // @blockrun/llm types the challenge with its own PaymentRequired (an
       // optional `resource`); it is the same x402 v2 object on the wire.
       payer,
-      begin: () => paymentStore.getStore()?.sessionSpend?.signatureMark(),
+      begin: () => {
+        const store = paymentStore.getStore();
+        const mark = store?.sessionSpend?.signatureMark();
+        if (store) store.batchMark = mark;
+        return mark;
+      },
       settle: (mark, outcome) => {
         const store = paymentStore.getStore();
+        if (store) store.batchMark = void 0;
         const spend = store?.sessionSpend;
         if (outcome.kind === "paid") {
-          if (store) store.amountUsd = microsToUsd(outcome.chargedMicros);
+          if (store && outcome.chargedMicros !== void 0) {
+            store.amountUsd = microsToUsd(outcome.chargedMicros);
+          }
           if (spend && mark !== void 0 && spend.signatureMark() > mark) {
             spend.voidSignedSince(mark, true);
-            spend.settleLastSigned(outcome.chargedMicros);
+            if (outcome.chargedMicros !== void 0) spend.settleLastSigned(outcome.chargedMicros);
           }
         } else if (outcome.kind === "not_charged") {
           if (store) store.amountUsd = 0;
@@ -256084,7 +256126,7 @@ async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxT
     return { success: true, response };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    if (err instanceof Error && err.name === "BatchPaymentUnresolvedError") {
+    if (err instanceof Error && (err.name === "BatchPaymentUnresolvedError" || err.name === "PaymentInDoubtError")) {
       return {
         success: false,
         errorBody: JSON.stringify({
@@ -256092,7 +256134,8 @@ async function tryModelRequest(upstreamUrl, method, headers, body, modelId, maxT
         }),
         errorStatus: 502,
         isProviderError: false,
-        errorCategory: "payment_error"
+        errorCategory: "payment_error",
+        paymentInDoubt: true
       };
     }
     if (err instanceof CostCapError) {
@@ -257587,6 +257630,19 @@ data: [DONE]
       if (globalController.signal.aborted) {
         throw abortError();
       }
+      if (result.paymentInDoubt) {
+        lastError = {
+          body: result.errorBody || "payment outcome unknown",
+          status: result.errorStatus || 502,
+          requestId: result.upstreamRequestId
+        };
+        failedAttempts.push({
+          model: tryModel,
+          reason: "payment_in_doubt",
+          status: lastError.status
+        });
+        break;
+      }
       const timedOut = !result.success && modelController.signal.aborted;
       if (timedOut) recordAttempt(tryModel, result, true);
       if (timedOut && !isLastAttempt) {
@@ -257692,6 +257748,19 @@ data: [DONE]
             retryResult,
             !retryResult.success && retryController.signal.aborted
           );
+          if (retryResult.paymentInDoubt) {
+            lastError = {
+              body: retryResult.errorBody || "payment outcome unknown",
+              status: retryResult.errorStatus || 502,
+              requestId: retryResult.upstreamRequestId
+            };
+            failedAttempts.push({
+              model: tryModel,
+              reason: "payment_in_doubt (retry)",
+              status: lastError.status
+            });
+            break;
+          }
           if (retryResult.success && retryResult.response) {
             upstream = retryResult.response;
             actualModelUsed = tryModel;
@@ -257761,6 +257830,19 @@ data: [DONE]
                 retryResult,
                 !retryResult.success && retryController.signal.aborted
               );
+              if (retryResult.paymentInDoubt) {
+                lastError = {
+                  body: retryResult.errorBody || "payment outcome unknown",
+                  status: retryResult.errorStatus || 502,
+                  requestId: retryResult.upstreamRequestId
+                };
+                failedAttempts.push({
+                  model: tryModel,
+                  reason: "payment_in_doubt (retry)",
+                  status: lastError.status
+                });
+                break;
+              }
               if (retryResult.success && retryResult.response) {
                 upstream = retryResult.response;
                 actualModelUsed = tryModel;
