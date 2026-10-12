@@ -4,6 +4,22 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.285 — October 12, 2026
+
+### Security: patched HTTP libraries
+
+- **axios 1.20.0** (used by the Polymarket tools) fixes 12 advisories,
+  including header injection, prototype-pollution gadgets that can alter
+  outbound requests, `maxRedirects: 0` being ignored by the fetch adapter, and
+  the HTTP/2 adapter bypassing the configured DNS lookup and proxy.
+- **undici 8.11.2** (the proxy's HTTP client) fixes TLS certificate
+  validation being bypassed on dropped connections, cross-origin cache
+  poisoning, cross-user cookie disclosure, and several denial-of-service bugs.
+- Patched transitive packages: proxy-addr, fast-uri, brace-expansion,
+  ip-address.
+- The Desktop app's bundled runtime gets the same fixes, and moves from
+  ClawRouter 0.12.267 to 0.12.284.
+
 ## v0.12.284 — October 11, 2026
 
 ### `clawrouter reconcile` no longer reports a partial ledger as complete
