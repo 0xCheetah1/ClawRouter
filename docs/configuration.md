@@ -28,6 +28,7 @@ Complete reference for ClawRouter configuration options.
 | `BLOCKRUN_WALLET_KEY`       | -                                     | Explicit Base wallet override (hex, 0x-prefixed).                                                                                                           |
 | `BLOCKRUN_PROXY_PORT`       | `8402`                                | Port for the local x402 proxy server.                                                                                                                       |
 | `CLAWROUTER_SOLANA_RPC_URL` | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint for USDC balance checks.                                                                                                                |
+| `CLAWROUTER_SOLANA_BATCH`   | (off)                                 | Set to `1` to pay Solana chat calls with batch-settlement: charged what each call cost, not its ceiling. See below.                                         |
 | `CLAWROUTER_DISABLED`       | `false`                               | Set to `true` to disable smart routing (pass requests through as-is).                                                                                       |
 | `CLAWROUTER_WORKER`         | -                                     | Set to `1` to enable Worker Mode (earn USDC by running health checks).                                                                                      |
 | `CLAWROUTER_DEBUG_HEADERS`  | (on)                                  | Set to `off`/`false`/`0` to suppress the `x-clawrouter-*` debug response headers.                                                                           |
@@ -233,6 +234,54 @@ curl -s -m 10 -X POST https://api.mainnet-beta.solana.com \
 
 If that hangs or is refused, point this variable at an endpoint the host can
 reach.
+
+### CLAWROUTER_SOLANA_BATCH
+
+Pay Solana chat calls with x402 **batch-settlement** instead of one `exact`
+transfer per call (Solana chain only, wallet mode only, off by default):
+
+```bash
+export CLAWROUTER_SOLANA_BATCH=1
+export CLAWROUTER_SOLANA_BATCH_MAX_DEPOSIT='$5'   # optional; default $1
+openclaw gateway restart
+```
+
+`exact` pays every call at its ceiling (the price of `max_tokens`) and settles
+it on-chain before the model answers. With batch-settlement, the first call
+opens a payment channel with a small deposit; each call after that carries a
+signed authorization for its ceiling, and the gateway charges what the call
+actually cost. One on-chain transaction covers many calls.
+
+- **Who holds the deposit.** The channel's voucher signer is BlockRun's
+  operator key, pinned in ClawRouter (the operator a 402 names is never
+  trusted). The deposit is escrow, capped by
+  `CLAWROUTER_SOLANA_BATCH_MAX_DEPOSIT` (`$1` by default), and later calls keep
+  spending it. A channel idle for 3 days is closed by BlockRun at what has been
+  settled, and the unused escrow returns to the wallet on its own (the gateway
+  advertises this as `batchPolicy.idleCloseSeconds` in its 402). To get it back
+  sooner, close the channel with `@blockrun/llm`'s `closeBatchChannel()` on the
+  same wallet; ClawRouter has no close command yet.
+- **Spend limits apply unchanged.** `maxCostPerRun` and the spend policy
+  (`clawrouter policy`) check each batch payment at its per-call ceiling before
+  it is signed, exactly like an `exact` payment. `maxCostPerRun` then books what
+  the call was actually charged; the spend policy's windows keep the ceiling
+  (conservative). Both only apply if you set them.
+- **Never pays twice.** A batch payment whose outcome is unknown (sent, no
+  receipt) is never replaced: no `exact` fallback, no retry, no next model.
+  The request fails with `payment_in_doubt`. A call that batch could not pay
+  (channel busy, rate limited, gateway refused the deposit) pays `exact`
+  instead, and only when the gateway proved nothing was charged.
+- **Only non-streaming chat completions** use batch (ClawRouter always calls
+  the gateway non-streaming). Images, audio, video and other endpoints stay on
+  `exact`.
+- Channel state lives in `~/.blockrun/solana-batch/<wallet>.json`, locked to
+  one process at a time. A second process on the same wallet pays `exact`.
+
+Programmatic: `startProxy({ solanaBatch: true })` or
+`startProxy({ solanaBatch: { maxDeposit: "$5" } })`.
+
+The protocol is implemented by `@blockrun/llm`'s `SolanaBatchPayer`, the same
+payer `SolanaLLMClient` uses.
 
 ---
 

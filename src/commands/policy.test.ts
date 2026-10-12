@@ -36,7 +36,7 @@ describe("runPolicyCommand (in-memory store)", () => {
     expect(run(["set", "blockedPayees", payee]).isError).toBeFalsy();
 
     let signerCalls = 0;
-    const client = new x402Client();
+    const client = new x402Client().setSpendControls(false); // as the proxy builds it: ClawRouter enforces its own limits
     registerSpendPolicyHook(client, openControl());
     client.register(CAIP2_BASE, {
       scheme: "exact",

@@ -85,6 +85,15 @@ describe("SessionSpend", () => {
     expect(store.getSessionCostMicros("wallet")).toBe(7_000n);
   });
 
+  it("does not book the estimate on top of a receipt that settled the charge to zero", () => {
+    const store = newStore();
+    const spend = admit(store, 8_000n);
+    spend.recordSigned(5_000n);
+    spend.settleLastSigned(0n); // the receipt states no charge
+    spend.recordSuccess(8_000n);
+    expect(store.getSessionCostMicros("s")).toBe(0n);
+  });
+
   it("release returns the remaining hold once", () => {
     const store = newStore();
     const spend = admit(store, 8_000n);

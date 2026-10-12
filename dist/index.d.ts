@@ -1067,6 +1067,45 @@ declare function getSessionId(headers: Record<string, string | string[] | undefi
 declare function hashRequestContent(lastUserContent: string, toolCallNames?: string[]): string;
 
 /**
+ * Solana batch-settlement, paid by @blockrun/llm's SolanaBatchPayer.
+ *
+ * `exact` signs one SPL transfer per call at the call's ceiling (the quote for
+ * `max_tokens`). `batch-settlement` opens a deposit-backed channel once; each
+ * call then carries a signed authorization for its ceiling, and the gateway
+ * charges what the call actually cost. ClawRouter does not implement the
+ * protocol: it uses the same payer `SolanaLLMClient` ships, so both clients
+ * share one hardened path (in-doubt payments are never replaced, the channel
+ * file is locked across processes, 429s cool the wallet down, a refused
+ * deposit parks the wallet on exact).
+ *
+ * The channel's voucher signer is BlockRun's operator key, pinned here as the
+ * only trusted operator. The deposit is escrow under that key, bounded by
+ * `maxDeposit`; spend is the per-call charge. ClawRouter's own spend rules
+ * (SpendControl, the strict session cap) see each batch payment at its
+ * per-call ceiling through `configureClient`, exactly as they see `exact`
+ * payments, and only when the user configured them.
+ */
+
+interface SolanaBatchSettings {
+    /** Escrow cap per channel, e.g. "$5". Unset: @x402/svm's default ("$1"). */
+    maxDeposit?: string | number;
+    /**
+     * Operator keys trusted to sign vouchers. Default: BlockRun's
+     * (`BLOCKRUN_SOL_OPERATOR`). Only for a key rotation, when both keys are
+     * valid for a while. Never trust the operator a 402 names.
+     */
+    operators?: string[];
+    /**
+     * Where open-channel state is kept: a file path, or `false` for memory only.
+     * Default: @blockrun/llm's `~/.blockrun/solana-batch/<address>.json`, locked
+     * to one process at a time.
+     */
+    channelStore?: string | false;
+    /** @internal Replay budget for a payment in doubt, in ms (tests shorten it). */
+    inDoubtMaxWaitMs?: number;
+}
+
+/**
  * Local x402 Proxy Server
  *
  * Sits between OpenClaw's pi-ai (which makes standard OpenAI-format requests)
@@ -1227,6 +1266,16 @@ type ProxyOptions = {
      * ~/.openclaw/blockrun/spending.json. Inject in tests.
      */
     spendControl?: SpendControl;
+    /**
+     * Solana batch-settlement for chat calls on the Solana rail: one deposit
+     * opens a payment channel with BlockRun, then each call is charged what it
+     * actually cost instead of its ceiling. `true` turns it on with the default
+     * escrow cap; an object sets `maxDeposit`. Default: off, unless
+     * CLAWROUTER_SOLANA_BATCH is set.
+     */
+    solanaBatch?: boolean | SolanaBatchSettings;
+    /** @internal Set by startProxy when Solana batch-settlement is active. */
+    _solanaBatchActive?: boolean;
     /**
      * Upstream proxy URL for all outgoing requests.
      * Supports http://, https://, and socks5:// schemes.

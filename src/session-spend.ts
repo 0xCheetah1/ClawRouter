@@ -61,8 +61,8 @@ export class SessionSpend {
   private heldMicros: bigint;
   /** Sum of payments signed by this request that still count. */
   private signedMicros = 0n;
-  /** The most recent signature not yet settled or voided — the one a decline undoes. */
-  private lastSignedMicros = 0n;
+  /** Each signature this request made, in order, at the amount that still counts. */
+  private readonly signedLog: bigint[] = [];
   private released = false;
 
   private constructor(
@@ -134,7 +134,7 @@ export class SessionSpend {
   recordSigned(amountMicros: bigint): void {
     if (amountMicros <= 0n) return;
     this.signedMicros += amountMicros;
-    this.lastSignedMicros = amountMicros;
+    this.signedLog.push(amountMicros);
     this.store.addSessionCost(this.sessionId, amountMicros);
     this.shrinkHold(amountMicros);
   }
@@ -145,11 +145,43 @@ export class SessionSpend {
    * decline always belongs to the latest signature. Undone at most once.
    */
   voidLastSigned(): void {
-    const undo = this.lastSignedMicros;
-    this.lastSignedMicros = 0n;
-    if (undo <= 0n) return;
-    this.signedMicros -= undo;
-    this.store.addSessionCost(this.sessionId, -undo);
+    this.adjustSigned(this.signedLog.length - 1, 0n);
+  }
+
+  /** A marker for {@link voidSignedSince}: how many signatures this request has made. */
+  signatureMark(): number {
+    return this.signedLog.length;
+  }
+
+  /**
+   * Batch settlement reports one outcome for a whole `pay()`, which may sign
+   * more than once (a 429 proven not charged, then a fresh payment). Every
+   * signature since `mark` was not charged, except the last one when
+   * `keepLast`: it was charged (or is in doubt) and keeps counting.
+   */
+  voidSignedSince(mark: number, keepLast: boolean): void {
+    const end = keepLast ? this.signedLog.length - 1 : this.signedLog.length;
+    for (let i = mark; i < end; i++) this.adjustSigned(i, 0n);
+  }
+
+  /**
+   * The last signature was charged less than it authorized: batch settlement
+   * signs the per-call ceiling and the gateway charges what the call cost.
+   * Never raises what counts.
+   */
+  settleLastSigned(chargedMicros: bigint): void {
+    const i = this.signedLog.length - 1;
+    if (i >= 0 && chargedMicros >= 0n && chargedMicros < this.signedLog[i])
+      this.adjustSigned(i, chargedMicros);
+  }
+
+  private adjustSigned(index: number, toMicros: bigint): void {
+    if (index < 0 || index >= this.signedLog.length) return;
+    const delta = toMicros - this.signedLog[index];
+    if (delta === 0n) return;
+    this.signedLog[index] = toMicros;
+    this.signedMicros += delta;
+    this.store.addSessionCost(this.sessionId, delta);
   }
 
   /**
@@ -158,7 +190,9 @@ export class SessionSpend {
    * payment was signed, it is already recorded at its real amount.
    */
   recordSuccess(estimateMicros: bigint): void {
-    if (this.signedMicros > 0n || estimateMicros <= 0n) return;
+    // Any signature at all means the spend is already on the books, at what
+    // was signed or what a receipt settled it to (zero included).
+    if (this.signedLog.length > 0 || estimateMicros <= 0n) return;
     this.store.addSessionCost(this.sessionId, estimateMicros);
     this.shrinkHold(estimateMicros);
   }

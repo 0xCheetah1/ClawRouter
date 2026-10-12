@@ -411,7 +411,7 @@ describe("the singleton is the one ledger every surface reads and writes", () =>
     expect((await executeTrade(limitBuy)).isError).toBeFalsy(); // $5 notional, allowed
 
     let signerCalls = 0;
-    const client = new x402Client();
+    const client = new x402Client().setSpendControls(false); // as the proxy builds it: ClawRouter enforces its own limits
     registerSpendPolicyHook(client, getSharedSpendControl());
     client.register(CAIP2_BASE, {
       scheme: "exact",
