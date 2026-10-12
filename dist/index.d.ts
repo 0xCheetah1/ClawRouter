@@ -1101,6 +1101,8 @@ interface SolanaBatchSettings {
      * to one process at a time.
      */
     channelStore?: string | false;
+    /** @internal Replay budget for a payment in doubt, in ms (tests shorten it). */
+    inDoubtMaxWaitMs?: number;
 }
 
 /**

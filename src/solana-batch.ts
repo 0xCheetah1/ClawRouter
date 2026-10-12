@@ -21,6 +21,9 @@
 import bs58 from "bs58";
 import type { SolanaBatchPayer, X402ClientLike } from "@blockrun/llm";
 
+/** Replay budget for a batch payment in doubt (see createSolanaBatchPayer). */
+export const IN_DOUBT_MAX_WAIT_MS = 20_000;
+
 export interface SolanaBatchSettings {
   /** Escrow cap per channel, e.g. "$5". Unset: @x402/svm's default ("$1"). */
   maxDeposit?: string | number;
@@ -36,6 +39,8 @@ export interface SolanaBatchSettings {
    * to one process at a time.
    */
   channelStore?: string | false;
+  /** @internal Replay budget for a payment in doubt, in ms (tests shorten it). */
+  inDoubtMaxWaitMs?: number;
 }
 
 /**
@@ -77,6 +82,12 @@ export async function createSolanaBatchPayer(init: {
       operators: init.settings.operators?.length
         ? init.settings.operators
         : [BLOCKRUN_SOL_OPERATOR],
+      // How long one call keeps replaying a payment in doubt before it gives
+      // up. The SDK default (5 min) suits a client that waits for its answer;
+      // here the request has a deadline, and once it is aborted every replay
+      // reuses the aborted signal, so a long budget only keeps the wallet's
+      // channel busy for nothing.
+      inDoubt: { maxWaitMs: init.settings.inDoubtMaxWaitMs ?? IN_DOUBT_MAX_WAIT_MS },
       ...(init.settings.maxDeposit !== undefined ? { maxDeposit: init.settings.maxDeposit } : {}),
       ...(init.settings.channelStore !== undefined
         ? { channelStore: init.settings.channelStore }

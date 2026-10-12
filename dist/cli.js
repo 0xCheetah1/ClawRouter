@@ -97893,6 +97893,12 @@ async function createSolanaBatchPayer(init2) {
   return new SolanaBatchPayer2({
     options: {
       operators: init2.settings.operators?.length ? init2.settings.operators : [BLOCKRUN_SOL_OPERATOR2],
+      // How long one call keeps replaying a payment in doubt before it gives
+      // up. The SDK default (5 min) suits a client that waits for its answer;
+      // here the request has a deadline, and once it is aborted every replay
+      // reuses the aborted signal, so a long budget only keeps the wallet's
+      // channel busy for nothing.
+      inDoubt: { maxWaitMs: init2.settings.inDoubtMaxWaitMs ?? IN_DOUBT_MAX_WAIT_MS2 },
       ...init2.settings.maxDeposit !== void 0 ? { maxDeposit: init2.settings.maxDeposit } : {},
       ...init2.settings.channelStore !== void 0 ? { channelStore: init2.settings.channelStore } : {}
     },
@@ -97902,10 +97908,12 @@ async function createSolanaBatchPayer(init2) {
     configureClient: init2.configureClient
   });
 }
+var IN_DOUBT_MAX_WAIT_MS2;
 var init_solana_batch = __esm({
   "src/solana-batch.ts"() {
     "use strict";
     init_esm7();
+    IN_DOUBT_MAX_WAIT_MS2 = 2e4;
   }
 });
 
@@ -131229,10 +131237,7 @@ data: [DONE]
         combinedSignal
       );
       clearTimeout(modelTimeoutId);
-      if (globalController.signal.aborted) {
-        throw abortError();
-      }
-      if (result.paymentInDoubt) {
+      if (result.paymentInDoubt && !clientDisconnected()) {
         lastError = {
           body: result.errorBody || "payment outcome unknown",
           status: result.errorStatus || 502,
@@ -131244,6 +131249,9 @@ data: [DONE]
           status: lastError.status
         });
         break;
+      }
+      if (globalController.signal.aborted) {
+        throw abortError();
       }
       const timedOut = !result.success && modelController.signal.aborted;
       if (timedOut) recordAttempt(tryModel, result, true);

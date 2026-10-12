@@ -6898,15 +6898,13 @@ async function proxyRequest(
       );
       clearTimeout(modelTimeoutId);
 
-      // If the global deadline fired during this attempt (or the client left), bail out entirely
-      if (globalController.signal.aborted) {
-        throw abortError();
-      }
-
       // A payment for this attempt may have been charged: stop here. Checked
       // before the timeout branch, which would otherwise move to the next model
-      // and sign a new payment for the same request.
-      if (result.paymentInDoubt) {
+      // and sign a new payment for the same request, and before the global
+      // deadline, which would report a generic timeout and drop the dedup
+      // entry so an identical retry could pay again. A client that left still
+      // gets the disconnect cleanup below.
+      if (result.paymentInDoubt && !clientDisconnected()) {
         lastError = {
           body: result.errorBody || "payment outcome unknown",
           status: result.errorStatus || 502,
@@ -6918,6 +6916,11 @@ async function proxyRequest(
           status: lastError.status,
         });
         break;
+      }
+
+      // If the global deadline fired during this attempt (or the client left), bail out entirely
+      if (globalController.signal.aborted) {
+        throw abortError();
       }
 
       // If the per-model timeout fired (but not global), treat as fallback-worthy error.

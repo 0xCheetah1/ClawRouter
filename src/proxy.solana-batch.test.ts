@@ -125,7 +125,7 @@ let rpc: Server;
 let gateway: Server;
 let proxy: ProxyHandle;
 /** What the gateway does with a paid batch call. */
-let batchMode: "serve" | "lose" | "no-receipt" = "serve";
+let batchMode: "serve" | "lose" | "no-receipt" | "hang" = "serve";
 const payments: Array<{ model: string; amount: string; network: string }> = [];
 let schemesPaid: string[] = [];
 /** Cumulative charged per channel, as the gateway tracks it. */
@@ -179,6 +179,7 @@ beforeAll(async () => {
       res.end(JSON.stringify({ error: "upstream lost" }));
       return;
     }
+    if (batchMode === "hang") return; // the paid request never gets an answer
     if (batchMode === "no-receipt") {
       // Served, but whatever was charged is not stated anywhere.
       res.writeHead(200, { "content-type": "application/json" });
@@ -386,6 +387,46 @@ describe("Solana batch-settlement through the proxy", () => {
       expect(schemesPaid).toEqual(["batch-settlement"]);
     } finally {
       await lowBalanceProxy.close();
+    }
+  }, 30_000);
+  it("reports a batch payment still in flight at the global deadline as in doubt, and never pays it again", async () => {
+    batchMode = "hang";
+    const keys = deriveAllKeys(
+      "letter advice cage absurd amount doctor acoustic avoid letter advice cage above",
+    );
+    const deadlineProxy = await startProxy({
+      wallet: { key: keys.evmPrivateKey, solanaPrivateKeyBytes: keys.solanaPrivateKeyBytes },
+      paymentChain: "solana",
+      apiBase: `http://127.0.0.1:${(gateway.address() as AddressInfo).port}`,
+      port: 0,
+      skipBalanceCheck: true,
+      spendControl: new SpendControl({ storage: new InMemorySpendControlStorage() }),
+      requestTimeoutMs: 1_500,
+      solanaBatch: { operators: [operator.address], channelStore: false, inDoubtMaxWaitMs: 300 },
+    });
+    const send = () =>
+      fetch(`${deadlineProxy.baseUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 64,
+          stream: false,
+          messages: [{ role: "user", content: "deadline probe" }],
+        }),
+      });
+    try {
+      const first = await send();
+      const firstText = await first.text();
+      expect(firstText).toMatch(/payment_in_doubt/);
+
+      // The identical request again: answered from the in-doubt result, not paid.
+      const second = await send();
+      await second.text();
+      expect(schemesPaid.filter((s) => s === "batch-settlement")).toHaveLength(1);
+      expect(schemesPaid).not.toContain("exact");
+    } finally {
+      await deadlineProxy.close();
     }
   }, 30_000);
 });
