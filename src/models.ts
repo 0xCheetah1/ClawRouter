@@ -792,8 +792,8 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
     toolCalling: true,
   },
   // GPT-5.6 Pro tiers (blockrun #329, 2026-08-03): each base tier with pro
-  // reasoning mode. Terra Pro lands at half the standard Terra rate; Luna Pro
-  // is the budget deep-reasoning tier.
+  // reasoning mode, priced the same as its base tier on both gateways (checked
+  // 2026-10-13). Luna Pro is the budget deep-reasoning tier.
   {
     id: "openai/gpt-5.6-sol-pro",
     name: "GPT-5.6 Sol Pro",

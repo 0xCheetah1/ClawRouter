@@ -4,6 +4,19 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.288 — October 13, 2026
+
+### GPT-5.6 Pro tiers in the picker
+
+`openai/gpt-5.6-terra-pro`, `openai/gpt-5.6-sol-pro` and
+`openai/gpt-5.6-luna-pro` now show in the model picker, right after their
+base tiers. They were already callable and priced (in the registry since
+2026-08-03, listed by both gateways), just never picker-visible, unlike
+`gpt-5.5-pro` and `gpt-5.4-pro` (#460).
+
+`openai/chat-latest` stays out of the picker: it is a rolling alias you pin
+on purpose.
+
 ## v0.12.287 — October 12, 2026
 
 ### Live model catalog
