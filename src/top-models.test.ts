@@ -12,6 +12,11 @@ describe("TOP_MODELS", () => {
     expect(TOP_MODELS).toContain("anthropic/claude-fable-5");
     expect(TOP_MODELS).toContain("deepseek/deepseek-reasoner");
     expect(TOP_MODELS).toContain("free/nemotron-3.5-lightning");
+    // GPT-5.6 Pro tiers: in BLOCKRUN_MODELS and the advertised catalog since
+    // 2026-08-03 but never picker-visible, unlike gpt-5.5-pro / gpt-5.4-pro.
+    expect(TOP_MODELS).toContain("openai/gpt-5.6-terra-pro");
+    expect(TOP_MODELS).toContain("openai/gpt-5.6-sol-pro");
+    expect(TOP_MODELS).toContain("openai/gpt-5.6-luna-pro");
     // Retired from the advertised catalog 2026-07 — must not reappear.
     expect(TOP_MODELS).not.toContain("xai/grok-4-0709");
     expect(TOP_MODELS).not.toContain("xai/grok-3");
