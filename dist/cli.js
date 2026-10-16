@@ -14593,17 +14593,17 @@ function sqrt5mod8(Fp, n) {
     throw new Error("Cannot find square root");
   return root;
 }
-function tonelliShanks(P2) {
-  if (P2 < BigInt(3))
+function tonelliShanks(P3) {
+  if (P3 < BigInt(3))
     throw new Error("sqrt is not defined for small field");
-  let Q = P2 - _1n3;
+  let Q = P3 - _1n3;
   let S = 0;
   while (Q % _2n2 === _0n3) {
     Q /= _2n2;
     S++;
   }
   let Z = _2n2;
-  const _Fp = Field(P2);
+  const _Fp = Field(P3);
   while (FpLegendre(_Fp, Z) === 1) {
     if (Z++ > 1e3)
       throw new Error("Cannot find square root: probably non-prime P");
@@ -14642,12 +14642,12 @@ function tonelliShanks(P2) {
     return R;
   };
 }
-function FpSqrt(P2) {
-  if (P2 % _4n === _3n)
+function FpSqrt(P3) {
+  if (P3 % _4n === _3n)
     return sqrt3mod4;
-  if (P2 % _8n === _5n)
+  if (P3 % _8n === _5n)
     return sqrt5mod8;
-  return tonelliShanks(P2);
+  return tonelliShanks(P3);
 }
 function validateField(field) {
   const initial = {
@@ -14874,8 +14874,8 @@ function validateMSMScalars(scalars, field) {
       throw new Error("invalid scalar at index " + i);
   });
 }
-function getW(P2) {
-  return pointWindowSizes.get(P2) || 1;
+function getW(P3) {
+  return pointWindowSizes.get(P3) || 1;
 }
 function wNAF(c, bits) {
   return {
@@ -14968,32 +14968,32 @@ function wNAF(c, bits) {
       }
       return acc;
     },
-    getPrecomputes(W, P2, transform2) {
-      let comp = pointPrecomputes.get(P2);
+    getPrecomputes(W, P3, transform2) {
+      let comp = pointPrecomputes.get(P3);
       if (!comp) {
-        comp = this.precomputeWindow(P2, W);
+        comp = this.precomputeWindow(P3, W);
         if (W !== 1)
-          pointPrecomputes.set(P2, transform2(comp));
+          pointPrecomputes.set(P3, transform2(comp));
       }
       return comp;
     },
-    wNAFCached(P2, n, transform2) {
-      const W = getW(P2);
-      return this.wNAF(W, this.getPrecomputes(W, P2, transform2), n);
+    wNAFCached(P3, n, transform2) {
+      const W = getW(P3);
+      return this.wNAF(W, this.getPrecomputes(W, P3, transform2), n);
     },
-    wNAFCachedUnsafe(P2, n, transform2, prev) {
-      const W = getW(P2);
+    wNAFCachedUnsafe(P3, n, transform2, prev) {
+      const W = getW(P3);
       if (W === 1)
-        return this.unsafeLadder(P2, n, prev);
-      return this.wNAFUnsafe(W, this.getPrecomputes(W, P2, transform2), n, prev);
+        return this.unsafeLadder(P3, n, prev);
+      return this.wNAFUnsafe(W, this.getPrecomputes(W, P3, transform2), n, prev);
     },
     // We calculate precomputes for elliptic curve point multiplication
     // using windowed method. This specifies window size and
     // stores precomputed values. Usually only base point would be precomputed.
-    setWindowSize(P2, W) {
+    setWindowSize(P3, W) {
       validateW(W, bits);
-      pointWindowSizes.set(P2, W);
-      pointPrecomputes.delete(P2);
+      pointWindowSizes.set(P3, W);
+      pointPrecomputes.delete(P3);
     }
   };
 }
@@ -15237,9 +15237,9 @@ function weierstrassPoints(opts) {
      * @param hex short/long ECDSA hex
      */
     static fromHex(hex) {
-      const P2 = Point4.fromAffine(fromBytes4(ensureBytes("pointHex", hex)));
-      P2.assertValidity();
-      return P2;
+      const P3 = Point4.fromAffine(fromBytes4(ensureBytes("pointHex", hex)));
+      P3.assertValidity();
+      return P3;
     }
     // Multiplies generator point by privateKey.
     static fromPrivateKey(privateKey) {
@@ -15456,7 +15456,7 @@ function weierstrassPoints(opts) {
      */
     multiplyAndAddUnsafe(Q, a, b) {
       const G2 = Point4.BASE;
-      const mul3 = (P2, a2) => a2 === _0n5 || a2 === _1n5 || !P2.equals(G2) ? P2.multiplyUnsafe(a2) : P2.multiply(a2);
+      const mul3 = (P3, a2) => a2 === _0n5 || a2 === _1n5 || !P3.equals(G2) ? P3.multiplyUnsafe(a2) : P3.multiply(a2);
       const sum = mul3(this, a).add(mul3(Q, b));
       return sum.is0() ? void 0 : sum;
     }
@@ -15794,7 +15794,7 @@ function weierstrass(curveDef) {
     if (!isHex2 && !isObj)
       throw new Error("invalid signature, expected Uint8Array, hex string or Signature instance");
     let _sig = void 0;
-    let P2;
+    let P3;
     try {
       if (isObj)
         _sig = new Signature2(sg.r, sg.s);
@@ -15809,7 +15809,7 @@ function weierstrass(curveDef) {
         if (!_sig && format2 !== "der")
           _sig = Signature2.fromCompact(sg);
       }
-      P2 = Point4.fromHex(publicKey);
+      P3 = Point4.fromHex(publicKey);
     } catch (error) {
       return false;
     }
@@ -15824,7 +15824,7 @@ function weierstrass(curveDef) {
     const is = invN(s3);
     const u1 = modN2(h * is);
     const u2 = modN2(r2 * is);
-    const R = Point4.BASE.multiplyAndAddUnsafe(P2, u1, u2)?.toAffine();
+    const R = Point4.BASE.multiplyAndAddUnsafe(P3, u1, u2)?.toAffine();
     if (!R)
       return false;
     const v = modN2(R.x);
@@ -16195,11 +16195,11 @@ function createHasher2(Point4, mapToCurve, defaults2) {
     return Point4.fromAffine(mapToCurve(num2));
   }
   function clear(initial) {
-    const P2 = initial.clearCofactor();
-    if (P2.equals(Point4.ZERO))
+    const P3 = initial.clearCofactor();
+    if (P3.equals(Point4.ZERO))
       return Point4.ZERO;
-    P2.assertValidity();
-    return P2;
+    P3.assertValidity();
+    return P3;
   }
   return {
     defaults: defaults2,
@@ -16248,23 +16248,23 @@ __export(secp256k1_exports, {
   secp256k1_hasher: () => secp256k1_hasher
 });
 function sqrtMod(y) {
-  const P2 = secp256k1P;
+  const P3 = secp256k1P;
   const _3n7 = BigInt(3), _6n = BigInt(6), _11n = BigInt(11), _22n = BigInt(22);
   const _23n = BigInt(23), _44n = BigInt(44), _88n = BigInt(88);
-  const b2 = y * y * y % P2;
-  const b3 = b2 * b2 * y % P2;
-  const b6 = pow2(b3, _3n7, P2) * b3 % P2;
-  const b9 = pow2(b6, _3n7, P2) * b3 % P2;
-  const b11 = pow2(b9, _2n4, P2) * b2 % P2;
-  const b22 = pow2(b11, _11n, P2) * b11 % P2;
-  const b44 = pow2(b22, _22n, P2) * b22 % P2;
-  const b88 = pow2(b44, _44n, P2) * b44 % P2;
-  const b176 = pow2(b88, _88n, P2) * b88 % P2;
-  const b220 = pow2(b176, _44n, P2) * b44 % P2;
-  const b223 = pow2(b220, _3n7, P2) * b3 % P2;
-  const t1 = pow2(b223, _23n, P2) * b22 % P2;
-  const t2 = pow2(t1, _6n, P2) * b2 % P2;
-  const root = pow2(t2, _2n4, P2);
+  const b2 = y * y * y % P3;
+  const b3 = b2 * b2 * y % P3;
+  const b6 = pow2(b3, _3n7, P3) * b3 % P3;
+  const b9 = pow2(b6, _3n7, P3) * b3 % P3;
+  const b11 = pow2(b9, _2n4, P3) * b2 % P3;
+  const b22 = pow2(b11, _11n, P3) * b11 % P3;
+  const b44 = pow2(b22, _22n, P3) * b22 % P3;
+  const b88 = pow2(b44, _44n, P3) * b44 % P3;
+  const b176 = pow2(b88, _88n, P3) * b88 % P3;
+  const b220 = pow2(b176, _44n, P3) * b44 % P3;
+  const b223 = pow2(b220, _3n7, P3) * b3 % P3;
+  const t1 = pow2(b223, _23n, P3) * b22 % P3;
+  const t2 = pow2(t1, _6n, P3) * b2 % P3;
+  const root = pow2(t2, _2n4, P3);
   if (!Fpk1.eql(Fpk1.sqr(root), y))
     throw new Error("Cannot find square root");
   return root;
@@ -16324,15 +16324,15 @@ function schnorrVerify(signature3, message, publicKey) {
   const m = ensureBytes("message", message);
   const pub = ensureBytes("publicKey", publicKey, 32);
   try {
-    const P2 = lift_x(num(pub));
+    const P3 = lift_x(num(pub));
     const r2 = num(sig.subarray(0, 32));
     if (!inRange(r2, _1n6, secp256k1P))
       return false;
     const s3 = num(sig.subarray(32, 64));
     if (!inRange(s3, _1n6, secp256k1N))
       return false;
-    const e7 = challenge(numTo32b(r2), pointToBytes(P2), m);
-    const R = GmulAdd(P2, s3, modN(-e7));
+    const e7 = challenge(numTo32b(r2), pointToBytes(P3), m);
+    const R = GmulAdd(P3, s3, modN(-e7));
     if (!R || !R.hasEvenY() || R.toAffine().x !== r2)
       return false;
     return true;
@@ -26873,17 +26873,17 @@ function sqrt5mod82(Fp, n) {
     throw new Error("Cannot find square root");
   return root;
 }
-function tonelliShanks2(P2) {
-  if (P2 < BigInt(3))
+function tonelliShanks2(P3) {
+  if (P3 < BigInt(3))
     throw new Error("sqrt is not defined for small field");
-  let Q = P2 - _1n9;
+  let Q = P3 - _1n9;
   let S = 0;
   while (Q % _2n6 === _0n9) {
     Q /= _2n6;
     S++;
   }
   let Z = _2n6;
-  const _Fp = Field2(P2);
+  const _Fp = Field2(P3);
   while (FpLegendre2(_Fp, Z) === 1) {
     if (Z++ > 1e3)
       throw new Error("Cannot find square root: probably non-prime P");
@@ -26922,12 +26922,12 @@ function tonelliShanks2(P2) {
     return R;
   };
 }
-function FpSqrt2(P2) {
-  if (P2 % _4n3 === _3n3)
+function FpSqrt2(P3) {
+  if (P3 % _4n3 === _3n3)
     return sqrt3mod42;
-  if (P2 % _8n2 === _5n2)
+  if (P3 % _8n2 === _5n2)
     return sqrt5mod82;
-  return tonelliShanks2(P2);
+  return tonelliShanks2(P3);
 }
 function validateField2(field) {
   const initial = {
@@ -27154,8 +27154,8 @@ function validateMSMScalars2(scalars, field) {
       throw new Error("invalid scalar at index " + i);
   });
 }
-function getW2(P2) {
-  return pointWindowSizes2.get(P2) || 1;
+function getW2(P3) {
+  return pointWindowSizes2.get(P3) || 1;
 }
 function wNAF2(c, bits) {
   return {
@@ -27248,32 +27248,32 @@ function wNAF2(c, bits) {
       }
       return acc;
     },
-    getPrecomputes(W, P2, transform2) {
-      let comp = pointPrecomputes2.get(P2);
+    getPrecomputes(W, P3, transform2) {
+      let comp = pointPrecomputes2.get(P3);
       if (!comp) {
-        comp = this.precomputeWindow(P2, W);
+        comp = this.precomputeWindow(P3, W);
         if (W !== 1)
-          pointPrecomputes2.set(P2, transform2(comp));
+          pointPrecomputes2.set(P3, transform2(comp));
       }
       return comp;
     },
-    wNAFCached(P2, n, transform2) {
-      const W = getW2(P2);
-      return this.wNAF(W, this.getPrecomputes(W, P2, transform2), n);
+    wNAFCached(P3, n, transform2) {
+      const W = getW2(P3);
+      return this.wNAF(W, this.getPrecomputes(W, P3, transform2), n);
     },
-    wNAFCachedUnsafe(P2, n, transform2, prev) {
-      const W = getW2(P2);
+    wNAFCachedUnsafe(P3, n, transform2, prev) {
+      const W = getW2(P3);
       if (W === 1)
-        return this.unsafeLadder(P2, n, prev);
-      return this.wNAFUnsafe(W, this.getPrecomputes(W, P2, transform2), n, prev);
+        return this.unsafeLadder(P3, n, prev);
+      return this.wNAFUnsafe(W, this.getPrecomputes(W, P3, transform2), n, prev);
     },
     // We calculate precomputes for elliptic curve point multiplication
     // using windowed method. This specifies window size and
     // stores precomputed values. Usually only base point would be precomputed.
-    setWindowSize(P2, W) {
+    setWindowSize(P3, W) {
       validateW2(W, bits);
-      pointWindowSizes2.set(P2, W);
-      pointPrecomputes2.delete(P2);
+      pointWindowSizes2.set(P3, W);
+      pointPrecomputes2.delete(P3);
     }
   };
 }
@@ -27517,9 +27517,9 @@ function weierstrassPoints2(opts) {
      * @param hex short/long ECDSA hex
      */
     static fromHex(hex) {
-      const P2 = Point4.fromAffine(fromBytes4(ensureBytes2("pointHex", hex)));
-      P2.assertValidity();
-      return P2;
+      const P3 = Point4.fromAffine(fromBytes4(ensureBytes2("pointHex", hex)));
+      P3.assertValidity();
+      return P3;
     }
     // Multiplies generator point by privateKey.
     static fromPrivateKey(privateKey) {
@@ -27736,7 +27736,7 @@ function weierstrassPoints2(opts) {
      */
     multiplyAndAddUnsafe(Q, a, b) {
       const G2 = Point4.BASE;
-      const mul3 = (P2, a2) => a2 === _0n11 || a2 === _1n11 || !P2.equals(G2) ? P2.multiplyUnsafe(a2) : P2.multiply(a2);
+      const mul3 = (P3, a2) => a2 === _0n11 || a2 === _1n11 || !P3.equals(G2) ? P3.multiplyUnsafe(a2) : P3.multiply(a2);
       const sum = mul3(this, a).add(mul3(Q, b));
       return sum.is0() ? void 0 : sum;
     }
@@ -28074,7 +28074,7 @@ function weierstrass2(curveDef) {
     if (!isHex2 && !isObj)
       throw new Error("invalid signature, expected Uint8Array, hex string or Signature instance");
     let _sig = void 0;
-    let P2;
+    let P3;
     try {
       if (isObj)
         _sig = new Signature2(sg.r, sg.s);
@@ -28089,7 +28089,7 @@ function weierstrass2(curveDef) {
         if (!_sig && format2 !== "der")
           _sig = Signature2.fromCompact(sg);
       }
-      P2 = Point4.fromHex(publicKey);
+      P3 = Point4.fromHex(publicKey);
     } catch (error) {
       return false;
     }
@@ -28104,7 +28104,7 @@ function weierstrass2(curveDef) {
     const is = invN(s3);
     const u1 = modN2(h * is);
     const u2 = modN2(r2 * is);
-    const R = Point4.BASE.multiplyAndAddUnsafe(P2, u1, u2)?.toAffine();
+    const R = Point4.BASE.multiplyAndAddUnsafe(P3, u1, u2)?.toAffine();
     if (!R)
       return false;
     const v = modN2(R.x);
@@ -28264,23 +28264,23 @@ var init_shortw_utils2 = __esm({
 
 // node_modules/ox/node_modules/@noble/curves/esm/secp256k1.js
 function sqrtMod2(y) {
-  const P2 = secp256k1P2;
+  const P3 = secp256k1P2;
   const _3n7 = BigInt(3), _6n = BigInt(6), _11n = BigInt(11), _22n = BigInt(22);
   const _23n = BigInt(23), _44n = BigInt(44), _88n = BigInt(88);
-  const b2 = y * y * y % P2;
-  const b3 = b2 * b2 * y % P2;
-  const b6 = pow22(b3, _3n7, P2) * b3 % P2;
-  const b9 = pow22(b6, _3n7, P2) * b3 % P2;
-  const b11 = pow22(b9, _2n8, P2) * b2 % P2;
-  const b22 = pow22(b11, _11n, P2) * b11 % P2;
-  const b44 = pow22(b22, _22n, P2) * b22 % P2;
-  const b88 = pow22(b44, _44n, P2) * b44 % P2;
-  const b176 = pow22(b88, _88n, P2) * b88 % P2;
-  const b220 = pow22(b176, _44n, P2) * b44 % P2;
-  const b223 = pow22(b220, _3n7, P2) * b3 % P2;
-  const t1 = pow22(b223, _23n, P2) * b22 % P2;
-  const t2 = pow22(t1, _6n, P2) * b2 % P2;
-  const root = pow22(t2, _2n8, P2);
+  const b2 = y * y * y % P3;
+  const b3 = b2 * b2 * y % P3;
+  const b6 = pow22(b3, _3n7, P3) * b3 % P3;
+  const b9 = pow22(b6, _3n7, P3) * b3 % P3;
+  const b11 = pow22(b9, _2n8, P3) * b2 % P3;
+  const b22 = pow22(b11, _11n, P3) * b11 % P3;
+  const b44 = pow22(b22, _22n, P3) * b22 % P3;
+  const b88 = pow22(b44, _44n, P3) * b44 % P3;
+  const b176 = pow22(b88, _88n, P3) * b88 % P3;
+  const b220 = pow22(b176, _44n, P3) * b44 % P3;
+  const b223 = pow22(b220, _3n7, P3) * b3 % P3;
+  const t1 = pow22(b223, _23n, P3) * b22 % P3;
+  const t2 = pow22(t1, _6n, P3) * b2 % P3;
+  const root = pow22(t2, _2n8, P3);
   if (!Fpk12.eql(Fpk12.sqr(root), y))
     throw new Error("Cannot find square root");
   return root;
@@ -49687,13 +49687,13 @@ function sqrt5mod83(Fp, n) {
   assertIsSquare(F, root, n);
   return root;
 }
-function sqrt9mod16(P2) {
-  const Fp_ = Field3(P2);
-  const tn = tonelliShanks3(P2);
+function sqrt9mod16(P3) {
+  const Fp_ = Field3(P3);
+  const tn = tonelliShanks3(P3);
   const c1 = tn(Fp_, Fp_.neg(Fp_.ONE));
   const c2 = tn(Fp_, c1);
   const c3 = tn(Fp_, Fp_.neg(c1));
-  const c4 = (P2 + _7n3) / _16n;
+  const c4 = (P3 + _7n3) / _16n;
   return ((Fp, n) => {
     const F = Fp;
     let tv1 = F.pow(n, c4);
@@ -49710,17 +49710,17 @@ function sqrt9mod16(P2) {
     return root;
   });
 }
-function tonelliShanks3(P2) {
-  if (P2 < _3n5)
+function tonelliShanks3(P3) {
+  if (P3 < _3n5)
     throw new Error("sqrt is not defined for small field");
-  let Q = P2 - _1n14;
+  let Q = P3 - _1n14;
   let S = 0;
   while (Q % _2n9 === _0n14) {
     Q /= _2n9;
     S++;
   }
   let Z = _2n9;
-  const _Fp = Field3(P2);
+  const _Fp = Field3(P3);
   while (FpLegendre3(_Fp, Z) === 1) {
     if (Z++ > 1e3)
       throw new Error("Cannot find square root: probably non-prime P");
@@ -49760,14 +49760,14 @@ function tonelliShanks3(P2) {
     return R;
   };
 }
-function FpSqrt3(P2) {
-  if (P2 % _4n5 === _3n5)
+function FpSqrt3(P3) {
+  if (P3 % _4n5 === _3n5)
     return sqrt3mod43;
-  if (P2 % _8n3 === _5n3)
+  if (P3 % _8n3 === _5n3)
     return sqrt5mod83;
-  if (P2 % _16n === _9n)
-    return sqrt9mod16(P2);
-  return tonelliShanks3(P2);
+  if (P3 % _16n === _9n)
+    return sqrt9mod16(P3);
+  return tonelliShanks3(P3);
 }
 function validateField3(field) {
   const initial = {
@@ -50086,8 +50086,8 @@ function calcOffsets3(n, window2, wOpts) {
   const offsetF = offsetStart;
   return { nextN, offset, isZero, isNeg, isNegF, offsetF };
 }
-function getW3(P2) {
-  return pointWindowSizes3.get(P2) || 1;
+function getW3(P3) {
+  return pointWindowSizes3.get(P3) || 1;
 }
 function assert0(n) {
   if (n !== _0n15)
@@ -50278,10 +50278,10 @@ var init_curve3 = __esm({
       // We calculate precomputes for elliptic curve point multiplication
       // using windowed method. This specifies window size and
       // stores precomputed values. Usually only base point would be precomputed.
-      createCache(P2, W) {
+      createCache(P3, W) {
         validateW3(W, this.bits);
-        pointWindowSizes3.set(P2, W);
-        pointPrecomputes3.delete(P2);
+        pointWindowSizes3.set(P3, W);
+        pointPrecomputes3.delete(P3);
       }
       hasCache(elm) {
         return getW3(elm) !== 1;
@@ -50559,9 +50559,9 @@ function weierstrass3(params, extraOpts = {}) {
       return new Point4(x, y, Fp.ONE);
     }
     static fromBytes(bytes) {
-      const P2 = Point4.fromAffine(decodePoint2(abytes7(bytes, void 0, "point")));
-      P2.assertValidity();
-      return P2;
+      const P3 = Point4.fromAffine(decodePoint2(abytes7(bytes, void 0, "point")));
+      P3.assertValidity();
+      return P3;
     }
     static fromHex(hex) {
       return Point4.fromBytes(hexToBytes5(hex));
@@ -51123,7 +51123,7 @@ function ecdsa(Point4, hash5, ecdsaOpts = {}) {
     validateSigLength(signature3, format2);
     try {
       const sig = Signature2.fromBytes(signature3, format2);
-      const P2 = Point4.fromBytes(publicKey);
+      const P3 = Point4.fromBytes(publicKey);
       if (lowS && sig.hasHighS())
         return false;
       const { r: r2, s: s3 } = sig;
@@ -51131,7 +51131,7 @@ function ecdsa(Point4, hash5, ecdsaOpts = {}) {
       const is = Fn2.inv(s3);
       const u1 = Fn2.create(h * is);
       const u2 = Fn2.create(r2 * is);
-      const R = Point4.BASE.multiplyUnsafe(u1).add(P2.multiplyUnsafe(u2));
+      const R = Point4.BASE.multiplyUnsafe(u1).add(P3.multiplyUnsafe(u2));
       if (R.is0())
         return false;
       const v = Fn2.create(R.x);
@@ -51294,23 +51294,23 @@ var init_weierstrass3 = __esm({
 
 // node_modules/@noble/curves/secp256k1.js
 function sqrtMod3(y) {
-  const P2 = secp256k1_CURVE.p;
+  const P3 = secp256k1_CURVE.p;
   const _3n7 = BigInt(3), _6n = BigInt(6), _11n = BigInt(11), _22n = BigInt(22);
   const _23n = BigInt(23), _44n = BigInt(44), _88n = BigInt(88);
-  const b2 = y * y * y % P2;
-  const b3 = b2 * b2 * y % P2;
-  const b6 = pow23(b3, _3n7, P2) * b3 % P2;
-  const b9 = pow23(b6, _3n7, P2) * b3 % P2;
-  const b11 = pow23(b9, _2n11, P2) * b2 % P2;
-  const b22 = pow23(b11, _11n, P2) * b11 % P2;
-  const b44 = pow23(b22, _22n, P2) * b22 % P2;
-  const b88 = pow23(b44, _44n, P2) * b44 % P2;
-  const b176 = pow23(b88, _88n, P2) * b88 % P2;
-  const b220 = pow23(b176, _44n, P2) * b44 % P2;
-  const b223 = pow23(b220, _3n7, P2) * b3 % P2;
-  const t1 = pow23(b223, _23n, P2) * b22 % P2;
-  const t2 = pow23(t1, _6n, P2) * b2 % P2;
-  const root = pow23(t2, _2n11, P2);
+  const b2 = y * y * y % P3;
+  const b3 = b2 * b2 * y % P3;
+  const b6 = pow23(b3, _3n7, P3) * b3 % P3;
+  const b9 = pow23(b6, _3n7, P3) * b3 % P3;
+  const b11 = pow23(b9, _2n11, P3) * b2 % P3;
+  const b22 = pow23(b11, _11n, P3) * b11 % P3;
+  const b44 = pow23(b22, _22n, P3) * b22 % P3;
+  const b88 = pow23(b44, _44n, P3) * b44 % P3;
+  const b176 = pow23(b88, _88n, P3) * b88 % P3;
+  const b220 = pow23(b176, _44n, P3) * b44 % P3;
+  const b223 = pow23(b220, _3n7, P3) * b3 % P3;
+  const t1 = pow23(b223, _23n, P3) * b22 % P3;
+  const t2 = pow23(t1, _6n, P3) * b2 % P3;
+  const root = pow23(t2, _2n11, P3);
   if (!Fpk13.eql(Fpk13.sqr(root), y))
     throw new Error("Cannot find square root");
   return root;
@@ -53559,7 +53559,7 @@ function unwrapSimulationError(error) {
   }
   return error;
 }
-var SOLANA_ERROR__BLOCK_HEIGHT_EXCEEDED, SOLANA_ERROR__INVALID_NONCE, SOLANA_ERROR__NONCE_ACCOUNT_NOT_FOUND, SOLANA_ERROR__BLOCKHASH_STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__INVALID_BLOCKHASH_BYTE_LENGTH, SOLANA_ERROR__LAMPORTS_OUT_OF_RANGE, SOLANA_ERROR__MALFORMED_BIGINT_STRING, SOLANA_ERROR__MALFORMED_NUMBER_STRING, SOLANA_ERROR__TIMESTAMP_OUT_OF_RANGE, SOLANA_ERROR__MALFORMED_JSON_RPC_ERROR, SOLANA_ERROR__FAILED_TO_SEND_TRANSACTION, SOLANA_ERROR__FAILED_TO_SEND_TRANSACTIONS, SOLANA_ERROR__FAILED_TO_SIGN_TRANSACTION, SOLANA_ERROR__FAILED_TO_SIGN_TRANSACTIONS, SOLANA_ERROR__JSON_RPC__PARSE_ERROR, SOLANA_ERROR__JSON_RPC__INTERNAL_ERROR, SOLANA_ERROR__JSON_RPC__INVALID_PARAMS, SOLANA_ERROR__JSON_RPC__METHOD_NOT_FOUND, SOLANA_ERROR__JSON_RPC__INVALID_REQUEST, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_NO_SLOT_HISTORY, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_FILTER_TRANSACTION_NOT_FOUND, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_LONG_TERM_STORAGE_UNREACHABLE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SLOT_NOT_EPOCH_BOUNDARY, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_EPOCH_REWARDS_PERIOD_ACTIVE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_MIN_CONTEXT_SLOT_NOT_REACHED, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_UNSUPPORTED_TRANSACTION_VERSION, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_BLOCK_STATUS_NOT_AVAILABLE_YET, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_SIGNATURE_LEN_MISMATCH, SOLANA_ERROR__JSON_RPC__SCAN_ERROR, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_HISTORY_NOT_AVAILABLE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_KEY_EXCLUDED_FROM_SECONDARY_INDEX, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_LONG_TERM_STORAGE_SLOT_SKIPPED, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_NO_SNAPSHOT, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SLOT_SKIPPED, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_PRECOMPILE_VERIFICATION_FAILURE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_NODE_UNHEALTHY, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_BLOCK_NOT_AVAILABLE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_SIGNATURE_VERIFICATION_FAILURE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_BLOCK_CLEANED_UP, SOLANA_ERROR__ADDRESSES__INVALID_BYTE_LENGTH, SOLANA_ERROR__ADDRESSES__STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__ADDRESSES__INVALID_BASE58_ENCODED_ADDRESS, SOLANA_ERROR__ADDRESSES__INVALID_ED25519_PUBLIC_KEY, SOLANA_ERROR__ADDRESSES__MALFORMED_PDA, SOLANA_ERROR__ADDRESSES__PDA_BUMP_SEED_OUT_OF_RANGE, SOLANA_ERROR__ADDRESSES__MAX_NUMBER_OF_PDA_SEEDS_EXCEEDED, SOLANA_ERROR__ADDRESSES__MAX_PDA_SEED_LENGTH_EXCEEDED, SOLANA_ERROR__ADDRESSES__INVALID_SEEDS_POINT_ON_CURVE, SOLANA_ERROR__ADDRESSES__FAILED_TO_FIND_VIABLE_PDA_BUMP_SEED, SOLANA_ERROR__ADDRESSES__PDA_ENDS_WITH_PDA_MARKER, SOLANA_ERROR__ADDRESSES__INVALID_OFF_CURVE_ADDRESS, SOLANA_ERROR__ACCOUNTS__ACCOUNT_NOT_FOUND, SOLANA_ERROR__ACCOUNTS__ONE_OR_MORE_ACCOUNTS_NOT_FOUND, SOLANA_ERROR__ACCOUNTS__FAILED_TO_DECODE_ACCOUNT, SOLANA_ERROR__ACCOUNTS__EXPECTED_DECODED_ACCOUNT, SOLANA_ERROR__ACCOUNTS__EXPECTED_ALL_ACCOUNTS_TO_BE_DECODED, SOLANA_ERROR__SUBTLE_CRYPTO__DISALLOWED_IN_INSECURE_CONTEXT, SOLANA_ERROR__SUBTLE_CRYPTO__DIGEST_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__ED25519_ALGORITHM_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__EXPORT_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__GENERATE_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__SIGN_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__VERIFY_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__CANNOT_EXPORT_NON_EXTRACTABLE_KEY, SOLANA_ERROR__CRYPTO__RANDOM_VALUES_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__KEYS__INVALID_KEY_PAIR_BYTE_LENGTH, SOLANA_ERROR__KEYS__INVALID_PRIVATE_KEY_BYTE_LENGTH, SOLANA_ERROR__KEYS__INVALID_SIGNATURE_BYTE_LENGTH, SOLANA_ERROR__KEYS__SIGNATURE_STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__KEYS__PUBLIC_KEY_MUST_MATCH_PRIVATE_KEY, SOLANA_ERROR__KEYS__INVALID_BASE58_IN_GRIND_REGEX, SOLANA_ERROR__KEYS__WRITE_KEY_PAIR_UNSUPPORTED_ENVIRONMENT, SOLANA_ERROR__FS__UNSUPPORTED_ENVIRONMENT, SOLANA_ERROR__INSTRUCTION__EXPECTED_TO_HAVE_ACCOUNTS, SOLANA_ERROR__INSTRUCTION__EXPECTED_TO_HAVE_DATA, SOLANA_ERROR__INSTRUCTION__PROGRAM_ID_MISMATCH, SOLANA_ERROR__INSTRUCTION_ERROR__UNKNOWN, SOLANA_ERROR__INSTRUCTION_ERROR__GENERIC_ERROR, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ARGUMENT, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_INSTRUCTION_DATA, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ACCOUNT_DATA, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_DATA_TOO_SMALL, SOLANA_ERROR__INSTRUCTION_ERROR__INSUFFICIENT_FUNDS, SOLANA_ERROR__INSTRUCTION_ERROR__INCORRECT_PROGRAM_ID, SOLANA_ERROR__INSTRUCTION_ERROR__MISSING_REQUIRED_SIGNATURE, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_ALREADY_INITIALIZED, SOLANA_ERROR__INSTRUCTION_ERROR__UNINITIALIZED_ACCOUNT, SOLANA_ERROR__INSTRUCTION_ERROR__UNBALANCED_INSTRUCTION, SOLANA_ERROR__INSTRUCTION_ERROR__MODIFIED_PROGRAM_ID, SOLANA_ERROR__INSTRUCTION_ERROR__EXTERNAL_ACCOUNT_LAMPORT_SPEND, SOLANA_ERROR__INSTRUCTION_ERROR__EXTERNAL_ACCOUNT_DATA_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__READONLY_LAMPORT_CHANGE, SOLANA_ERROR__INSTRUCTION_ERROR__READONLY_DATA_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__DUPLICATE_ACCOUNT_INDEX, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__RENT_EPOCH_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__NOT_ENOUGH_ACCOUNT_KEYS, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_DATA_SIZE_CHANGED, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_NOT_EXECUTABLE, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_BORROW_FAILED, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_BORROW_OUTSTANDING, SOLANA_ERROR__INSTRUCTION_ERROR__DUPLICATE_ACCOUNT_OUT_OF_SYNC, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ERROR, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_DATA_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_LAMPORT_CHANGE, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_ACCOUNT_NOT_RENT_EXEMPT, SOLANA_ERROR__INSTRUCTION_ERROR__UNSUPPORTED_PROGRAM_ID, SOLANA_ERROR__INSTRUCTION_ERROR__CALL_DEPTH, SOLANA_ERROR__INSTRUCTION_ERROR__MISSING_ACCOUNT, SOLANA_ERROR__INSTRUCTION_ERROR__REENTRANCY_NOT_ALLOWED, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_SEED_LENGTH_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_SEEDS, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_REALLOC, SOLANA_ERROR__INSTRUCTION_ERROR__COMPUTATIONAL_BUDGET_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__PRIVILEGE_ESCALATION, SOLANA_ERROR__INSTRUCTION_ERROR__PROGRAM_ENVIRONMENT_SETUP_FAILURE, SOLANA_ERROR__INSTRUCTION_ERROR__PROGRAM_FAILED_TO_COMPLETE, SOLANA_ERROR__INSTRUCTION_ERROR__PROGRAM_FAILED_TO_COMPILE, SOLANA_ERROR__INSTRUCTION_ERROR__IMMUTABLE, SOLANA_ERROR__INSTRUCTION_ERROR__INCORRECT_AUTHORITY, SOLANA_ERROR__INSTRUCTION_ERROR__BORSH_IO_ERROR, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_NOT_RENT_EXEMPT, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ACCOUNT_OWNER, SOLANA_ERROR__INSTRUCTION_ERROR__ARITHMETIC_OVERFLOW, SOLANA_ERROR__INSTRUCTION_ERROR__UNSUPPORTED_SYSVAR, SOLANA_ERROR__INSTRUCTION_ERROR__ILLEGAL_OWNER, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_ACCOUNTS_DATA_ALLOCATIONS_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_ACCOUNTS_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_INSTRUCTION_TRACE_LENGTH_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__BUILTIN_PROGRAMS_MUST_CONSUME_COMPUTE_UNITS, SOLANA_ERROR__SIGNER__ADDRESS_CANNOT_HAVE_MULTIPLE_SIGNERS, SOLANA_ERROR__SIGNER__EXPECTED_KEY_PAIR_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_MESSAGE_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_MESSAGE_MODIFYING_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_MESSAGE_PARTIAL_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_MODIFYING_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_PARTIAL_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_SENDING_SIGNER, SOLANA_ERROR__SIGNER__TRANSACTION_CANNOT_HAVE_MULTIPLE_SENDING_SIGNERS, SOLANA_ERROR__SIGNER__TRANSACTION_SENDING_SIGNER_MISSING, SOLANA_ERROR__SIGNER__WALLET_MULTISIGN_UNIMPLEMENTED, SOLANA_ERROR__SIGNER__WALLET_ACCOUNT_CANNOT_SIGN_TRANSACTION, SOLANA_ERROR__OFFCHAIN_MESSAGE__MAXIMUM_LENGTH_EXCEEDED, SOLANA_ERROR__OFFCHAIN_MESSAGE__RESTRICTED_ASCII_BODY_CHARACTER_OUT_OF_RANGE, SOLANA_ERROR__OFFCHAIN_MESSAGE__APPLICATION_DOMAIN_STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__OFFCHAIN_MESSAGE__INVALID_APPLICATION_DOMAIN_BYTE_LENGTH, SOLANA_ERROR__OFFCHAIN_MESSAGE__NUM_SIGNATURES_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__NUM_REQUIRED_SIGNERS_CANNOT_BE_ZERO, SOLANA_ERROR__OFFCHAIN_MESSAGE__VERSION_NUMBER_NOT_SUPPORTED, SOLANA_ERROR__OFFCHAIN_MESSAGE__MESSAGE_FORMAT_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__MESSAGE_LENGTH_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__MESSAGE_MUST_BE_NON_EMPTY, SOLANA_ERROR__OFFCHAIN_MESSAGE__NUM_ENVELOPE_SIGNATURES_CANNOT_BE_ZERO, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATURES_MISSING, SOLANA_ERROR__OFFCHAIN_MESSAGE__ENVELOPE_SIGNERS_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__ADDRESSES_CANNOT_SIGN_OFFCHAIN_MESSAGE, SOLANA_ERROR__OFFCHAIN_MESSAGE__UNEXPECTED_VERSION, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATORIES_MUST_BE_SORTED, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATORIES_MUST_BE_UNIQUE, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATURE_VERIFICATION_FAILURE, SOLANA_ERROR__OFFCHAIN_MESSAGE__CONTENT_DOES_NOT_MATCH_EXPECTED, SOLANA_ERROR__OFFCHAIN_MESSAGE__REQUIRED_SIGNATORIES_DO_NOT_MATCH_EXPECTED, SOLANA_ERROR__TRANSACTION__INVOKED_PROGRAMS_CANNOT_PAY_FEES, SOLANA_ERROR__TRANSACTION__INVOKED_PROGRAMS_MUST_NOT_BE_WRITABLE, SOLANA_ERROR__TRANSACTION__EXPECTED_BLOCKHASH_LIFETIME, SOLANA_ERROR__TRANSACTION__EXPECTED_NONCE_LIFETIME, SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_ADDRESS_LOOKUP_TABLE_CONTENTS_MISSING, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_ADDRESS_LOOKUP_TABLE_INDEX_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_INSTRUCTION_PROGRAM_ADDRESS_NOT_FOUND, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_FEE_PAYER_MISSING, SOLANA_ERROR__TRANSACTION__SIGNATURES_MISSING, SOLANA_ERROR__TRANSACTION__ADDRESS_MISSING, SOLANA_ERROR__TRANSACTION__FEE_PAYER_MISSING, SOLANA_ERROR__TRANSACTION__FEE_PAYER_SIGNATURE_MISSING, SOLANA_ERROR__TRANSACTION__INVALID_NONCE_TRANSACTION_INSTRUCTIONS_MISSING, SOLANA_ERROR__TRANSACTION__INVALID_NONCE_TRANSACTION_FIRST_INSTRUCTION_MUST_BE_ADVANCE_NONCE, SOLANA_ERROR__TRANSACTION__ADDRESSES_CANNOT_SIGN_TRANSACTION, SOLANA_ERROR__TRANSACTION__CANNOT_ENCODE_WITH_EMPTY_SIGNATURES, SOLANA_ERROR__TRANSACTION__MESSAGE_SIGNATURES_MISMATCH, SOLANA_ERROR__TRANSACTION__FAILED_TO_ESTIMATE_COMPUTE_LIMIT, SOLANA_ERROR__TRANSACTION__FAILED_WHEN_SIMULATING_TO_ESTIMATE_COMPUTE_LIMIT, SOLANA_ERROR__TRANSACTION__EXCEEDS_SIZE_LIMIT, SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_NOT_SUPPORTED, SOLANA_ERROR__TRANSACTION__NONCE_ACCOUNT_CANNOT_BE_IN_LOOKUP_TABLE, SOLANA_ERROR__TRANSACTION__MALFORMED_MESSAGE_BYTES, SOLANA_ERROR__TRANSACTION__CANNOT_ENCODE_WITH_EMPTY_MESSAGE_BYTES, SOLANA_ERROR__TRANSACTION__CANNOT_DECODE_EMPTY_TRANSACTION_BYTES, SOLANA_ERROR__TRANSACTION__VERSION_ZERO_MUST_BE_ENCODED_WITH_SIGNATURES_FIRST, SOLANA_ERROR__TRANSACTION__SIGNATURE_COUNT_TOO_HIGH_FOR_TRANSACTION_BYTES, SOLANA_ERROR__TRANSACTION__INVALID_CONFIG_MASK_PRIORITY_FEE_BITS, SOLANA_ERROR__TRANSACTION__INVALID_NONCE_ACCOUNT_INDEX, SOLANA_ERROR__TRANSACTION__INVALID_CONFIG_VALUE_KIND, SOLANA_ERROR__TRANSACTION__INSTRUCTION_HEADERS_PAYLOADS_MISMATCH, SOLANA_ERROR__TRANSACTION__TOO_MANY_SIGNER_ADDRESSES, SOLANA_ERROR__TRANSACTION__TOO_MANY_ACCOUNT_ADDRESSES, SOLANA_ERROR__TRANSACTION__TOO_MANY_INSTRUCTIONS, SOLANA_ERROR__TRANSACTION__TOO_MANY_ACCOUNTS_IN_INSTRUCTION, SOLANA_ERROR__TRANSACTION__FAILED_TO_ESTIMATE_LOADED_ACCOUNTS_DATA_SIZE_LIMIT, SOLANA_ERROR__TRANSACTION__FAILED_WHEN_SIMULATING_TO_ESTIMATE_RESOURCE_LIMITS, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_INSTRUCTION_ACCOUNT_INDEX_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__COMPUTE_UNIT_LIMIT_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__INVALID_HEAP_SIZE, SOLANA_ERROR__TRANSACTION_INTROSPECTION__CANNOT_DECODE_JSON_PARSED_TRANSACTION, SOLANA_ERROR__TRANSACTION_INTROSPECTION__UNRECOGNIZED_GET_TRANSACTION_RESPONSE, SOLANA_ERROR__TRANSACTION_ERROR__UNKNOWN, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_IN_USE, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_LOADED_TWICE, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__PROGRAM_ACCOUNT_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS_FOR_FEE, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ACCOUNT_FOR_FEE, SOLANA_ERROR__TRANSACTION_ERROR__ALREADY_PROCESSED, SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__CALL_CHAIN_TOO_DEEP, SOLANA_ERROR__TRANSACTION_ERROR__MISSING_SIGNATURE_FOR_FEE, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ACCOUNT_INDEX, SOLANA_ERROR__TRANSACTION_ERROR__SIGNATURE_FAILURE, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_PROGRAM_FOR_EXECUTION, SOLANA_ERROR__TRANSACTION_ERROR__SANITIZE_FAILURE, SOLANA_ERROR__TRANSACTION_ERROR__CLUSTER_MAINTENANCE, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_BORROW_OUTSTANDING, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_MAX_BLOCK_COST_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__UNSUPPORTED_VERSION, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_WRITABLE_ACCOUNT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_MAX_ACCOUNT_COST_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_ACCOUNT_DATA_BLOCK_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__TOO_MANY_ACCOUNT_LOCKS, SOLANA_ERROR__TRANSACTION_ERROR__ADDRESS_LOOKUP_TABLE_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ADDRESS_LOOKUP_TABLE_OWNER, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ADDRESS_LOOKUP_TABLE_DATA, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ADDRESS_LOOKUP_TABLE_INDEX, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_RENT_PAYING_ACCOUNT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_MAX_VOTE_COST_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_ACCOUNT_DATA_TOTAL_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__DUPLICATE_INSTRUCTION, SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS_FOR_RENT, SOLANA_ERROR__TRANSACTION_ERROR__MAX_LOADED_ACCOUNTS_DATA_SIZE_EXCEEDED, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_LOADED_ACCOUNTS_DATA_SIZE_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__RESANITIZATION_NEEDED, SOLANA_ERROR__TRANSACTION_ERROR__PROGRAM_EXECUTION_TEMPORARILY_RESTRICTED, SOLANA_ERROR__TRANSACTION_ERROR__UNBALANCED_TRANSACTION, SOLANA_ERROR__INSTRUCTION_PLANS__MESSAGE_CANNOT_ACCOMMODATE_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__MESSAGE_PACKER_ALREADY_COMPLETE, SOLANA_ERROR__INSTRUCTION_PLANS__EMPTY_INSTRUCTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__FAILED_TO_EXECUTE_TRANSACTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__NON_DIVISIBLE_TRANSACTION_PLANS_NOT_SUPPORTED, SOLANA_ERROR__INSTRUCTION_PLANS__FAILED_SINGLE_TRANSACTION_PLAN_RESULT_NOT_FOUND, SOLANA_ERROR__INSTRUCTION_PLANS__UNEXPECTED_INSTRUCTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__UNEXPECTED_TRANSACTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__UNEXPECTED_TRANSACTION_PLAN_RESULT, SOLANA_ERROR__INSTRUCTION_PLANS__EXPECTED_SUCCESSFUL_TRANSACTION_PLAN_RESULT, SOLANA_ERROR__INSTRUCTION_PLANS__MAX_INSTRUCTIONS_PER_TRANSACTION_EXCEEDED, SOLANA_ERROR__INSTRUCTION_PLANS__INVALID_MAX_INSTRUCTIONS_PER_TRANSACTION, SOLANA_ERROR__INSTRUCTION_PLANS__MESSAGE_REJECTED_BY_PACKER, SOLANA_ERROR__CODECS__CANNOT_DECODE_EMPTY_BYTE_ARRAY, SOLANA_ERROR__CODECS__INVALID_BYTE_LENGTH, SOLANA_ERROR__CODECS__EXPECTED_FIXED_LENGTH, SOLANA_ERROR__CODECS__EXPECTED_VARIABLE_LENGTH, SOLANA_ERROR__CODECS__ENCODER_DECODER_SIZE_COMPATIBILITY_MISMATCH, SOLANA_ERROR__CODECS__ENCODER_DECODER_FIXED_SIZE_MISMATCH, SOLANA_ERROR__CODECS__ENCODER_DECODER_MAX_SIZE_MISMATCH, SOLANA_ERROR__CODECS__INVALID_NUMBER_OF_ITEMS, SOLANA_ERROR__CODECS__ENUM_DISCRIMINATOR_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_DISCRIMINATED_UNION_VARIANT, SOLANA_ERROR__CODECS__INVALID_ENUM_VARIANT, SOLANA_ERROR__CODECS__NUMBER_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_STRING_FOR_BASE, SOLANA_ERROR__CODECS__EXPECTED_POSITIVE_BYTE_LENGTH, SOLANA_ERROR__CODECS__OFFSET_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_LITERAL_UNION_VARIANT, SOLANA_ERROR__CODECS__LITERAL_UNION_DISCRIMINATOR_OUT_OF_RANGE, SOLANA_ERROR__CODECS__UNION_VARIANT_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_CONSTANT, SOLANA_ERROR__CODECS__EXPECTED_ZERO_VALUE_TO_MATCH_ITEM_FIXED_SIZE, SOLANA_ERROR__CODECS__ENCODED_BYTES_MUST_NOT_INCLUDE_SENTINEL, SOLANA_ERROR__CODECS__SENTINEL_MISSING_IN_DECODED_BYTES, SOLANA_ERROR__CODECS__CANNOT_USE_LEXICAL_VALUES_AS_ENUM_DISCRIMINATORS, SOLANA_ERROR__CODECS__EXPECTED_DECODER_TO_CONSUME_ENTIRE_BYTE_ARRAY, SOLANA_ERROR__CODECS__INVALID_PATTERN_MATCH_VALUE, SOLANA_ERROR__CODECS__INVALID_PATTERN_MATCH_BYTES, SOLANA_ERROR__CODECS__INVALID_UTF8_BYTES, SOLANA_ERROR__CODECS__INVALID_UTF8_STRING, SOLANA_ERROR__CODECS__SENTINEL_MISSING_AT_END_OF_BYTES, SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY, SOLANA_ERROR__FIXED_POINTS__INVALID_TOTAL_BITS, SOLANA_ERROR__FIXED_POINTS__INVALID_FRACTIONAL_BITS, SOLANA_ERROR__FIXED_POINTS__INVALID_DECIMALS, SOLANA_ERROR__FIXED_POINTS__FRACTIONAL_BITS_EXCEED_TOTAL_BITS, SOLANA_ERROR__FIXED_POINTS__VALUE_OUT_OF_RANGE, SOLANA_ERROR__FIXED_POINTS__INVALID_STRING, SOLANA_ERROR__FIXED_POINTS__INVALID_ZERO_DENOMINATOR_RATIO, SOLANA_ERROR__FIXED_POINTS__ARITHMETIC_OVERFLOW, SOLANA_ERROR__FIXED_POINTS__SHAPE_MISMATCH, SOLANA_ERROR__FIXED_POINTS__DIVISION_BY_ZERO, SOLANA_ERROR__FIXED_POINTS__STRICT_MODE_PRECISION_LOSS, SOLANA_ERROR__FIXED_POINTS__MALFORMED_RAW_VALUE, SOLANA_ERROR__FIXED_POINTS__TOTAL_BITS_NOT_BYTE_ALIGNED, SOLANA_ERROR__RPC__INTEGER_OVERFLOW, SOLANA_ERROR__RPC__TRANSPORT_HTTP_HEADER_FORBIDDEN, SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR, SOLANA_ERROR__RPC__API_PLAN_MISSING_FOR_RPC_METHOD, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CANNOT_CREATE_SUBSCRIPTION_PLAN, SOLANA_ERROR__RPC_SUBSCRIPTIONS__EXPECTED_SERVER_SUBSCRIPTION_ID, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CHANNEL_CLOSED_BEFORE_MESSAGE_BUFFERED, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CHANNEL_CONNECTION_CLOSED, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CHANNEL_FAILED_TO_CONNECT, SOLANA_ERROR__SUBSCRIBABLE__RETRY_NOT_SUPPORTED, SOLANA_ERROR__SUBSCRIBABLE__STREAM_CLOSED_WITHOUT_ERROR, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, SOLANA_ERROR__PROGRAM_CLIENTS__UNEXPECTED_RESOLVED_INSTRUCTION_INPUT_TYPE, SOLANA_ERROR__PROGRAM_CLIENTS__RESOLVED_INSTRUCTION_INPUT_MUST_BE_NON_NULL, SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_ACCOUNT_TYPE, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT, SOLANA_ERROR__PROGRAM_CLIENTS__RESOLVED_INSTRUCTION_INPUT_MUST_BE_SIGNER, SOLANA_ERROR__WALLET__NOT_CONNECTED, SOLANA_ERROR__WALLET__NO_SIGNER_CONNECTED, SOLANA_ERROR__WALLET__SIGNER_NOT_AVAILABLE, SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE, SOLANA_ERROR__REACT__MISSING_PROVIDER, SOLANA_ERROR__REACT__MISSING_CAPABILITY, SOLANA_ERROR__REACT__SUBSCRIPTION_CLOSED_WITHOUT_ERROR, SOLANA_ERROR__INVARIANT_VIOLATION__SUBSCRIPTION_ITERATOR_STATE_MISSING, SOLANA_ERROR__INVARIANT_VIOLATION__SUBSCRIPTION_ITERATOR_MUST_NOT_POLL_BEFORE_RESOLVING_EXISTING_MESSAGE_PROMISE, SOLANA_ERROR__INVARIANT_VIOLATION__CACHED_ABORTABLE_ITERABLE_CACHE_ENTRY_MISSING, SOLANA_ERROR__INVARIANT_VIOLATION__SWITCH_MUST_BE_EXHAUSTIVE, SOLANA_ERROR__INVARIANT_VIOLATION__DATA_PUBLISHER_CHANNEL_UNIMPLEMENTED, SOLANA_ERROR__INVARIANT_VIOLATION__INVALID_INSTRUCTION_PLAN_KIND, SOLANA_ERROR__INVARIANT_VIOLATION__INVALID_TRANSACTION_PLAN_KIND, SolanaErrorMessages, INSTRUCTION_ERROR_RANGE_SIZE, START_INDEX, TYPE, SolanaError, ORDERED_ERROR_NAMES, ORDERED_ERROR_NAMES2;
+var SOLANA_ERROR__BLOCK_HEIGHT_EXCEEDED, SOLANA_ERROR__INVALID_NONCE, SOLANA_ERROR__NONCE_ACCOUNT_NOT_FOUND, SOLANA_ERROR__BLOCKHASH_STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__INVALID_BLOCKHASH_BYTE_LENGTH, SOLANA_ERROR__LAMPORTS_OUT_OF_RANGE, SOLANA_ERROR__MALFORMED_BIGINT_STRING, SOLANA_ERROR__MALFORMED_NUMBER_STRING, SOLANA_ERROR__TIMESTAMP_OUT_OF_RANGE, SOLANA_ERROR__MALFORMED_JSON_RPC_ERROR, SOLANA_ERROR__FAILED_TO_SEND_TRANSACTION, SOLANA_ERROR__FAILED_TO_SEND_TRANSACTIONS, SOLANA_ERROR__FAILED_TO_SIGN_TRANSACTION, SOLANA_ERROR__FAILED_TO_SIGN_TRANSACTIONS, SOLANA_ERROR__JSON_RPC__PARSE_ERROR, SOLANA_ERROR__JSON_RPC__INTERNAL_ERROR, SOLANA_ERROR__JSON_RPC__INVALID_PARAMS, SOLANA_ERROR__JSON_RPC__METHOD_NOT_FOUND, SOLANA_ERROR__JSON_RPC__INVALID_REQUEST, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_NO_SLOT_HISTORY, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_FILTER_TRANSACTION_NOT_FOUND, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_LONG_TERM_STORAGE_UNREACHABLE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SLOT_NOT_EPOCH_BOUNDARY, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_EPOCH_REWARDS_PERIOD_ACTIVE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_MIN_CONTEXT_SLOT_NOT_REACHED, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_UNSUPPORTED_TRANSACTION_VERSION, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_BLOCK_STATUS_NOT_AVAILABLE_YET, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_SIGNATURE_LEN_MISMATCH, SOLANA_ERROR__JSON_RPC__SCAN_ERROR, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_HISTORY_NOT_AVAILABLE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_KEY_EXCLUDED_FROM_SECONDARY_INDEX, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_LONG_TERM_STORAGE_SLOT_SKIPPED, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_NO_SNAPSHOT, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SLOT_SKIPPED, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_PRECOMPILE_VERIFICATION_FAILURE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_NODE_UNHEALTHY, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_BLOCK_NOT_AVAILABLE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_TRANSACTION_SIGNATURE_VERIFICATION_FAILURE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_BLOCK_CLEANED_UP, SOLANA_ERROR__ADDRESSES__INVALID_BYTE_LENGTH, SOLANA_ERROR__ADDRESSES__STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__ADDRESSES__INVALID_BASE58_ENCODED_ADDRESS, SOLANA_ERROR__ADDRESSES__INVALID_ED25519_PUBLIC_KEY, SOLANA_ERROR__ADDRESSES__MALFORMED_PDA, SOLANA_ERROR__ADDRESSES__PDA_BUMP_SEED_OUT_OF_RANGE, SOLANA_ERROR__ADDRESSES__MAX_NUMBER_OF_PDA_SEEDS_EXCEEDED, SOLANA_ERROR__ADDRESSES__MAX_PDA_SEED_LENGTH_EXCEEDED, SOLANA_ERROR__ADDRESSES__INVALID_SEEDS_POINT_ON_CURVE, SOLANA_ERROR__ADDRESSES__FAILED_TO_FIND_VIABLE_PDA_BUMP_SEED, SOLANA_ERROR__ADDRESSES__PDA_ENDS_WITH_PDA_MARKER, SOLANA_ERROR__ADDRESSES__INVALID_OFF_CURVE_ADDRESS, SOLANA_ERROR__ACCOUNTS__ACCOUNT_NOT_FOUND, SOLANA_ERROR__ACCOUNTS__ONE_OR_MORE_ACCOUNTS_NOT_FOUND, SOLANA_ERROR__ACCOUNTS__FAILED_TO_DECODE_ACCOUNT, SOLANA_ERROR__ACCOUNTS__EXPECTED_DECODED_ACCOUNT, SOLANA_ERROR__ACCOUNTS__EXPECTED_ALL_ACCOUNTS_TO_BE_DECODED, SOLANA_ERROR__SUBTLE_CRYPTO__DISALLOWED_IN_INSECURE_CONTEXT, SOLANA_ERROR__SUBTLE_CRYPTO__DIGEST_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__ED25519_ALGORITHM_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__EXPORT_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__GENERATE_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__SIGN_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__VERIFY_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__SUBTLE_CRYPTO__CANNOT_EXPORT_NON_EXTRACTABLE_KEY, SOLANA_ERROR__CRYPTO__RANDOM_VALUES_FUNCTION_UNIMPLEMENTED, SOLANA_ERROR__KEYS__INVALID_KEY_PAIR_BYTE_LENGTH, SOLANA_ERROR__KEYS__INVALID_PRIVATE_KEY_BYTE_LENGTH, SOLANA_ERROR__KEYS__INVALID_SIGNATURE_BYTE_LENGTH, SOLANA_ERROR__KEYS__SIGNATURE_STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__KEYS__PUBLIC_KEY_MUST_MATCH_PRIVATE_KEY, SOLANA_ERROR__KEYS__INVALID_BASE58_IN_GRIND_REGEX, SOLANA_ERROR__KEYS__WRITE_KEY_PAIR_UNSUPPORTED_ENVIRONMENT, SOLANA_ERROR__KEYS__VERIFICATION_REQUIRES_EXTRACTABLE_PUBLIC_KEY, SOLANA_ERROR__FS__UNSUPPORTED_ENVIRONMENT, SOLANA_ERROR__INSTRUCTION__EXPECTED_TO_HAVE_ACCOUNTS, SOLANA_ERROR__INSTRUCTION__EXPECTED_TO_HAVE_DATA, SOLANA_ERROR__INSTRUCTION__PROGRAM_ID_MISMATCH, SOLANA_ERROR__INSTRUCTION_ERROR__UNKNOWN, SOLANA_ERROR__INSTRUCTION_ERROR__GENERIC_ERROR, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ARGUMENT, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_INSTRUCTION_DATA, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ACCOUNT_DATA, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_DATA_TOO_SMALL, SOLANA_ERROR__INSTRUCTION_ERROR__INSUFFICIENT_FUNDS, SOLANA_ERROR__INSTRUCTION_ERROR__INCORRECT_PROGRAM_ID, SOLANA_ERROR__INSTRUCTION_ERROR__MISSING_REQUIRED_SIGNATURE, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_ALREADY_INITIALIZED, SOLANA_ERROR__INSTRUCTION_ERROR__UNINITIALIZED_ACCOUNT, SOLANA_ERROR__INSTRUCTION_ERROR__UNBALANCED_INSTRUCTION, SOLANA_ERROR__INSTRUCTION_ERROR__MODIFIED_PROGRAM_ID, SOLANA_ERROR__INSTRUCTION_ERROR__EXTERNAL_ACCOUNT_LAMPORT_SPEND, SOLANA_ERROR__INSTRUCTION_ERROR__EXTERNAL_ACCOUNT_DATA_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__READONLY_LAMPORT_CHANGE, SOLANA_ERROR__INSTRUCTION_ERROR__READONLY_DATA_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__DUPLICATE_ACCOUNT_INDEX, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__RENT_EPOCH_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__NOT_ENOUGH_ACCOUNT_KEYS, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_DATA_SIZE_CHANGED, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_NOT_EXECUTABLE, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_BORROW_FAILED, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_BORROW_OUTSTANDING, SOLANA_ERROR__INSTRUCTION_ERROR__DUPLICATE_ACCOUNT_OUT_OF_SYNC, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ERROR, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_DATA_MODIFIED, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_LAMPORT_CHANGE, SOLANA_ERROR__INSTRUCTION_ERROR__EXECUTABLE_ACCOUNT_NOT_RENT_EXEMPT, SOLANA_ERROR__INSTRUCTION_ERROR__UNSUPPORTED_PROGRAM_ID, SOLANA_ERROR__INSTRUCTION_ERROR__CALL_DEPTH, SOLANA_ERROR__INSTRUCTION_ERROR__MISSING_ACCOUNT, SOLANA_ERROR__INSTRUCTION_ERROR__REENTRANCY_NOT_ALLOWED, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_SEED_LENGTH_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_SEEDS, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_REALLOC, SOLANA_ERROR__INSTRUCTION_ERROR__COMPUTATIONAL_BUDGET_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__PRIVILEGE_ESCALATION, SOLANA_ERROR__INSTRUCTION_ERROR__PROGRAM_ENVIRONMENT_SETUP_FAILURE, SOLANA_ERROR__INSTRUCTION_ERROR__PROGRAM_FAILED_TO_COMPLETE, SOLANA_ERROR__INSTRUCTION_ERROR__PROGRAM_FAILED_TO_COMPILE, SOLANA_ERROR__INSTRUCTION_ERROR__IMMUTABLE, SOLANA_ERROR__INSTRUCTION_ERROR__INCORRECT_AUTHORITY, SOLANA_ERROR__INSTRUCTION_ERROR__BORSH_IO_ERROR, SOLANA_ERROR__INSTRUCTION_ERROR__ACCOUNT_NOT_RENT_EXEMPT, SOLANA_ERROR__INSTRUCTION_ERROR__INVALID_ACCOUNT_OWNER, SOLANA_ERROR__INSTRUCTION_ERROR__ARITHMETIC_OVERFLOW, SOLANA_ERROR__INSTRUCTION_ERROR__UNSUPPORTED_SYSVAR, SOLANA_ERROR__INSTRUCTION_ERROR__ILLEGAL_OWNER, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_ACCOUNTS_DATA_ALLOCATIONS_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_ACCOUNTS_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__MAX_INSTRUCTION_TRACE_LENGTH_EXCEEDED, SOLANA_ERROR__INSTRUCTION_ERROR__BUILTIN_PROGRAMS_MUST_CONSUME_COMPUTE_UNITS, SOLANA_ERROR__SIGNER__ADDRESS_CANNOT_HAVE_MULTIPLE_SIGNERS, SOLANA_ERROR__SIGNER__EXPECTED_KEY_PAIR_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_MESSAGE_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_MESSAGE_MODIFYING_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_MESSAGE_PARTIAL_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_MODIFYING_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_PARTIAL_SIGNER, SOLANA_ERROR__SIGNER__EXPECTED_TRANSACTION_SENDING_SIGNER, SOLANA_ERROR__SIGNER__TRANSACTION_CANNOT_HAVE_MULTIPLE_SENDING_SIGNERS, SOLANA_ERROR__SIGNER__TRANSACTION_SENDING_SIGNER_MISSING, SOLANA_ERROR__SIGNER__WALLET_MULTISIGN_UNIMPLEMENTED, SOLANA_ERROR__SIGNER__WALLET_ACCOUNT_CANNOT_SIGN_TRANSACTION, SOLANA_ERROR__OFFCHAIN_MESSAGE__MAXIMUM_LENGTH_EXCEEDED, SOLANA_ERROR__OFFCHAIN_MESSAGE__RESTRICTED_ASCII_BODY_CHARACTER_OUT_OF_RANGE, SOLANA_ERROR__OFFCHAIN_MESSAGE__APPLICATION_DOMAIN_STRING_LENGTH_OUT_OF_RANGE, SOLANA_ERROR__OFFCHAIN_MESSAGE__INVALID_APPLICATION_DOMAIN_BYTE_LENGTH, SOLANA_ERROR__OFFCHAIN_MESSAGE__NUM_SIGNATURES_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__NUM_REQUIRED_SIGNERS_CANNOT_BE_ZERO, SOLANA_ERROR__OFFCHAIN_MESSAGE__VERSION_NUMBER_NOT_SUPPORTED, SOLANA_ERROR__OFFCHAIN_MESSAGE__MESSAGE_FORMAT_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__MESSAGE_LENGTH_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__MESSAGE_MUST_BE_NON_EMPTY, SOLANA_ERROR__OFFCHAIN_MESSAGE__NUM_ENVELOPE_SIGNATURES_CANNOT_BE_ZERO, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATURES_MISSING, SOLANA_ERROR__OFFCHAIN_MESSAGE__ENVELOPE_SIGNERS_MISMATCH, SOLANA_ERROR__OFFCHAIN_MESSAGE__ADDRESSES_CANNOT_SIGN_OFFCHAIN_MESSAGE, SOLANA_ERROR__OFFCHAIN_MESSAGE__UNEXPECTED_VERSION, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATORIES_MUST_BE_SORTED, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATORIES_MUST_BE_UNIQUE, SOLANA_ERROR__OFFCHAIN_MESSAGE__SIGNATURE_VERIFICATION_FAILURE, SOLANA_ERROR__OFFCHAIN_MESSAGE__CONTENT_DOES_NOT_MATCH_EXPECTED, SOLANA_ERROR__OFFCHAIN_MESSAGE__REQUIRED_SIGNATORIES_DO_NOT_MATCH_EXPECTED, SOLANA_ERROR__TRANSACTION__INVOKED_PROGRAMS_CANNOT_PAY_FEES, SOLANA_ERROR__TRANSACTION__INVOKED_PROGRAMS_MUST_NOT_BE_WRITABLE, SOLANA_ERROR__TRANSACTION__EXPECTED_BLOCKHASH_LIFETIME, SOLANA_ERROR__TRANSACTION__EXPECTED_NONCE_LIFETIME, SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_ADDRESS_LOOKUP_TABLE_CONTENTS_MISSING, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_ADDRESS_LOOKUP_TABLE_INDEX_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_INSTRUCTION_PROGRAM_ADDRESS_NOT_FOUND, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_FEE_PAYER_MISSING, SOLANA_ERROR__TRANSACTION__SIGNATURES_MISSING, SOLANA_ERROR__TRANSACTION__ADDRESS_MISSING, SOLANA_ERROR__TRANSACTION__FEE_PAYER_MISSING, SOLANA_ERROR__TRANSACTION__FEE_PAYER_SIGNATURE_MISSING, SOLANA_ERROR__TRANSACTION__INVALID_NONCE_TRANSACTION_INSTRUCTIONS_MISSING, SOLANA_ERROR__TRANSACTION__INVALID_NONCE_TRANSACTION_FIRST_INSTRUCTION_MUST_BE_ADVANCE_NONCE, SOLANA_ERROR__TRANSACTION__ADDRESSES_CANNOT_SIGN_TRANSACTION, SOLANA_ERROR__TRANSACTION__CANNOT_ENCODE_WITH_EMPTY_SIGNATURES, SOLANA_ERROR__TRANSACTION__MESSAGE_SIGNATURES_MISMATCH, SOLANA_ERROR__TRANSACTION__FAILED_TO_ESTIMATE_COMPUTE_LIMIT, SOLANA_ERROR__TRANSACTION__FAILED_WHEN_SIMULATING_TO_ESTIMATE_COMPUTE_LIMIT, SOLANA_ERROR__TRANSACTION__EXCEEDS_SIZE_LIMIT, SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_NOT_SUPPORTED, SOLANA_ERROR__TRANSACTION__NONCE_ACCOUNT_CANNOT_BE_IN_LOOKUP_TABLE, SOLANA_ERROR__TRANSACTION__MALFORMED_MESSAGE_BYTES, SOLANA_ERROR__TRANSACTION__CANNOT_ENCODE_WITH_EMPTY_MESSAGE_BYTES, SOLANA_ERROR__TRANSACTION__CANNOT_DECODE_EMPTY_TRANSACTION_BYTES, SOLANA_ERROR__TRANSACTION__VERSION_ZERO_MUST_BE_ENCODED_WITH_SIGNATURES_FIRST, SOLANA_ERROR__TRANSACTION__SIGNATURE_COUNT_TOO_HIGH_FOR_TRANSACTION_BYTES, SOLANA_ERROR__TRANSACTION__INVALID_CONFIG_MASK_PRIORITY_FEE_BITS, SOLANA_ERROR__TRANSACTION__INVALID_NONCE_ACCOUNT_INDEX, SOLANA_ERROR__TRANSACTION__INVALID_CONFIG_VALUE_KIND, SOLANA_ERROR__TRANSACTION__INSTRUCTION_HEADERS_PAYLOADS_MISMATCH, SOLANA_ERROR__TRANSACTION__TOO_MANY_SIGNER_ADDRESSES, SOLANA_ERROR__TRANSACTION__TOO_MANY_ACCOUNT_ADDRESSES, SOLANA_ERROR__TRANSACTION__TOO_MANY_INSTRUCTIONS, SOLANA_ERROR__TRANSACTION__TOO_MANY_ACCOUNTS_IN_INSTRUCTION, SOLANA_ERROR__TRANSACTION__FAILED_TO_ESTIMATE_LOADED_ACCOUNTS_DATA_SIZE_LIMIT, SOLANA_ERROR__TRANSACTION__FAILED_WHEN_SIMULATING_TO_ESTIMATE_RESOURCE_LIMITS, SOLANA_ERROR__TRANSACTION__FAILED_TO_DECOMPILE_INSTRUCTION_ACCOUNT_INDEX_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__COMPUTE_UNIT_LIMIT_OUT_OF_RANGE, SOLANA_ERROR__TRANSACTION__INVALID_HEAP_SIZE, SOLANA_ERROR__TRANSACTION_INTROSPECTION__CANNOT_DECODE_JSON_PARSED_TRANSACTION, SOLANA_ERROR__TRANSACTION_INTROSPECTION__UNRECOGNIZED_GET_TRANSACTION_RESPONSE, SOLANA_ERROR__TRANSACTION_ERROR__UNKNOWN, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_IN_USE, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_LOADED_TWICE, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__PROGRAM_ACCOUNT_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS_FOR_FEE, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ACCOUNT_FOR_FEE, SOLANA_ERROR__TRANSACTION_ERROR__ALREADY_PROCESSED, SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__CALL_CHAIN_TOO_DEEP, SOLANA_ERROR__TRANSACTION_ERROR__MISSING_SIGNATURE_FOR_FEE, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ACCOUNT_INDEX, SOLANA_ERROR__TRANSACTION_ERROR__SIGNATURE_FAILURE, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_PROGRAM_FOR_EXECUTION, SOLANA_ERROR__TRANSACTION_ERROR__SANITIZE_FAILURE, SOLANA_ERROR__TRANSACTION_ERROR__CLUSTER_MAINTENANCE, SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_BORROW_OUTSTANDING, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_MAX_BLOCK_COST_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__UNSUPPORTED_VERSION, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_WRITABLE_ACCOUNT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_MAX_ACCOUNT_COST_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_ACCOUNT_DATA_BLOCK_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__TOO_MANY_ACCOUNT_LOCKS, SOLANA_ERROR__TRANSACTION_ERROR__ADDRESS_LOOKUP_TABLE_NOT_FOUND, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ADDRESS_LOOKUP_TABLE_OWNER, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ADDRESS_LOOKUP_TABLE_DATA, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ADDRESS_LOOKUP_TABLE_INDEX, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_RENT_PAYING_ACCOUNT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_MAX_VOTE_COST_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__WOULD_EXCEED_ACCOUNT_DATA_TOTAL_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__DUPLICATE_INSTRUCTION, SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS_FOR_RENT, SOLANA_ERROR__TRANSACTION_ERROR__MAX_LOADED_ACCOUNTS_DATA_SIZE_EXCEEDED, SOLANA_ERROR__TRANSACTION_ERROR__INVALID_LOADED_ACCOUNTS_DATA_SIZE_LIMIT, SOLANA_ERROR__TRANSACTION_ERROR__RESANITIZATION_NEEDED, SOLANA_ERROR__TRANSACTION_ERROR__PROGRAM_EXECUTION_TEMPORARILY_RESTRICTED, SOLANA_ERROR__TRANSACTION_ERROR__UNBALANCED_TRANSACTION, SOLANA_ERROR__INSTRUCTION_PLANS__MESSAGE_CANNOT_ACCOMMODATE_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__MESSAGE_PACKER_ALREADY_COMPLETE, SOLANA_ERROR__INSTRUCTION_PLANS__EMPTY_INSTRUCTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__FAILED_TO_EXECUTE_TRANSACTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__NON_DIVISIBLE_TRANSACTION_PLANS_NOT_SUPPORTED, SOLANA_ERROR__INSTRUCTION_PLANS__FAILED_SINGLE_TRANSACTION_PLAN_RESULT_NOT_FOUND, SOLANA_ERROR__INSTRUCTION_PLANS__UNEXPECTED_INSTRUCTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__UNEXPECTED_TRANSACTION_PLAN, SOLANA_ERROR__INSTRUCTION_PLANS__UNEXPECTED_TRANSACTION_PLAN_RESULT, SOLANA_ERROR__INSTRUCTION_PLANS__EXPECTED_SUCCESSFUL_TRANSACTION_PLAN_RESULT, SOLANA_ERROR__INSTRUCTION_PLANS__MAX_INSTRUCTIONS_PER_TRANSACTION_EXCEEDED, SOLANA_ERROR__INSTRUCTION_PLANS__INVALID_MAX_INSTRUCTIONS_PER_TRANSACTION, SOLANA_ERROR__INSTRUCTION_PLANS__MESSAGE_REJECTED_BY_PACKER, SOLANA_ERROR__CODECS__CANNOT_DECODE_EMPTY_BYTE_ARRAY, SOLANA_ERROR__CODECS__INVALID_BYTE_LENGTH, SOLANA_ERROR__CODECS__EXPECTED_FIXED_LENGTH, SOLANA_ERROR__CODECS__EXPECTED_VARIABLE_LENGTH, SOLANA_ERROR__CODECS__ENCODER_DECODER_SIZE_COMPATIBILITY_MISMATCH, SOLANA_ERROR__CODECS__ENCODER_DECODER_FIXED_SIZE_MISMATCH, SOLANA_ERROR__CODECS__ENCODER_DECODER_MAX_SIZE_MISMATCH, SOLANA_ERROR__CODECS__INVALID_NUMBER_OF_ITEMS, SOLANA_ERROR__CODECS__ENUM_DISCRIMINATOR_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_DISCRIMINATED_UNION_VARIANT, SOLANA_ERROR__CODECS__INVALID_ENUM_VARIANT, SOLANA_ERROR__CODECS__NUMBER_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_STRING_FOR_BASE, SOLANA_ERROR__CODECS__EXPECTED_POSITIVE_BYTE_LENGTH, SOLANA_ERROR__CODECS__OFFSET_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_LITERAL_UNION_VARIANT, SOLANA_ERROR__CODECS__LITERAL_UNION_DISCRIMINATOR_OUT_OF_RANGE, SOLANA_ERROR__CODECS__UNION_VARIANT_OUT_OF_RANGE, SOLANA_ERROR__CODECS__INVALID_CONSTANT, SOLANA_ERROR__CODECS__EXPECTED_ZERO_VALUE_TO_MATCH_ITEM_FIXED_SIZE, SOLANA_ERROR__CODECS__ENCODED_BYTES_MUST_NOT_INCLUDE_SENTINEL, SOLANA_ERROR__CODECS__SENTINEL_MISSING_IN_DECODED_BYTES, SOLANA_ERROR__CODECS__CANNOT_USE_LEXICAL_VALUES_AS_ENUM_DISCRIMINATORS, SOLANA_ERROR__CODECS__EXPECTED_DECODER_TO_CONSUME_ENTIRE_BYTE_ARRAY, SOLANA_ERROR__CODECS__INVALID_PATTERN_MATCH_VALUE, SOLANA_ERROR__CODECS__INVALID_PATTERN_MATCH_BYTES, SOLANA_ERROR__CODECS__INVALID_UTF8_BYTES, SOLANA_ERROR__CODECS__INVALID_UTF8_STRING, SOLANA_ERROR__CODECS__SENTINEL_MISSING_AT_END_OF_BYTES, SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY, SOLANA_ERROR__CODECS__UNEXPECTED_ZERO_FIXED_SIZE_ITEM_FOR_ARRAY_LIKE_SIZE_STRATEGY, SOLANA_ERROR__FIXED_POINTS__INVALID_TOTAL_BITS, SOLANA_ERROR__FIXED_POINTS__INVALID_FRACTIONAL_BITS, SOLANA_ERROR__FIXED_POINTS__INVALID_DECIMALS, SOLANA_ERROR__FIXED_POINTS__FRACTIONAL_BITS_EXCEED_TOTAL_BITS, SOLANA_ERROR__FIXED_POINTS__VALUE_OUT_OF_RANGE, SOLANA_ERROR__FIXED_POINTS__INVALID_STRING, SOLANA_ERROR__FIXED_POINTS__INVALID_ZERO_DENOMINATOR_RATIO, SOLANA_ERROR__FIXED_POINTS__ARITHMETIC_OVERFLOW, SOLANA_ERROR__FIXED_POINTS__SHAPE_MISMATCH, SOLANA_ERROR__FIXED_POINTS__DIVISION_BY_ZERO, SOLANA_ERROR__FIXED_POINTS__STRICT_MODE_PRECISION_LOSS, SOLANA_ERROR__FIXED_POINTS__MALFORMED_RAW_VALUE, SOLANA_ERROR__FIXED_POINTS__TOTAL_BITS_NOT_BYTE_ALIGNED, SOLANA_ERROR__RPC__INTEGER_OVERFLOW, SOLANA_ERROR__RPC__TRANSPORT_HTTP_HEADER_FORBIDDEN, SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR, SOLANA_ERROR__RPC__API_PLAN_MISSING_FOR_RPC_METHOD, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CANNOT_CREATE_SUBSCRIPTION_PLAN, SOLANA_ERROR__RPC_SUBSCRIPTIONS__EXPECTED_SERVER_SUBSCRIPTION_ID, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CHANNEL_CLOSED_BEFORE_MESSAGE_BUFFERED, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CHANNEL_CONNECTION_CLOSED, SOLANA_ERROR__RPC_SUBSCRIPTIONS__CHANNEL_FAILED_TO_CONNECT, SOLANA_ERROR__SUBSCRIBABLE__RETRY_NOT_SUPPORTED, SOLANA_ERROR__SUBSCRIBABLE__STREAM_CLOSED_WITHOUT_ERROR, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, SOLANA_ERROR__PROGRAM_CLIENTS__UNEXPECTED_RESOLVED_INSTRUCTION_INPUT_TYPE, SOLANA_ERROR__PROGRAM_CLIENTS__RESOLVED_INSTRUCTION_INPUT_MUST_BE_NON_NULL, SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_ACCOUNT_TYPE, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT, SOLANA_ERROR__PROGRAM_CLIENTS__RESOLVED_INSTRUCTION_INPUT_MUST_BE_SIGNER, SOLANA_ERROR__WALLET__NOT_CONNECTED, SOLANA_ERROR__WALLET__NO_SIGNER_CONNECTED, SOLANA_ERROR__WALLET__SIGNER_NOT_AVAILABLE, SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE, SOLANA_ERROR__WALLET__INVALID_MESSAGE_SIGNATURE, SOLANA_ERROR__WALLET__INVALID_SIGN_IN_OUTPUT, SOLANA_ERROR__WALLET__INVALID_NUMBER_OF_OUTPUTS, SOLANA_ERROR__REACT__MISSING_PROVIDER, SOLANA_ERROR__REACT__MISSING_CAPABILITY, SOLANA_ERROR__REACT__SUBSCRIPTION_CLOSED_WITHOUT_ERROR, SOLANA_ERROR__INVARIANT_VIOLATION__SUBSCRIPTION_ITERATOR_STATE_MISSING, SOLANA_ERROR__INVARIANT_VIOLATION__SUBSCRIPTION_ITERATOR_MUST_NOT_POLL_BEFORE_RESOLVING_EXISTING_MESSAGE_PROMISE, SOLANA_ERROR__INVARIANT_VIOLATION__CACHED_ABORTABLE_ITERABLE_CACHE_ENTRY_MISSING, SOLANA_ERROR__INVARIANT_VIOLATION__SWITCH_MUST_BE_EXHAUSTIVE, SOLANA_ERROR__INVARIANT_VIOLATION__DATA_PUBLISHER_CHANNEL_UNIMPLEMENTED, SOLANA_ERROR__INVARIANT_VIOLATION__INVALID_INSTRUCTION_PLAN_KIND, SOLANA_ERROR__INVARIANT_VIOLATION__INVALID_TRANSACTION_PLAN_KIND, SolanaErrorMessages, INSTRUCTION_ERROR_RANGE_SIZE, START_INDEX, TYPE, SolanaError, ORDERED_ERROR_NAMES, ORDERED_ERROR_NAMES2;
 var init_index_node = __esm({
   "node_modules/@solana/errors/dist/index.node.mjs"() {
     "use strict";
@@ -53636,6 +53636,7 @@ var init_index_node = __esm({
     SOLANA_ERROR__KEYS__PUBLIC_KEY_MUST_MATCH_PRIVATE_KEY = 3704004;
     SOLANA_ERROR__KEYS__INVALID_BASE58_IN_GRIND_REGEX = 3704005;
     SOLANA_ERROR__KEYS__WRITE_KEY_PAIR_UNSUPPORTED_ENVIRONMENT = 3704006;
+    SOLANA_ERROR__KEYS__VERIFICATION_REQUIRES_EXTRACTABLE_PUBLIC_KEY = 3704007;
     SOLANA_ERROR__FS__UNSUPPORTED_ENVIRONMENT = 3712e3;
     SOLANA_ERROR__INSTRUCTION__EXPECTED_TO_HAVE_ACCOUNTS = 4128e3;
     SOLANA_ERROR__INSTRUCTION__EXPECTED_TO_HAVE_DATA = 4128001;
@@ -53851,6 +53852,7 @@ var init_index_node = __esm({
     SOLANA_ERROR__CODECS__INVALID_UTF8_STRING = 8078027;
     SOLANA_ERROR__CODECS__SENTINEL_MISSING_AT_END_OF_BYTES = 8078028;
     SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY = 8078029;
+    SOLANA_ERROR__CODECS__UNEXPECTED_ZERO_FIXED_SIZE_ITEM_FOR_ARRAY_LIKE_SIZE_STRATEGY = 8078030;
     SOLANA_ERROR__FIXED_POINTS__INVALID_TOTAL_BITS = 809e4;
     SOLANA_ERROR__FIXED_POINTS__INVALID_FRACTIONAL_BITS = 8090001;
     SOLANA_ERROR__FIXED_POINTS__INVALID_DECIMALS = 8090002;
@@ -53887,6 +53889,9 @@ var init_index_node = __esm({
     SOLANA_ERROR__WALLET__NO_SIGNER_CONNECTED = 8900001;
     SOLANA_ERROR__WALLET__SIGNER_NOT_AVAILABLE = 8900002;
     SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE = 8900003;
+    SOLANA_ERROR__WALLET__INVALID_MESSAGE_SIGNATURE = 8900004;
+    SOLANA_ERROR__WALLET__INVALID_SIGN_IN_OUTPUT = 8900005;
+    SOLANA_ERROR__WALLET__INVALID_NUMBER_OF_OUTPUTS = 8900006;
     SOLANA_ERROR__REACT__MISSING_PROVIDER = 9e6;
     SOLANA_ERROR__REACT__MISSING_CAPABILITY = 9000001;
     SOLANA_ERROR__REACT__SUBSCRIPTION_CLOSED_WITHOUT_ERROR = 9000002;
@@ -53943,6 +53948,7 @@ var init_index_node = __esm({
       [SOLANA_ERROR__CODECS__SENTINEL_MISSING_AT_END_OF_BYTES]: "Codec [$codecDescription] expected sentinel [$hexSentinel] to terminate the collection, but reached the end of the byte array without it.",
       [SOLANA_ERROR__CODECS__SENTINEL_MISSING_IN_DECODED_BYTES]: "Expected sentinel [$hexSentinel] to be present in decoded bytes [$hexDecodedBytes].",
       [SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY]: "The sentinel must not be empty.",
+      [SOLANA_ERROR__CODECS__UNEXPECTED_ZERO_FIXED_SIZE_ITEM_FOR_ARRAY_LIKE_SIZE_STRATEGY]: "Codec [$codecDescription] cannot use the [$sizeStrategy] size strategy: the item codec has a fixed size of zero and consumes no bytes.",
       [SOLANA_ERROR__CODECS__UNION_VARIANT_OUT_OF_RANGE]: "Union variant out of range. Expected an index between $minRange and $maxRange, got $variant.",
       [SOLANA_ERROR__CODECS__EXPECTED_DECODER_TO_CONSUME_ENTIRE_BYTE_ARRAY]: "This decoder expected a byte array of exactly $expectedLength bytes, but $numExcessBytes unexpected excess bytes remained after decoding. Are you sure that you have chosen the correct decoder for this data?",
       [SOLANA_ERROR__CODECS__INVALID_PATTERN_MATCH_VALUE]: "Invalid pattern match value. The provided value does not match any of the specified patterns.",
@@ -54078,6 +54084,7 @@ var init_index_node = __esm({
       [SOLANA_ERROR__KEYS__INVALID_SIGNATURE_BYTE_LENGTH]: "Expected base58-encoded signature to decode to a byte array of length 64. Actual length: $actualLength.",
       [SOLANA_ERROR__KEYS__PUBLIC_KEY_MUST_MATCH_PRIVATE_KEY]: "The provided private key does not match the provided public key.",
       [SOLANA_ERROR__KEYS__SIGNATURE_STRING_LENGTH_OUT_OF_RANGE]: "Expected base58-encoded signature string of length in the range [64, 88]. Actual length: $actualLength.",
+      [SOLANA_ERROR__KEYS__VERIFICATION_REQUIRES_EXTRACTABLE_PUBLIC_KEY]: "Signatures can only be verified using an extractable public key. The bytes of the public key must be readable. If you imported the public key yourself, set `extractable` to `true`.",
       [SOLANA_ERROR__KEYS__WRITE_KEY_PAIR_UNSUPPORTED_ENVIRONMENT]: "Writing a key pair to disk is not supported in this environment.",
       [SOLANA_ERROR__LAMPORTS_OUT_OF_RANGE]: "Lamports value must be in the range [0, 2e64-1]",
       [SOLANA_ERROR__MALFORMED_BIGINT_STRING]: "`$value` cannot be parsed as a `BigInt`",
@@ -54231,7 +54238,10 @@ var init_index_node = __esm({
       [SOLANA_ERROR__WALLET__NOT_CONNECTED]: "Cannot $operation: no wallet connected",
       [SOLANA_ERROR__WALLET__NO_SIGNER_CONNECTED]: "No signing wallet connected (status: $status)",
       [SOLANA_ERROR__WALLET__SIGNER_NOT_AVAILABLE]: "Connected wallet does not support signing",
-      [SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE]: 'Account $address is not available in wallet "$walletName"'
+      [SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE]: 'Account $address is not available in wallet "$walletName"',
+      [SOLANA_ERROR__WALLET__INVALID_MESSAGE_SIGNATURE]: 'Wallet "$walletName" did not return a valid signature of the requested message for account $address',
+      [SOLANA_ERROR__WALLET__INVALID_NUMBER_OF_OUTPUTS]: 'Wallet "$walletName" returned $actual outputs from `$featureName`, but $expected were requested',
+      [SOLANA_ERROR__WALLET__INVALID_SIGN_IN_OUTPUT]: 'Wallet "$walletName" returned an invalid sign-in output for account $address'
     };
     INSTRUCTION_ERROR_RANGE_SIZE = 1e3;
     START_INDEX = "i";
@@ -55116,7 +55126,7 @@ var init_index_node3 = __esm({
       getSizeFromValue: (value) => Math.ceil(value.length / 2),
       write(value, bytes, offset) {
         const len = value.length;
-        const al = len / 2;
+        const al = Math.ceil(len / 2);
         if (len === 1) {
           const c = value.charCodeAt(0);
           const n = charCodeToBase163(c);
@@ -55462,7 +55472,7 @@ function address(putativeAddress) {
 function getAddressEncoder() {
   return transformEncoder(
     fixEncoderSize(getMemoizedBase58Encoder(), 32),
-    (putativeAddress) => address(putativeAddress)
+    (value) => address(typeof value === "string" ? value : value.address)
   );
 }
 function getAddressDecoder() {
@@ -56062,7 +56072,9 @@ function getMaxSize(codec) {
 function getArrayEncoder(item, config = {}) {
   const size5 = config.size ?? getU32Encoder();
   assertValidSize(size5);
-  const fixedSize = computeArrayLikeCodecSize(size5, getFixedSize(item));
+  const itemSize = getFixedSize(item);
+  assertItemCodecSupportsSizeStrategy(config.description ?? "array", size5, itemSize);
+  const fixedSize = computeArrayLikeCodecSize(size5, itemSize);
   const maxSize = computeArrayLikeCodecSize(size5, getMaxSize(item)) ?? void 0;
   return createEncoder({
     ...fixedSize !== null ? { fixedSize } : {
@@ -56095,6 +56107,7 @@ function getArrayDecoder(item, config = {}) {
   const size5 = config.size ?? getU32Decoder();
   assertValidSize(size5);
   const itemSize = getFixedSize(item);
+  assertItemCodecSupportsSizeStrategy(config.description ?? "array", size5, itemSize);
   const fixedSize = computeArrayLikeCodecSize(size5, itemSize);
   const maxSize = computeArrayLikeCodecSize(size5, getMaxSize(item)) ?? void 0;
   return createDecoder({
@@ -56163,6 +56176,15 @@ function isSentinelSize(size5) {
 function assertValidSize(size5) {
   if (isSentinelSize(size5) && size5.sentinel.length === 0) {
     throw new SolanaError(SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY);
+  }
+}
+function assertItemCodecSupportsSizeStrategy(codecDescription, size5, itemFixedSize) {
+  if (itemFixedSize !== 0) return;
+  if (size5 === "remainder" || isSentinelSize(size5)) {
+    throw new SolanaError(SOLANA_ERROR__CODECS__UNEXPECTED_ZERO_FIXED_SIZE_ITEM_FOR_ARRAY_LIKE_SIZE_STRATEGY, {
+      codecDescription,
+      sizeStrategy: size5 === "remainder" ? "remainder" : "sentinel"
+    });
   }
 }
 function hexBytes2(bytes) {
@@ -56859,14 +56881,6 @@ function assertValidDecimals(decimals) {
     });
   }
 }
-function assertFractionalBitsFitInTotalBits(fractionalBits, totalBits) {
-  if (fractionalBits > totalBits) {
-    throw new SolanaError(SOLANA_ERROR__FIXED_POINTS__FRACTIONAL_BITS_EXCEED_TOTAL_BITS, {
-      fractionalBits,
-      totalBits
-    });
-  }
-}
 function assertTotalBitsIsByteAligned(kind, totalBits) {
   if (totalBits % 8 !== 0) {
     throw new SolanaError(SOLANA_ERROR__FIXED_POINTS__TOTAL_BITS_NOT_BYTE_ALIGNED, {
@@ -57131,7 +57145,6 @@ function readRawBigInt(bytes, offset, byteSize, signedness, littleEndian) {
 function getBinaryFixedPointEncoder(signedness, totalBits, fractionalBits, config = {}) {
   assertValidTotalBits("binaryFixedPoint", totalBits);
   assertValidFractionalBits(fractionalBits);
-  assertFractionalBitsFitInTotalBits(fractionalBits, totalBits);
   assertTotalBitsIsByteAligned("binaryFixedPoint", totalBits);
   const byteSize = totalBits / 8;
   const littleEndian = config.endian !== "be";
@@ -57153,7 +57166,6 @@ function getBinaryFixedPointEncoder(signedness, totalBits, fractionalBits, confi
 function getBinaryFixedPointDecoder(signedness, totalBits, fractionalBits, config = {}) {
   assertValidTotalBits("binaryFixedPoint", totalBits);
   assertValidFractionalBits(fractionalBits);
-  assertFractionalBitsFitInTotalBits(fractionalBits, totalBits);
   assertTotalBitsIsByteAligned("binaryFixedPoint", totalBits);
   const byteSize = totalBits / 8;
   const littleEndian = config.endian !== "be";
@@ -57226,7 +57238,6 @@ function toSignedBinaryFixedPoint(value) {
 function rescaleBinaryFixedPoint(value, newTotalBits, newFractionalBits, rounding = "strict") {
   assertValidTotalBits("binaryFixedPoint", newTotalBits);
   assertValidFractionalBits(newFractionalBits);
-  assertFractionalBitsFitInTotalBits(newFractionalBits, newTotalBits);
   if (value.totalBits === newTotalBits && value.fractionalBits === newFractionalBits) {
     return value;
   }
@@ -57278,7 +57289,6 @@ function createBinaryFixedPoint(signedness, totalBits, fractionalBits, raw) {
 function binaryFixedPoint(signedness, totalBits, fractionalBits) {
   assertValidTotalBits("binaryFixedPoint", totalBits);
   assertValidFractionalBits(fractionalBits);
-  assertFractionalBitsFitInTotalBits(fractionalBits, totalBits);
   return (input, rounding = "strict") => {
     const parsed = parseDecimalString("binaryFixedPoint", input);
     const scaledRaw = parsed.raw * (1n << BigInt(fractionalBits));
@@ -57289,13 +57299,11 @@ function binaryFixedPoint(signedness, totalBits, fractionalBits) {
 function rawBinaryFixedPoint(signedness, totalBits, fractionalBits) {
   assertValidTotalBits("binaryFixedPoint", totalBits);
   assertValidFractionalBits(fractionalBits);
-  assertFractionalBitsFitInTotalBits(fractionalBits, totalBits);
   return (raw) => createBinaryFixedPoint(signedness, totalBits, fractionalBits, raw);
 }
 function ratioBinaryFixedPoint(signedness, totalBits, fractionalBits) {
   assertValidTotalBits("binaryFixedPoint", totalBits);
   assertValidFractionalBits(fractionalBits);
-  assertFractionalBitsFitInTotalBits(fractionalBits, totalBits);
   return (numerator, denominator, rounding = "strict") => {
     if (denominator === 0n) {
       throw new SolanaError(SOLANA_ERROR__FIXED_POINTS__INVALID_ZERO_DENOMINATOR_RATIO, {
@@ -57376,7 +57384,6 @@ function assertIsBinaryFixedPoint(value, signedness, totalBits, fractionalBits) 
     totalBits
   };
   assertShapeMatches("assertIsBinaryFixedPoint", actual, expected);
-  assertFractionalBitsFitInTotalBits(actual.scale, actual.totalBits);
   assertRawIsBigint("binaryFixedPoint", value);
   assertRawFitsInRange("binaryFixedPoint", actual.signedness, actual.totalBits, value.raw);
 }
@@ -59234,7 +59241,7 @@ function compileTransactionMessage4(transactionMessage) {
     return compileTransactionMessage3(transactionMessage);
   } else {
     throw new SolanaError(SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_NOT_SUPPORTED, {
-      version: version30
+      unsupportedVersion: version30
     });
   }
 }
@@ -59714,7 +59721,7 @@ function decompileTransactionMessage4(compiledTransactionMessage, config) {
     return decompileTransactionMessage3(compiledTransactionMessage, config);
   } else {
     throw new SolanaError(SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_NOT_SUPPORTED, {
-      version: version30
+      unsupportedVersion: version30
     });
   }
 }
@@ -60058,7 +60065,7 @@ async function createPrivateKeyFromBytes(bytes, extractable = false) {
     "sign"
   ]);
 }
-async function getPublicKeyFromPrivateKey(privateKey, extractable = false) {
+async function getPublicKeyFromPrivateKey(privateKey, _extractable) {
   assertKeyExporterIsAvailable();
   if (privateKey.extractable === false) {
     throw new SolanaError(SOLANA_ERROR__SUBTLE_CRYPTO__CANNOT_EXPORT_NON_EXTRACTABLE_KEY, { key: privateKey });
@@ -60068,15 +60075,25 @@ async function getPublicKeyFromPrivateKey(privateKey, extractable = false) {
     "jwk",
     {
       crv: "Ed25519",
-      ext: extractable,
+      ext: true,
       key_ops: ["verify"],
       kty: "OKP",
       x: jwk.x
     },
     "Ed25519",
-    extractable,
+    true,
     ["verify"]
   );
+}
+function isSmallOrderPointEncoding(bytes) {
+  if (bytes.byteLength !== 32) {
+    return false;
+  }
+  let y = 0n;
+  for (let ii = 31; ii >= 0; ii--) {
+    y = y << 8n | BigInt(ii === 31 ? bytes[ii] & 127 : bytes[ii]);
+  }
+  return SMALL_ORDER_Y_COORDINATES.has(y % P2);
 }
 function assertIsSignature(putativeSignature) {
   if (!base58Encoder) base58Encoder = getBase58Encoder();
@@ -60130,6 +60147,17 @@ function signatureBytes(putativeSignatureBytes) {
 }
 async function verifySignature(key3, signature22, data) {
   assertVerificationCapabilityIsAvailable();
+  assertKeyExporterIsAvailable();
+  if (key3.type !== "public" || !key3.extractable) {
+    throw new SolanaError(SOLANA_ERROR__KEYS__VERIFICATION_REQUIRES_EXTRACTABLE_PUBLIC_KEY);
+  }
+  const publicKeyBytes = new Uint8Array(await crypto.subtle.exportKey("raw", key3));
+  if (isSmallOrderPointEncoding(publicKeyBytes)) {
+    return false;
+  }
+  if (isSmallOrderPointEncoding(signature22.subarray(0, 32))) {
+    return false;
+  }
   return await crypto.subtle.verify(ED25519_ALGORITHM_IDENTIFIER, key3, toArrayBuffer(signature22), toArrayBuffer(data));
 }
 async function generateKeyPair(extractable = false) {
@@ -60182,11 +60210,7 @@ async function createKeyPairFromPrivateKeyBytes(bytes, extractable = false) {
       true
       /* extractable */
     )).then(
-      async (privateKey2) => await getPublicKeyFromPrivateKey(
-        privateKey2,
-        true
-        /* extractable */
-      )
+      async (privateKey2) => await getPublicKeyFromPrivateKey(privateKey2)
     ),
     privateKeyPromise
   ]);
@@ -60280,7 +60304,7 @@ async function writeKeyPair(keyPair2, path8, config = {}) {
     mode: 384
   });
 }
-var ED25519_ALGORITHM_IDENTIFIER, base58Encoder, STRIP_UNVALIDATED_REGEX_PARTS, STRIP_GRIND_METACHARACTERS, BASE58_ALPHABET_REGEX;
+var ED25519_ALGORITHM_IDENTIFIER, P2, SMALL_ORDER_Y_COORDINATES, base58Encoder, STRIP_UNVALIDATED_REGEX_PARTS, STRIP_GRIND_METACHARACTERS, BASE58_ALPHABET_REGEX;
 var init_index_node17 = __esm({
   "node_modules/@solana/keys/dist/index.node.mjs"() {
     "use strict";
@@ -60292,6 +60316,14 @@ var init_index_node17 = __esm({
     ED25519_ALGORITHM_IDENTIFIER = // Resist the temptation to convert this to a simple string; As of version 133.0.3, Firefox
     // requires the object form of `AlgorithmIdentifier` and will throw a `DOMException` otherwise.
     Object.freeze({ name: "Ed25519" });
+    P2 = 2n ** 255n - 19n;
+    SMALL_ORDER_Y_COORDINATES = /* @__PURE__ */ new Set([
+      0n,
+      1n,
+      P2 - 1n,
+      2707385501144840649318225287225658788936804267575313519463743609750303402022n,
+      55188659117513257062467267217118295137698188065244968500265048394206261417927n
+    ]);
     STRIP_UNVALIDATED_REGEX_PARTS = /\\.|\[[^\]]*\]|\{[^}]*\}|\([^)]*\)/g;
     STRIP_GRIND_METACHARACTERS = /[$()*+./?[\]^{|}]/g;
     BASE58_ALPHABET_REGEX = /^[1-9A-HJ-NP-Za-km-z]*$/;
@@ -61199,6 +61231,15 @@ function isTransactionPlanInput(value) {
 function isTransactionMessage(value) {
   return typeof value === "object" && value !== null && "instructions" in value && Array.isArray(value.instructions) && "version" in value;
 }
+function withTransactionPlanResult(context, transactionPlanResult) {
+  Object.defineProperty(context, "transactionPlanResult", {
+    configurable: false,
+    enumerable: false,
+    value: transactionPlanResult,
+    writable: false
+  });
+  return context;
+}
 function sequentialTransactionPlanResult(plans) {
   return Object.freeze({ divisible: true, kind: "sequential", planType: "transactionPlanResult", plans });
 }
@@ -61354,16 +61395,9 @@ function findTransactionPlanResult(transactionPlanResult, predicate) {
 function getFirstFailedSingleTransactionPlanResult(transactionPlanResult) {
   const result = findTransactionPlanResult(transactionPlanResult, (r2) => r2.kind === "single" && r2.status === "failed");
   if (!result) {
-    const context = {};
-    Object.defineProperty(context, "transactionPlanResult", {
-      configurable: false,
-      enumerable: false,
-      value: transactionPlanResult,
-      writable: false
-    });
     throw new SolanaError(
       SOLANA_ERROR__INSTRUCTION_PLANS__FAILED_SINGLE_TRANSACTION_PLAN_RESULT_NOT_FOUND,
-      context
+      withTransactionPlanResult({}, transactionPlanResult)
     );
   }
   return result;
@@ -61484,19 +61518,7 @@ function getSingleFailureContext(result, abortReason, includeSubmissionIndicator
     cause = abortReason;
     causeMessage = abortReason != null ? `. Canceled with abort reason: ${String(abortReason)}` : ": Canceled";
   }
-  const context = {
-    cause,
-    causeMessage,
-    logs,
-    preflightData
-  };
-  Object.defineProperty(context, "transactionPlanResult", {
-    configurable: false,
-    enumerable: false,
-    value: result,
-    writable: false
-  });
-  return context;
+  return withTransactionPlanResult({ cause, causeMessage, logs, preflightData }, result);
 }
 function getMultipleFailuresContext(result, abortReason, includeSubmissionIndicator) {
   const flattenedResults = flattenTransactionPlanResult(result);
@@ -61527,31 +61549,17 @@ function getMultipleFailuresContext(result, abortReason, includeSubmissionIndica
     cause = abortReason;
     causeMessages = abortReason != null ? `. Canceled with abort reason: ${String(abortReason)}` : ": Canceled";
   }
-  const context = {
-    cause,
-    causeMessages,
-    failedTransactions
-  };
-  Object.defineProperty(context, "transactionPlanResult", {
-    configurable: false,
-    enumerable: false,
-    value: result,
-    writable: false
-  });
-  return context;
+  return withTransactionPlanResult({ cause, causeMessages, failedTransactions }, result);
 }
 function createFailedToExecuteTransactionPlanError(result, abortReason) {
-  const context = {
-    abortReason,
-    // Deprecated: will be removed in a future version.
-    cause: findErrorFromTransactionPlanResult(result) ?? abortReason
-  };
-  Object.defineProperty(context, "transactionPlanResult", {
-    configurable: false,
-    enumerable: false,
-    value: result,
-    writable: false
-  });
+  const context = withTransactionPlanResult(
+    {
+      abortReason,
+      // Deprecated: will be removed in a future version.
+      cause: findErrorFromTransactionPlanResult(result) ?? abortReason
+    },
+    result
+  );
   return new SolanaError(SOLANA_ERROR__INSTRUCTION_PLANS__FAILED_TO_EXECUTE_TRANSACTION_PLAN, context);
 }
 function unwrapErrorWithPreflightData(error) {
@@ -64471,7 +64479,7 @@ function createDefaultRpcTransport(config) {
         ...config.headers ? normalizeHeaders2(config.headers) : void 0,
         ...{
           // Keep these headers lowercase so they will override any user-supplied headers above.
-          "solana-client": `js/${"8.4.0"}`
+          "solana-client": `js/${"8.5.0"}`
         }
       }
     }),
@@ -70124,6 +70132,7 @@ __export(index_node_exports, {
   SOLANA_ERROR__CODECS__SENTINEL_MISSING_AT_END_OF_BYTES: () => SOLANA_ERROR__CODECS__SENTINEL_MISSING_AT_END_OF_BYTES,
   SOLANA_ERROR__CODECS__SENTINEL_MISSING_IN_DECODED_BYTES: () => SOLANA_ERROR__CODECS__SENTINEL_MISSING_IN_DECODED_BYTES,
   SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY: () => SOLANA_ERROR__CODECS__SENTINEL_MUST_NOT_BE_EMPTY,
+  SOLANA_ERROR__CODECS__UNEXPECTED_ZERO_FIXED_SIZE_ITEM_FOR_ARRAY_LIKE_SIZE_STRATEGY: () => SOLANA_ERROR__CODECS__UNEXPECTED_ZERO_FIXED_SIZE_ITEM_FOR_ARRAY_LIKE_SIZE_STRATEGY,
   SOLANA_ERROR__CODECS__UNION_VARIANT_OUT_OF_RANGE: () => SOLANA_ERROR__CODECS__UNION_VARIANT_OUT_OF_RANGE,
   SOLANA_ERROR__CRYPTO__RANDOM_VALUES_FUNCTION_UNIMPLEMENTED: () => SOLANA_ERROR__CRYPTO__RANDOM_VALUES_FUNCTION_UNIMPLEMENTED,
   SOLANA_ERROR__FAILED_TO_SEND_TRANSACTION: () => SOLANA_ERROR__FAILED_TO_SEND_TRANSACTION,
@@ -70256,6 +70265,7 @@ __export(index_node_exports, {
   SOLANA_ERROR__KEYS__INVALID_SIGNATURE_BYTE_LENGTH: () => SOLANA_ERROR__KEYS__INVALID_SIGNATURE_BYTE_LENGTH,
   SOLANA_ERROR__KEYS__PUBLIC_KEY_MUST_MATCH_PRIVATE_KEY: () => SOLANA_ERROR__KEYS__PUBLIC_KEY_MUST_MATCH_PRIVATE_KEY,
   SOLANA_ERROR__KEYS__SIGNATURE_STRING_LENGTH_OUT_OF_RANGE: () => SOLANA_ERROR__KEYS__SIGNATURE_STRING_LENGTH_OUT_OF_RANGE,
+  SOLANA_ERROR__KEYS__VERIFICATION_REQUIRES_EXTRACTABLE_PUBLIC_KEY: () => SOLANA_ERROR__KEYS__VERIFICATION_REQUIRES_EXTRACTABLE_PUBLIC_KEY,
   SOLANA_ERROR__KEYS__WRITE_KEY_PAIR_UNSUPPORTED_ENVIRONMENT: () => SOLANA_ERROR__KEYS__WRITE_KEY_PAIR_UNSUPPORTED_ENVIRONMENT,
   SOLANA_ERROR__LAMPORTS_OUT_OF_RANGE: () => SOLANA_ERROR__LAMPORTS_OUT_OF_RANGE,
   SOLANA_ERROR__MALFORMED_BIGINT_STRING: () => SOLANA_ERROR__MALFORMED_BIGINT_STRING,
@@ -70407,6 +70417,9 @@ __export(index_node_exports, {
   SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_OUT_OF_RANGE: () => SOLANA_ERROR__TRANSACTION__VERSION_NUMBER_OUT_OF_RANGE,
   SOLANA_ERROR__TRANSACTION__VERSION_ZERO_MUST_BE_ENCODED_WITH_SIGNATURES_FIRST: () => SOLANA_ERROR__TRANSACTION__VERSION_ZERO_MUST_BE_ENCODED_WITH_SIGNATURES_FIRST,
   SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE: () => SOLANA_ERROR__WALLET__ACCOUNT_NOT_AVAILABLE,
+  SOLANA_ERROR__WALLET__INVALID_MESSAGE_SIGNATURE: () => SOLANA_ERROR__WALLET__INVALID_MESSAGE_SIGNATURE,
+  SOLANA_ERROR__WALLET__INVALID_NUMBER_OF_OUTPUTS: () => SOLANA_ERROR__WALLET__INVALID_NUMBER_OF_OUTPUTS,
+  SOLANA_ERROR__WALLET__INVALID_SIGN_IN_OUTPUT: () => SOLANA_ERROR__WALLET__INVALID_SIGN_IN_OUTPUT,
   SOLANA_ERROR__WALLET__NOT_CONNECTED: () => SOLANA_ERROR__WALLET__NOT_CONNECTED,
   SOLANA_ERROR__WALLET__NO_SIGNER_CONNECTED: () => SOLANA_ERROR__WALLET__NO_SIGNER_CONNECTED,
   SOLANA_ERROR__WALLET__SIGNER_NOT_AVAILABLE: () => SOLANA_ERROR__WALLET__SIGNER_NOT_AVAILABLE,
@@ -155302,13 +155315,13 @@ var require_parse_proxy_response = __commonJS({
 var require_agent2 = __commonJS({
   "node_modules/axios/node_modules/https-proxy-agent/dist/agent.js"(exports) {
     "use strict";
-    var __awaiter18 = exports && exports.__awaiter || function(thisArg, _arguments, P2, generator) {
+    var __awaiter18 = exports && exports.__awaiter || function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -162700,13 +162713,13 @@ function __setFunctionName(f, name, prefix) {
 function __metadata(metadataKey, metadataValue) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
 }
-function __awaiter(thisArg, _arguments, P2, generator) {
+function __awaiter(thisArg, _arguments, P3, generator) {
   function adopt(value) {
-    return value instanceof P2 ? value : new P2(function(resolve2) {
+    return value instanceof P3 ? value : new P3(function(resolve2) {
       resolve2(value);
     });
   }
-  return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+  return new (P3 || (P3 = Promise))(function(resolve2, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -169838,17 +169851,17 @@ var require_modular = __commonJS({
         throw new Error("Cannot find square root");
       return root;
     }
-    function tonelliShanks4(P2) {
-      if (P2 < BigInt(3))
+    function tonelliShanks4(P3) {
+      if (P3 < BigInt(3))
         throw new Error("sqrt is not defined for small field");
-      let Q = P2 - _1n17;
+      let Q = P3 - _1n17;
       let S = 0;
       while (Q % _2n12 === _0n17) {
         Q /= _2n12;
         S++;
       }
       let Z = _2n12;
-      const _Fp = Field4(P2);
+      const _Fp = Field4(P3);
       while (FpLegendre4(_Fp, Z) === 1) {
         if (Z++ > 1e3)
           throw new Error("Cannot find square root: probably non-prime P");
@@ -169887,12 +169900,12 @@ var require_modular = __commonJS({
         return R;
       };
     }
-    function FpSqrt4(P2) {
-      if (P2 % _4n7 === _3n7)
+    function FpSqrt4(P3) {
+      if (P3 % _4n7 === _3n7)
         return sqrt3mod44;
-      if (P2 % _8n4 === _5n4)
+      if (P3 % _8n4 === _5n4)
         return sqrt5mod84;
-      return tonelliShanks4(P2);
+      return tonelliShanks4(P3);
     }
     var isNegativeLE = (num2, modulo2) => (mod5(num2, modulo2) & _1n17) === _1n17;
     exports.isNegativeLE = isNegativeLE;
@@ -170150,8 +170163,8 @@ var require_curve = __commonJS({
     }
     var pointPrecomputes4 = /* @__PURE__ */ new WeakMap();
     var pointWindowSizes4 = /* @__PURE__ */ new WeakMap();
-    function getW4(P2) {
-      return pointWindowSizes4.get(P2) || 1;
+    function getW4(P3) {
+      return pointWindowSizes4.get(P3) || 1;
     }
     function wNAF4(c, bits) {
       return {
@@ -170244,32 +170257,32 @@ var require_curve = __commonJS({
           }
           return acc;
         },
-        getPrecomputes(W, P2, transform2) {
-          let comp = pointPrecomputes4.get(P2);
+        getPrecomputes(W, P3, transform2) {
+          let comp = pointPrecomputes4.get(P3);
           if (!comp) {
-            comp = this.precomputeWindow(P2, W);
+            comp = this.precomputeWindow(P3, W);
             if (W !== 1)
-              pointPrecomputes4.set(P2, transform2(comp));
+              pointPrecomputes4.set(P3, transform2(comp));
           }
           return comp;
         },
-        wNAFCached(P2, n, transform2) {
-          const W = getW4(P2);
-          return this.wNAF(W, this.getPrecomputes(W, P2, transform2), n);
+        wNAFCached(P3, n, transform2) {
+          const W = getW4(P3);
+          return this.wNAF(W, this.getPrecomputes(W, P3, transform2), n);
         },
-        wNAFCachedUnsafe(P2, n, transform2, prev) {
-          const W = getW4(P2);
+        wNAFCachedUnsafe(P3, n, transform2, prev) {
+          const W = getW4(P3);
           if (W === 1)
-            return this.unsafeLadder(P2, n, prev);
-          return this.wNAFUnsafe(W, this.getPrecomputes(W, P2, transform2), n, prev);
+            return this.unsafeLadder(P3, n, prev);
+          return this.wNAFUnsafe(W, this.getPrecomputes(W, P3, transform2), n, prev);
         },
         // We calculate precomputes for elliptic curve point multiplication
         // using windowed method. This specifies window size and
         // stores precomputed values. Usually only base point would be precomputed.
-        setWindowSize(P2, W) {
+        setWindowSize(P3, W) {
           validateW4(W, bits);
-          pointWindowSizes4.set(P2, W);
-          pointPrecomputes4.delete(P2);
+          pointWindowSizes4.set(P3, W);
+          pointPrecomputes4.delete(P3);
         }
       };
     }
@@ -170662,9 +170675,9 @@ var require_weierstrass = __commonJS({
          * @param hex short/long ECDSA hex
          */
         static fromHex(hex) {
-          const P2 = Point4.fromAffine(fromBytes4((0, utils_ts_1.ensureBytes)("pointHex", hex)));
-          P2.assertValidity();
-          return P2;
+          const P3 = Point4.fromAffine(fromBytes4((0, utils_ts_1.ensureBytes)("pointHex", hex)));
+          P3.assertValidity();
+          return P3;
         }
         // Multiplies generator point by privateKey.
         static fromPrivateKey(privateKey) {
@@ -170881,7 +170894,7 @@ var require_weierstrass = __commonJS({
          */
         multiplyAndAddUnsafe(Q, a, b) {
           const G2 = Point4.BASE;
-          const mul3 = (P2, a2) => a2 === _0n17 || a2 === _1n17 || !P2.equals(G2) ? P2.multiplyUnsafe(a2) : P2.multiply(a2);
+          const mul3 = (P3, a2) => a2 === _0n17 || a2 === _1n17 || !P3.equals(G2) ? P3.multiplyUnsafe(a2) : P3.multiply(a2);
           const sum = mul3(this, a).add(mul3(Q, b));
           return sum.is0() ? void 0 : sum;
         }
@@ -171219,7 +171232,7 @@ var require_weierstrass = __commonJS({
         if (!isHex2 && !isObj)
           throw new Error("invalid signature, expected Uint8Array, hex string or Signature instance");
         let _sig = void 0;
-        let P2;
+        let P3;
         try {
           if (isObj)
             _sig = new Signature2(sg.r, sg.s);
@@ -171234,7 +171247,7 @@ var require_weierstrass = __commonJS({
             if (!_sig && format2 !== "der")
               _sig = Signature2.fromCompact(sg);
           }
-          P2 = Point4.fromHex(publicKey);
+          P3 = Point4.fromHex(publicKey);
         } catch (error) {
           return false;
         }
@@ -171249,7 +171262,7 @@ var require_weierstrass = __commonJS({
         const is = invN(s3);
         const u1 = modN2(h * is);
         const u2 = modN2(r2 * is);
-        const R = Point4.BASE.multiplyAndAddUnsafe(P2, u1, u2)?.toAffine();
+        const R = Point4.BASE.multiplyAndAddUnsafe(P3, u1, u2)?.toAffine();
         if (!R)
           return false;
         const v = modN2(R.x);
@@ -171518,11 +171531,11 @@ var require_hash_to_curve = __commonJS({
         return Point4.fromAffine(mapToCurve(num2));
       }
       function clear(initial) {
-        const P2 = initial.clearCofactor();
-        if (P2.equals(Point4.ZERO))
+        const P3 = initial.clearCofactor();
+        if (P3.equals(Point4.ZERO))
           return Point4.ZERO;
-        P2.assertValidity();
-        return P2;
+        P3.assertValidity();
+        return P3;
       }
       return {
         defaults: defaults2,
@@ -171574,23 +171587,23 @@ var require_secp256k1 = __commonJS({
     var _2n12 = BigInt(2);
     var divNearest4 = (a, b) => (a + b / _2n12) / b;
     function sqrtMod4(y) {
-      const P2 = secp256k1P3;
+      const P3 = secp256k1P3;
       const _3n7 = BigInt(3), _6n = BigInt(6), _11n = BigInt(11), _22n = BigInt(22);
       const _23n = BigInt(23), _44n = BigInt(44), _88n = BigInt(88);
-      const b2 = y * y * y % P2;
-      const b3 = b2 * b2 * y % P2;
-      const b6 = (0, modular_ts_1.pow2)(b3, _3n7, P2) * b3 % P2;
-      const b9 = (0, modular_ts_1.pow2)(b6, _3n7, P2) * b3 % P2;
-      const b11 = (0, modular_ts_1.pow2)(b9, _2n12, P2) * b2 % P2;
-      const b22 = (0, modular_ts_1.pow2)(b11, _11n, P2) * b11 % P2;
-      const b44 = (0, modular_ts_1.pow2)(b22, _22n, P2) * b22 % P2;
-      const b88 = (0, modular_ts_1.pow2)(b44, _44n, P2) * b44 % P2;
-      const b176 = (0, modular_ts_1.pow2)(b88, _88n, P2) * b88 % P2;
-      const b220 = (0, modular_ts_1.pow2)(b176, _44n, P2) * b44 % P2;
-      const b223 = (0, modular_ts_1.pow2)(b220, _3n7, P2) * b3 % P2;
-      const t1 = (0, modular_ts_1.pow2)(b223, _23n, P2) * b22 % P2;
-      const t2 = (0, modular_ts_1.pow2)(t1, _6n, P2) * b2 % P2;
-      const root = (0, modular_ts_1.pow2)(t2, _2n12, P2);
+      const b2 = y * y * y % P3;
+      const b3 = b2 * b2 * y % P3;
+      const b6 = (0, modular_ts_1.pow2)(b3, _3n7, P3) * b3 % P3;
+      const b9 = (0, modular_ts_1.pow2)(b6, _3n7, P3) * b3 % P3;
+      const b11 = (0, modular_ts_1.pow2)(b9, _2n12, P3) * b2 % P3;
+      const b22 = (0, modular_ts_1.pow2)(b11, _11n, P3) * b11 % P3;
+      const b44 = (0, modular_ts_1.pow2)(b22, _22n, P3) * b22 % P3;
+      const b88 = (0, modular_ts_1.pow2)(b44, _44n, P3) * b44 % P3;
+      const b176 = (0, modular_ts_1.pow2)(b88, _88n, P3) * b88 % P3;
+      const b220 = (0, modular_ts_1.pow2)(b176, _44n, P3) * b44 % P3;
+      const b223 = (0, modular_ts_1.pow2)(b220, _3n7, P3) * b3 % P3;
+      const t1 = (0, modular_ts_1.pow2)(b223, _23n, P3) * b22 % P3;
+      const t2 = (0, modular_ts_1.pow2)(t1, _6n, P3) * b2 % P3;
+      const root = (0, modular_ts_1.pow2)(t2, _2n12, P3);
       if (!Fpk14.eql(Fpk14.sqr(root), y))
         throw new Error("Cannot find square root");
       return root;
@@ -171696,15 +171709,15 @@ var require_secp256k1 = __commonJS({
       const m = (0, utils_ts_1.ensureBytes)("message", message);
       const pub = (0, utils_ts_1.ensureBytes)("publicKey", publicKey, 32);
       try {
-        const P2 = lift_x2(num2(pub));
+        const P3 = lift_x2(num2(pub));
         const r2 = num2(sig.subarray(0, 32));
         if (!(0, utils_ts_1.inRange)(r2, _1n17, secp256k1P3))
           return false;
         const s3 = num2(sig.subarray(32, 64));
         if (!(0, utils_ts_1.inRange)(s3, _1n17, secp256k1N3))
           return false;
-        const e7 = challenge2(numTo32b2(r2), pointToBytes2(P2), m);
-        const R = GmulAdd2(P2, s3, modN2(-e7));
+        const e7 = challenge2(numTo32b2(r2), pointToBytes2(P3), m);
+        const R = GmulAdd2(P3, s3, modN2(-e7));
         if (!R || !R.hasEvenY() || R.toAffine().x !== r2)
           return false;
         return true;
@@ -186681,17 +186694,17 @@ var require_modular2 = __commonJS({
         throw new Error("Cannot find square root");
       return root;
     }
-    function tonelliShanks4(P2) {
-      if (P2 < BigInt(3))
+    function tonelliShanks4(P3) {
+      if (P3 < BigInt(3))
         throw new Error("sqrt is not defined for small field");
-      let Q = P2 - _1n17;
+      let Q = P3 - _1n17;
       let S = 0;
       while (Q % _2n12 === _0n17) {
         Q /= _2n12;
         S++;
       }
       let Z = _2n12;
-      const _Fp = Field4(P2);
+      const _Fp = Field4(P3);
       while (FpLegendre4(_Fp, Z) === 1) {
         if (Z++ > 1e3)
           throw new Error("Cannot find square root: probably non-prime P");
@@ -186730,12 +186743,12 @@ var require_modular2 = __commonJS({
         return R;
       };
     }
-    function FpSqrt4(P2) {
-      if (P2 % _4n7 === _3n7)
+    function FpSqrt4(P3) {
+      if (P3 % _4n7 === _3n7)
         return sqrt3mod44;
-      if (P2 % _8n4 === _5n4)
+      if (P3 % _8n4 === _5n4)
         return sqrt5mod84;
-      return tonelliShanks4(P2);
+      return tonelliShanks4(P3);
     }
     var isNegativeLE = (num2, modulo2) => (mod5(num2, modulo2) & _1n17) === _1n17;
     exports.isNegativeLE = isNegativeLE;
@@ -186993,8 +187006,8 @@ var require_curve2 = __commonJS({
     }
     var pointPrecomputes4 = /* @__PURE__ */ new WeakMap();
     var pointWindowSizes4 = /* @__PURE__ */ new WeakMap();
-    function getW4(P2) {
-      return pointWindowSizes4.get(P2) || 1;
+    function getW4(P3) {
+      return pointWindowSizes4.get(P3) || 1;
     }
     function wNAF4(c, bits) {
       return {
@@ -187087,32 +187100,32 @@ var require_curve2 = __commonJS({
           }
           return acc;
         },
-        getPrecomputes(W, P2, transform2) {
-          let comp = pointPrecomputes4.get(P2);
+        getPrecomputes(W, P3, transform2) {
+          let comp = pointPrecomputes4.get(P3);
           if (!comp) {
-            comp = this.precomputeWindow(P2, W);
+            comp = this.precomputeWindow(P3, W);
             if (W !== 1)
-              pointPrecomputes4.set(P2, transform2(comp));
+              pointPrecomputes4.set(P3, transform2(comp));
           }
           return comp;
         },
-        wNAFCached(P2, n, transform2) {
-          const W = getW4(P2);
-          return this.wNAF(W, this.getPrecomputes(W, P2, transform2), n);
+        wNAFCached(P3, n, transform2) {
+          const W = getW4(P3);
+          return this.wNAF(W, this.getPrecomputes(W, P3, transform2), n);
         },
-        wNAFCachedUnsafe(P2, n, transform2, prev) {
-          const W = getW4(P2);
+        wNAFCachedUnsafe(P3, n, transform2, prev) {
+          const W = getW4(P3);
           if (W === 1)
-            return this.unsafeLadder(P2, n, prev);
-          return this.wNAFUnsafe(W, this.getPrecomputes(W, P2, transform2), n, prev);
+            return this.unsafeLadder(P3, n, prev);
+          return this.wNAFUnsafe(W, this.getPrecomputes(W, P3, transform2), n, prev);
         },
         // We calculate precomputes for elliptic curve point multiplication
         // using windowed method. This specifies window size and
         // stores precomputed values. Usually only base point would be precomputed.
-        setWindowSize(P2, W) {
+        setWindowSize(P3, W) {
           validateW4(W, bits);
-          pointWindowSizes4.set(P2, W);
-          pointPrecomputes4.delete(P2);
+          pointWindowSizes4.set(P3, W);
+          pointPrecomputes4.delete(P3);
         }
       };
     }
@@ -187505,9 +187518,9 @@ var require_weierstrass2 = __commonJS({
          * @param hex short/long ECDSA hex
          */
         static fromHex(hex) {
-          const P2 = Point4.fromAffine(fromBytes4((0, utils_ts_1.ensureBytes)("pointHex", hex)));
-          P2.assertValidity();
-          return P2;
+          const P3 = Point4.fromAffine(fromBytes4((0, utils_ts_1.ensureBytes)("pointHex", hex)));
+          P3.assertValidity();
+          return P3;
         }
         // Multiplies generator point by privateKey.
         static fromPrivateKey(privateKey) {
@@ -187724,7 +187737,7 @@ var require_weierstrass2 = __commonJS({
          */
         multiplyAndAddUnsafe(Q, a, b) {
           const G2 = Point4.BASE;
-          const mul3 = (P2, a2) => a2 === _0n17 || a2 === _1n17 || !P2.equals(G2) ? P2.multiplyUnsafe(a2) : P2.multiply(a2);
+          const mul3 = (P3, a2) => a2 === _0n17 || a2 === _1n17 || !P3.equals(G2) ? P3.multiplyUnsafe(a2) : P3.multiply(a2);
           const sum = mul3(this, a).add(mul3(Q, b));
           return sum.is0() ? void 0 : sum;
         }
@@ -188062,7 +188075,7 @@ var require_weierstrass2 = __commonJS({
         if (!isHex2 && !isObj)
           throw new Error("invalid signature, expected Uint8Array, hex string or Signature instance");
         let _sig = void 0;
-        let P2;
+        let P3;
         try {
           if (isObj)
             _sig = new Signature2(sg.r, sg.s);
@@ -188077,7 +188090,7 @@ var require_weierstrass2 = __commonJS({
             if (!_sig && format2 !== "der")
               _sig = Signature2.fromCompact(sg);
           }
-          P2 = Point4.fromHex(publicKey);
+          P3 = Point4.fromHex(publicKey);
         } catch (error) {
           return false;
         }
@@ -188092,7 +188105,7 @@ var require_weierstrass2 = __commonJS({
         const is = invN(s3);
         const u1 = modN2(h * is);
         const u2 = modN2(r2 * is);
-        const R = Point4.BASE.multiplyAndAddUnsafe(P2, u1, u2)?.toAffine();
+        const R = Point4.BASE.multiplyAndAddUnsafe(P3, u1, u2)?.toAffine();
         if (!R)
           return false;
         const v = modN2(R.x);
@@ -188361,11 +188374,11 @@ var require_hash_to_curve2 = __commonJS({
         return Point4.fromAffine(mapToCurve(num2));
       }
       function clear(initial) {
-        const P2 = initial.clearCofactor();
-        if (P2.equals(Point4.ZERO))
+        const P3 = initial.clearCofactor();
+        if (P3.equals(Point4.ZERO))
           return Point4.ZERO;
-        P2.assertValidity();
-        return P2;
+        P3.assertValidity();
+        return P3;
       }
       return {
         defaults: defaults2,
@@ -188417,23 +188430,23 @@ var require_secp256k12 = __commonJS({
     var _2n12 = BigInt(2);
     var divNearest4 = (a, b) => (a + b / _2n12) / b;
     function sqrtMod4(y) {
-      const P2 = secp256k1P3;
+      const P3 = secp256k1P3;
       const _3n7 = BigInt(3), _6n = BigInt(6), _11n = BigInt(11), _22n = BigInt(22);
       const _23n = BigInt(23), _44n = BigInt(44), _88n = BigInt(88);
-      const b2 = y * y * y % P2;
-      const b3 = b2 * b2 * y % P2;
-      const b6 = (0, modular_ts_1.pow2)(b3, _3n7, P2) * b3 % P2;
-      const b9 = (0, modular_ts_1.pow2)(b6, _3n7, P2) * b3 % P2;
-      const b11 = (0, modular_ts_1.pow2)(b9, _2n12, P2) * b2 % P2;
-      const b22 = (0, modular_ts_1.pow2)(b11, _11n, P2) * b11 % P2;
-      const b44 = (0, modular_ts_1.pow2)(b22, _22n, P2) * b22 % P2;
-      const b88 = (0, modular_ts_1.pow2)(b44, _44n, P2) * b44 % P2;
-      const b176 = (0, modular_ts_1.pow2)(b88, _88n, P2) * b88 % P2;
-      const b220 = (0, modular_ts_1.pow2)(b176, _44n, P2) * b44 % P2;
-      const b223 = (0, modular_ts_1.pow2)(b220, _3n7, P2) * b3 % P2;
-      const t1 = (0, modular_ts_1.pow2)(b223, _23n, P2) * b22 % P2;
-      const t2 = (0, modular_ts_1.pow2)(t1, _6n, P2) * b2 % P2;
-      const root = (0, modular_ts_1.pow2)(t2, _2n12, P2);
+      const b2 = y * y * y % P3;
+      const b3 = b2 * b2 * y % P3;
+      const b6 = (0, modular_ts_1.pow2)(b3, _3n7, P3) * b3 % P3;
+      const b9 = (0, modular_ts_1.pow2)(b6, _3n7, P3) * b3 % P3;
+      const b11 = (0, modular_ts_1.pow2)(b9, _2n12, P3) * b2 % P3;
+      const b22 = (0, modular_ts_1.pow2)(b11, _11n, P3) * b11 % P3;
+      const b44 = (0, modular_ts_1.pow2)(b22, _22n, P3) * b22 % P3;
+      const b88 = (0, modular_ts_1.pow2)(b44, _44n, P3) * b44 % P3;
+      const b176 = (0, modular_ts_1.pow2)(b88, _88n, P3) * b88 % P3;
+      const b220 = (0, modular_ts_1.pow2)(b176, _44n, P3) * b44 % P3;
+      const b223 = (0, modular_ts_1.pow2)(b220, _3n7, P3) * b3 % P3;
+      const t1 = (0, modular_ts_1.pow2)(b223, _23n, P3) * b22 % P3;
+      const t2 = (0, modular_ts_1.pow2)(t1, _6n, P3) * b2 % P3;
+      const root = (0, modular_ts_1.pow2)(t2, _2n12, P3);
       if (!Fpk14.eql(Fpk14.sqr(root), y))
         throw new Error("Cannot find square root");
       return root;
@@ -188539,15 +188552,15 @@ var require_secp256k12 = __commonJS({
       const m = (0, utils_ts_1.ensureBytes)("message", message);
       const pub = (0, utils_ts_1.ensureBytes)("publicKey", publicKey, 32);
       try {
-        const P2 = lift_x2(num2(pub));
+        const P3 = lift_x2(num2(pub));
         const r2 = num2(sig.subarray(0, 32));
         if (!(0, utils_ts_1.inRange)(r2, _1n17, secp256k1P3))
           return false;
         const s3 = num2(sig.subarray(32, 64));
         if (!(0, utils_ts_1.inRange)(s3, _1n17, secp256k1N3))
           return false;
-        const e7 = challenge2(numTo32b2(r2), pointToBytes2(P2), m);
-        const R = GmulAdd2(P2, s3, modN2(-e7));
+        const e7 = challenge2(numTo32b2(r2), pointToBytes2(P3), m);
+        const R = GmulAdd2(P3, s3, modN2(-e7));
         if (!R || !R.hasEvenY() || R.toAffine().x !== r2)
           return false;
         return true;
@@ -251110,13 +251123,13 @@ var init_lib5 = __esm({
     "use strict";
     init_lib2();
     init_version8();
-    __awaiter2 = function(thisArg, _arguments, P2, generator) {
+    __awaiter2 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -254756,13 +254769,13 @@ var init_typed_data = __esm({
     init_lib2();
     init_version13();
     init_id2();
-    __awaiter3 = function(thisArg, _arguments, P2, generator) {
+    __awaiter3 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -255719,13 +255732,13 @@ var init_lib15 = __esm({
     init_lib5();
     init_lib2();
     init_version14();
-    __awaiter4 = function(thisArg, _arguments, P2, generator) {
+    __awaiter4 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -255806,13 +255819,13 @@ var init_lib16 = __esm({
     init_lib5();
     init_lib2();
     init_version15();
-    __awaiter5 = function(thisArg, _arguments, P2, generator) {
+    __awaiter5 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -260495,13 +260508,13 @@ var init_lib19 = __esm({
     init_lib18();
     init_lib2();
     init_version18();
-    __awaiter6 = function(thisArg, _arguments, P2, generator) {
+    __awaiter6 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -263305,13 +263318,13 @@ var init_keystore = __esm({
     init_utils19();
     init_lib2();
     init_version23();
-    __awaiter7 = function(thisArg, _arguments, P2, generator) {
+    __awaiter7 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -263417,13 +263430,13 @@ var init_lib27 = __esm({
     init_lib18();
     init_lib2();
     init_version24();
-    __awaiter8 = function(thisArg, _arguments, P2, generator) {
+    __awaiter8 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -263916,13 +263929,13 @@ var init_geturl = __esm({
   "node_modules/@ethersproject/web/lib.esm/geturl.js"() {
     "use strict";
     init_lib3();
-    __awaiter9 = function(thisArg, _arguments, P2, generator) {
+    __awaiter9 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -264309,13 +264322,13 @@ var init_lib29 = __esm({
     init_lib2();
     init_version26();
     init_geturl();
-    __awaiter10 = function(thisArg, _arguments, P2, generator) {
+    __awaiter10 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -265085,13 +265098,13 @@ var init_base_provider = __esm({
     init_lib2();
     init_version27();
     init_formatter2();
-    __awaiter11 = function(thisArg, _arguments, P2, generator) {
+    __awaiter11 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -266903,13 +266916,13 @@ var init_json_rpc_provider = __esm({
     init_lib2();
     init_version27();
     init_base_provider();
-    __awaiter12 = function(thisArg, _arguments, P2, generator) {
+    __awaiter12 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -267479,13 +267492,13 @@ var init_websocket_provider = __esm({
     init_ws();
     init_lib2();
     init_version27();
-    __awaiter13 = function(thisArg, _arguments, P2, generator) {
+    __awaiter13 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -267762,13 +267775,13 @@ var init_url_json_rpc_provider = __esm({
     init_lib2();
     init_version27();
     init_json_rpc_provider();
-    __awaiter14 = function(thisArg, _arguments, P2, generator) {
+    __awaiter14 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -268028,13 +268041,13 @@ var init_cloudflare_provider = __esm({
     init_url_json_rpc_provider();
     init_lib2();
     init_version27();
-    __awaiter15 = function(thisArg, _arguments, P2, generator) {
+    __awaiter15 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -268231,13 +268244,13 @@ var init_etherscan_provider = __esm({
     init_lib2();
     init_version27();
     init_base_provider();
-    __awaiter16 = function(thisArg, _arguments, P2, generator) {
+    __awaiter16 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -268813,13 +268826,13 @@ var init_fallback_provider = __esm({
     init_formatter2();
     init_lib2();
     init_version27();
-    __awaiter17 = function(thisArg, _arguments, P2, generator) {
+    __awaiter17 = function(thisArg, _arguments, P3, generator) {
       function adopt(value) {
-        return value instanceof P2 ? value : new P2(function(resolve2) {
+        return value instanceof P3 ? value : new P3(function(resolve2) {
           resolve2(value);
         });
       }
-      return new (P2 || (P2 = Promise))(function(resolve2, reject) {
+      return new (P3 || (P3 = Promise))(function(resolve2, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));

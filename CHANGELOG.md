@@ -4,6 +4,22 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.290 — October 16, 2026
+
+### @solana/kit 8.4.0 → 8.5.0
+
+Picks up the kit 8.5.0 minor release (supersedes Dependabot #468). The
+Dependabot lockfile nested private copies of `@solana/transactions`,
+`@solana/transaction-messages` and `@solana/signers` (up to 3 copies each),
+which the dist smoke check rejects because split copies sign malformed
+transactions. The `@solana` lock entries were re-resolved with npm 11, so every
+`@solana/*` package is again a single hoisted 8.5.0 copy and nothing outside
+`@solana` moved.
+
+Signed Solana payment transactions are byte-identical to 8.4.0: 8 cases
+(SPL and Token-2022, x402 v1 and v2, two amounts) built through `@x402/svm`'s
+real exact schemes with a fixed key and stubbed RPC hash the same on both.
+
 ## v0.12.289 — October 16, 2026
 
 ### CI actions pinned to commit SHAs
