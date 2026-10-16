@@ -4,6 +4,19 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.289 — October 16, 2026
+
+### CI actions pinned to commit SHAs
+
+Every GitHub Action in the CI, publish, integration and brand-sync workflows
+is now pinned to an immutable commit SHA instead of a floating tag. Each pin is
+the commit its tag already resolved to, so the workflows run the same code as
+before, and the publish workflow (which holds the npm token) can no longer pick
+up a retagged action. Dependabot now also watches the `github-actions`
+ecosystem, so the pins get upgrade PRs (#465).
+
+No runtime change to the plugin.
+
 ## v0.12.288 — October 13, 2026
 
 ### GPT-5.6 Pro tiers in the picker
