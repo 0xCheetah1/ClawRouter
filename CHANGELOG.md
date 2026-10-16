@@ -4,6 +4,26 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.291 — October 16, 2026
+
+### router-core 0.2.0: more models can recover a tool turn
+
+`@blockrun/router-core` moves from e38958b to 0.2.0 (27125a3). Eleven newly
+listed models returned a real structured tool call in a live probe and are
+admitted as availability fallbacks for tool-required turns: Claude Fable 5.1 /
+Opus 5.5 / Sonnet 5.5, Gemini 3.8 Flash, GPT-5.1, GPT-6 Astra / Luna / Sol,
+Grok 4.6 / 4.7 and MiMo 2.5. They never displace a benchmarked primary, so
+which model Auto picks first is unchanged. When the usual tool chain is
+unavailable, `eco` and `auto` try the cheapest of them first; `premium` keeps
+the curated order. DeepSeek V4 Flash Vision Experimental and Qwen 3.8 Flash
+failed the probe and stay out of tool turns. The bump also carries the
+2026-10 catalog sync (GPT-6, Claude 5.5 / Fable 5.1, Grok 4.6 / 4.7).
+
+### viem 2.56.9 → 2.57.5
+
+First release to ship Dependabot #469. The committed `dist/` is rebuilt so
+it matches the lockfile again.
+
 ## v0.12.290 — October 16, 2026
 
 ### @solana/kit 8.4.0 → 8.5.0
