@@ -438,7 +438,7 @@ describe("2026-10-20 live catalog sync", () => {
     ["openai/gpt-6.1-sol", 2, 10, 1_050_000, 128_000, true, true],
     ["qwen/qwen3.8-max", 2, 6, 1_000_000, 131_072, true, false],
     ["tencent/hy4-preview", 0.834, 2.501, 1_048_576, 64_000, true, false],
-    ["mistral/mistral-large-4", 0.68, 2.09, 524_288, 262_144, true, true],
+    ["mistral/mistral-large-4", 1.36, 4.18, 524_288, 262_144, true, true],
     ["poolside/laguna-s-2.1", 0.09, 0.18, 1_048_576, 131_072, false, false],
     ["free/muse-glimmer-30b", 0, 0, 131_072, 16_384, true, false],
   ];
