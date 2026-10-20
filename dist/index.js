@@ -236568,8 +236568,8 @@ function isReasoningModel(modelId) {
 var snapshot_v1_default = {
   catalog: {
     schema_version: 1,
-    catalog_version: "2026.09.29.1",
-    observed_at: "2026-09-29T23:31:20.524862+00:00",
+    catalog_version: "2026.10.20.3",
+    observed_at: "2026-10-20T15:39:43.000Z",
     sources: {
       base: "https://blockrun.ai/api/v1/models?format=json",
       solana: "https://sol.blockrun.ai/api/v1/models?format=json"
@@ -237539,9 +237539,9 @@ var snapshot_v1_default = {
       },
       {
         id: "deepseek/deepseek-chat",
-        name: "DeepSeek V4 Flash Chat",
+        name: "DeepSeek Chat (V4.1 Flash)",
         provider: "deepseek",
-        description: "Paid V4 Flash in non-thinking mode (1.6T-class quality at $0.14 in / $0.28 out). Production-grade reliability and 5MB request bodies.",
+        description: "Compatibility id for DeepSeek V4.1 Flash in non-thinking mode ($0.14 in / $0.28 out) \u2014 same model, price and routing as deepseek/deepseek-v4.1-flash. Production-grade reliability and 5MB request bodies.",
         lifecycle: "active",
         declared_capabilities: [
           "chat",
@@ -237559,7 +237559,8 @@ var snapshot_v1_default = {
             billing_mode: "paid",
             pricing: {
               input: 0.14,
-              output: 0.28
+              output: 0.28,
+              cache_read: 6e-3
             },
             context_window: 1048576,
             max_output: 65536
@@ -237582,9 +237583,9 @@ var snapshot_v1_default = {
       },
       {
         id: "deepseek/deepseek-reasoner",
-        name: "DeepSeek V4 Flash Reasoner",
+        name: "DeepSeek Reasoner (V4.1 Flash)",
         provider: "deepseek",
-        description: "Paid V4 Flash in thinking mode for reasoning tasks. Same upstream as deepseek/deepseek-chat but with thinking enabled by default.",
+        description: "Compatibility id for DeepSeek V4.1 Flash in thinking mode for reasoning tasks ($0.14 in / $0.28 out). Same upstream as deepseek/deepseek-v4.1-flash but with thinking enabled by default.",
         lifecycle: "active",
         declared_capabilities: [
           "chat",
@@ -237604,7 +237605,8 @@ var snapshot_v1_default = {
             billing_mode: "paid",
             pricing: {
               input: 0.14,
-              output: 0.28
+              output: 0.28,
+              cache_read: 6e-3
             },
             context_window: 1048576,
             max_output: 65536
@@ -237648,8 +237650,9 @@ var snapshot_v1_default = {
             ],
             billing_mode: "paid",
             pricing: {
-              input: 0.44,
-              output: 1.32
+              input: 0.3,
+              output: 1.2,
+              cache_read: 6e-3
             },
             context_window: 1048576,
             max_output: 65536
@@ -237663,8 +237666,8 @@ var snapshot_v1_default = {
             ],
             billing_mode: "paid",
             pricing: {
-              input: 0.44,
-              output: 1.32
+              input: 0.3,
+              output: 1.2
             },
             context_window: 1048576,
             max_output: 65536
@@ -237712,6 +237715,52 @@ var snapshot_v1_default = {
             pricing: {
               input: 1.32,
               output: 3.96
+            },
+            context_window: 1048576,
+            max_output: 65536
+          }
+        }
+      },
+      {
+        id: "deepseek/deepseek-v4.1-flash",
+        name: "DeepSeek V4.1 Flash",
+        provider: "deepseek",
+        description: "DeepSeek V4.1 Flash in non-thinking mode \u2014 1M context at $0.14 in / $0.28 out. Production-grade reliability and 5MB request bodies.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28,
+              cache_read: 6e-3
+            },
+            context_window: 1048576,
+            max_output: 65536
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.14,
+              output: 0.28
             },
             context_window: 1048576,
             max_output: 65536
@@ -238659,6 +238708,55 @@ var snapshot_v1_default = {
         }
       },
       {
+        id: "mistral/mistral-large-4",
+        name: "Mistral Large 4",
+        provider: "mistral",
+        description: "Mistral's flagship \u2014 multimodal reasoning model for coding and agentic work. 512K context, image input.",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.68,
+              output: 2.09
+            },
+            context_window: 524288,
+            max_output: 262144
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.68,
+              output: 2.09
+            },
+            context_window: 524288,
+            max_output: 262144
+          }
+        }
+      },
+      {
         id: "moonshot/kimi-k3",
         name: "Kimi K3",
         provider: "moonshot",
@@ -238705,41 +238803,6 @@ var snapshot_v1_default = {
             },
             context_window: 1048576,
             max_output: 65536
-          }
-        }
-      },
-      {
-        id: "nvidia/gemma-4-31b",
-        name: "Gemma 4 31B (Free)",
-        provider: "nvidia",
-        description: "Google's Gemma 4 31B instruction-tuned, open weights, hosted free by NVIDIA.",
-        lifecycle: "active",
-        declared_capabilities: [
-          "chat",
-          "reasoning"
-        ],
-        aliases: [],
-        redirects: [],
-        networks: {
-          base: {
-            listed: false,
-            categories: [],
-            billing_mode: "unavailable",
-            pricing: {}
-          },
-          solana: {
-            listed: true,
-            categories: [
-              "chat",
-              "reasoning"
-            ],
-            billing_mode: "free",
-            pricing: {
-              input: 0,
-              output: 0
-            },
-            context_window: 131072,
-            max_output: 16384
           }
         }
       },
@@ -238801,10 +238864,19 @@ var snapshot_v1_default = {
         redirects: [],
         networks: {
           base: {
-            listed: false,
-            categories: [],
-            billing_mode: "unavailable",
-            pricing: {}
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "free",
+            pricing: {
+              input: 0,
+              output: 0
+            },
+            context_window: 131072,
+            max_output: 16384
           },
           solana: {
             listed: true,
@@ -240437,6 +240509,75 @@ var snapshot_v1_default = {
         }
       },
       {
+        id: "openai/gpt-6.1-sol",
+        name: "GPT-6.1 Sol",
+        provider: "openai",
+        description: "Refreshed GPT-6 Sol \u2014 complex coding and agentic workflows below the Astra flagship, April 2026 knowledge. 1M context",
+        lifecycle: "active",
+        declared_capabilities: [
+          "chat",
+          "coding",
+          "reasoning",
+          "vision"
+        ],
+        aliases: [],
+        redirects: [],
+        networks: {
+          base: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10,
+              cache_read: 0.1,
+              cache_write: 2.5,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 15,
+                  cache_read: 0.2,
+                  cache_write: 5
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          },
+          solana: {
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 10,
+              long_context: [
+                {
+                  threshold: 272e3,
+                  inclusive: false,
+                  input: 4,
+                  output: 15
+                }
+              ]
+            },
+            context_window: 105e4,
+            max_output: 128e3
+          }
+        }
+      },
+      {
         id: "openai/gpt-image-1",
         name: "GPT Image 1",
         provider: "openai",
@@ -240536,7 +240677,7 @@ var snapshot_v1_default = {
             ],
             billing_mode: "per_image",
             pricing: {
-              per_image: 0.06
+              per_image: 0.28
             }
           }
         }
@@ -240571,7 +240712,7 @@ var snapshot_v1_default = {
             ],
             billing_mode: "per_image",
             pricing: {
-              per_image: 0.06
+              per_image: 0.28
             }
           }
         }
@@ -240759,36 +240900,6 @@ var snapshot_v1_default = {
         }
       },
       {
-        id: "openjev",
-        name: "OpenJev",
-        provider: "blockrun",
-        description: "Typed judgments over text or JSON: yes/no with a probability, a choice with per-option probabilities, or a score. An open-source NLI cross-encoder we host ourselves \u2014 NOT Jev, and expected to be materially weaker than it; we have not benchmarked the two against each other. Free with an API key from https://user.blockrun.ai; served at https://api.blockrun.ai/v1/decide, not by /v1/chat/completions.",
-        lifecycle: "active",
-        declared_capabilities: [
-          "judgment"
-        ],
-        aliases: [],
-        redirects: [],
-        networks: {
-          base: {
-            listed: true,
-            categories: [
-              "judgment"
-            ],
-            billing_mode: "free",
-            pricing: {
-              per_call: 0
-            }
-          },
-          solana: {
-            listed: false,
-            categories: [],
-            billing_mode: "unavailable",
-            pricing: {}
-          }
-        }
-      },
-      {
         id: "poolside/laguna-s-2.1",
         name: "Laguna S 2.1",
         provider: "poolside",
@@ -240802,10 +240913,18 @@ var snapshot_v1_default = {
         redirects: [],
         networks: {
           base: {
-            listed: false,
-            categories: [],
-            billing_mode: "unavailable",
-            pricing: {}
+            listed: true,
+            categories: [
+              "chat",
+              "coding"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.09,
+              output: 0.18
+            },
+            context_window: 1048576,
+            max_output: 131072
           },
           solana: {
             listed: true,
@@ -240837,7 +240956,7 @@ var snapshot_v1_default = {
         redirects: [],
         networks: {
           base: {
-            listed: false,
+            listed: true,
             categories: [
               "chat",
               "coding"
@@ -241090,10 +241209,19 @@ var snapshot_v1_default = {
         redirects: [],
         networks: {
           base: {
-            listed: false,
-            categories: [],
-            billing_mode: "unavailable",
-            pricing: {}
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 2,
+              output: 6
+            },
+            context_window: 1e6,
+            max_output: 131072
           },
           solana: {
             listed: true,
@@ -241127,10 +241255,19 @@ var snapshot_v1_default = {
         redirects: [],
         networks: {
           base: {
-            listed: false,
-            categories: [],
-            billing_mode: "unavailable",
-            pricing: {}
+            listed: true,
+            categories: [
+              "chat",
+              "coding",
+              "reasoning"
+            ],
+            billing_mode: "paid",
+            pricing: {
+              input: 0.834,
+              output: 2.501
+            },
+            context_window: 1048576,
+            max_output: 64e3
           },
           solana: {
             listed: true,
@@ -241220,7 +241357,7 @@ var snapshot_v1_default = {
         id: "xai/grok-4.5",
         name: "Grok 4.5",
         provider: "xai",
-        description: "xAI's flagship Grok 4.5 \u2014 their most intelligent and fastest model. 500K context, vision-capable, chain-of-thought reasoning. Supports Live Search (+$0.025/source)",
+        description: "xAI's flagship Grok 4.5 \u2014 their most intelligent and fastest model. 500K context, vision-capable, chain-of-thought reasoning. Supports Live Search (+$0.30 per call)",
         lifecycle: "active",
         declared_capabilities: [
           "chat",
@@ -241290,7 +241427,7 @@ var snapshot_v1_default = {
         id: "xai/grok-4.6",
         name: "Grok 4.6",
         provider: "xai",
-        description: "xAI's flagship Grok 4.6 \u2014 500K context, chain-of-thought reasoning with selectable effort. Supports Live Search (+$0.025/source)",
+        description: "xAI's flagship Grok 4.6 \u2014 500K context, chain-of-thought reasoning with selectable effort. Supports Live Search (+$0.30 per call)",
         lifecycle: "active",
         declared_capabilities: [
           "chat",
@@ -241360,7 +241497,7 @@ var snapshot_v1_default = {
         id: "xai/grok-4.7",
         name: "Grok 4.7",
         provider: "xai",
-        description: "xAI's flagship Grok 4.7 \u2014 500K context, vision, always-on reasoning with selectable effort (low to xhigh). Supports Live Search (+$0.025/source)",
+        description: "xAI's flagship Grok 4.7 \u2014 500K context, vision, always-on reasoning with selectable effort (low to xhigh). Supports Live Search (+$0.30 per call)",
         lifecycle: "active",
         declared_capabilities: [
           "chat",
@@ -242081,8 +242218,8 @@ var snapshot_v1_default = {
   },
   picker_policy: {
     schema_version: 1,
-    policy_version: "2026.09.29.1",
-    catalog_version: "2026.09.29.1",
+    policy_version: "2026.10.20.3",
+    catalog_version: "2026.10.20.3",
     default_network: "solana",
     compatibility_shortcuts: {
       "opus-4.6": "anthropic/claude-opus-4.6",
@@ -242099,11 +242236,11 @@ var snapshot_v1_default = {
       "grok-fast": "xai/grok-4-1-fast-reasoning",
       "grok-4.1": "xai/grok-4-1-fast-reasoning",
       r1: "deepseek/deepseek-reasoner",
-      "deepseek-v4": "nvidia/deepseek-v4-flash",
-      "deepseek-v4-flash": "nvidia/deepseek-v4-flash",
-      dsv4: "nvidia/deepseek-v4-flash",
-      "deepseek-v3.2": "nvidia/deepseek-v4-flash",
-      "deepseek-v3": "nvidia/deepseek-v4-flash",
+      "deepseek-v4": "deepseek/deepseek-v4.1-flash",
+      "deepseek-v4-flash": "deepseek/deepseek-v4.1-flash",
+      dsv4: "deepseek/deepseek-v4.1-flash",
+      "deepseek-v3.2": "deepseek/deepseek-v4.1-flash",
+      "deepseek-v3": "deepseek/deepseek-v4.1-flash",
       "k2.6": "moonshot/kimi-k2.6",
       "kimi-k2.5": "moonshot/kimi-k2.6",
       "k2.5": "moonshot/kimi-k2.6"
@@ -242156,7 +242293,7 @@ var snapshot_v1_default = {
           "qwen/qwen3.8-flash",
           "deepseek/deepseek-v4-flash-vision-exp",
           "deepseek/deepseek-v4-pro",
-          "deepseek/deepseek-chat",
+          "deepseek/deepseek-v4.1-flash",
           "nvidia/nemotron-3.5-lightning",
           "poolside/laguna-xs-2.1",
           "cohere/north-mini-code",
@@ -242209,7 +242346,7 @@ var snapshot_v1_default = {
               "qwen/qwen3.8-flash",
               "deepseek/deepseek-v4-flash-vision-exp",
               "deepseek/deepseek-v4-pro",
-              "deepseek/deepseek-chat"
+              "deepseek/deepseek-v4.1-flash"
             ]
           },
           {
@@ -242255,7 +242392,7 @@ var snapshot_v1_default = {
           grok: "xai/grok-4.7",
           "grok-4.3": "xai/grok-4.3",
           "grok-build": "xai/grok-build-0.1",
-          deepseek: "deepseek/deepseek-chat",
+          deepseek: "deepseek/deepseek-v4.1-flash",
           "deepseek-v4-pro": "nvidia/nemotron-3.5-lightning",
           "dsv4-pro": "deepseek/deepseek-v4-pro",
           "v4-pro": "nvidia/nemotron-3.5-lightning",
@@ -242440,7 +242577,6 @@ var snapshot_v1_default = {
           "claude-sonnet-5": "anthropic/claude-sonnet-5",
           "claude-opus-4.8": "anthropic/claude-opus-4.8",
           "gpt-4o": "openai/gpt-4o",
-          "gemma-4-31b": "nvidia/gemma-4-31b",
           "grok-4.7": "xai/grok-4.7",
           "laguna-xs-2.1": "poolside/laguna-xs-2.1",
           "nemotron-3-nano-omni-30b-a3b-reasoning": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
@@ -242469,7 +242605,10 @@ var snapshot_v1_default = {
           "claude-fable-5.1": "anthropic/claude-fable-5.1",
           "gpt-6-astra": "openai/gpt-6-astra",
           "gpt-4.1-nano": "openai/gpt-4.1-nano",
-          "gpt-5.3-codex": "openai/gpt-5.3-codex"
+          "gpt-5.3-codex": "openai/gpt-5.3-codex",
+          "gpt-6.1-sol": "openai/gpt-6.1-sol",
+          "mistral-large-4": "mistral/mistral-large-4",
+          "deepseek-v4.1-flash": "deepseek/deepseek-v4.1-flash"
         }
       }
     }
@@ -242477,7 +242616,7 @@ var snapshot_v1_default = {
   router_policy: {
     schema_version: 1,
     policy_version: "2026.09.29.1",
-    catalog_version: "2026.09.29.1",
+    catalog_version: "2026.10.20.3",
     default_network: "solana",
     status: "draft",
     description: "Prototype model-specific policy for Router Core. Do not consume in production until benchmark review is complete.",

@@ -4,6 +4,25 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.295 — October 20, 2026
+
+### Bare `deepseek` names DeepSeek V4.1 Flash
+
+`sol.blockrun.ai` now lists `deepseek/deepseek-v4.1-flash`, so the bare
+`deepseek` alias resolves on both chains and moves from `deepseek-chat` to the
+canonical id: same upstream, same $0.14/$0.28, same non-thinking default.
+`deepseek-chat` still names the compatibility id, and the free-tier
+`deepseek-v4-flash` / `v4-flash` names stay on the free default.
+
+### router-core 2cd5a10, model-catalog 2026.10.20.3
+
+`@blockrun/router-core` moves to 2cd5a10, which adds capability rows for
+`deepseek/deepseek-v4.1-flash`, `openai/gpt-6.1-sol` and
+`mistral/mistral-large-4`. The routing algorithm is unchanged since 0.3.0.
+`@blockrun/model-catalog` moves to fd63593 (catalog `2026.10.20.3`): the picker
+lists V4.1 Flash in place of `deepseek-chat`, and Base's DeepSeek cached input
+is $0.006/M.
+
 ## v0.12.294 — October 20, 2026
 
 ### DeepSeek V4.1 Flash, and the free v4-flash pins move to the free default
