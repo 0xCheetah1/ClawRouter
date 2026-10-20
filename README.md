@@ -532,7 +532,7 @@ No Surf account, no API key — settles directly to Surf's Base treasury in USDC
 | --------------------------- | --------: | ---------: | ---------: | ------- | -------------------------------------------- |
 | anthropic/claude-haiku-4.5  |     $1.00 |      $5.00 |    $0.0030 | 200K    | vision, agentic, tools                       |
 | zai/glm-5                   |     $1.00 |      $3.20 |    $0.0021 | 200K    | reasoning, tools                             |
-| mistral/mistral-large-4     |     $0.68 |      $2.09 |    $0.0014 | 512K    | reasoning, vision, tools (launch-promo rate) |
+| mistral/mistral-large-4     |     $1.36 |      $4.18 |    $0.0028 | 512K    | reasoning, vision, tools                     |
 | tencent/hy4-preview         |    $0.834 |     $2.501 |    $0.0017 | 1M      | reasoning (Tencent Hy4, 770B MoE)            |
 | openai/gpt-5.6-terra-pro    |     $2.00 |     $12.00 |    $0.0070 | 1M      | reasoning, vision, agentic, tools            |
 | openai/o3-mini              |     $1.10 |      $4.40 |    $0.0028 | 128K    | reasoning, tools                             |

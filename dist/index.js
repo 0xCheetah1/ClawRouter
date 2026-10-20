@@ -234385,8 +234385,8 @@ var MODEL_ALIASES = {
   "mistral-large": "free/mistral-large-3-675b",
   "mistral-large-3-675b": "free/mistral-large-3-675b",
   "qwen3.5-122b": "free/qwen3.5-122b-a10b",
-  // Mistral Large 4 (blockrun 2026-10-07) — PAID, $0.68/$2.09 (a launch promo
-  // upstream; Mistral lists $1.36/$4.18). Explicit pins only.
+  // Mistral Large 4 (blockrun 2026-10-07) — PAID, $1.36/$4.18 (Mistral's list
+  // rate since its launch promo ended, 2026-10-20). Explicit pins only.
   "mistral-large-4": "mistral/mistral-large-4",
   "qwen3-122b": "free/qwen3.5-122b-a10b",
   // Free model shorthand aliases. v4-flash EOL'd 2026-08-12 — no free DeepSeek
@@ -236394,15 +236394,16 @@ var BLOCKRUN_MODELS = [
     reasoning: true
   },
   {
-    // ⏰ $0.68/$2.09 is a LAUNCH PROMO upstream (Mistral lists $1.36/$4.18, no
-    // end date). Re-price here the day blockrun does. Probed by blockrun
+    // $1.36/$4.18, Mistral's list rate. Listed 2026-10-07 at its $0.68/$2.09
+    // launch promo; the promo ended and blockrun repriced 2026-10-20 (#857),
+    // so this follows. Probed by blockrun
     // through OpenRouter: text, stream, tools (clean tool_calls) and image input
     // all served; reasoning is on by default.
     id: "mistral/mistral-large-4",
     name: "Mistral Large 4",
     version: "large-4",
-    inputPrice: 0.68,
-    outputPrice: 2.09,
+    inputPrice: 1.36,
+    outputPrice: 4.18,
     contextWindow: 524288,
     maxOutput: 262144,
     reasoning: true,
