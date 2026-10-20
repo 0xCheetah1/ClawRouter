@@ -62,6 +62,7 @@
   "qwen/qwen3.8-flash",
   "deepseek/deepseek-v4-flash-vision-exp",
   "deepseek/deepseek-v4-pro",
+  "deepseek/deepseek-v4.1-flash",
   "deepseek/deepseek-chat",
   "deepseek/deepseek-reasoner",
   "free/nemotron-3.5-lightning",
