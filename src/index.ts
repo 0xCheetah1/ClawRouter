@@ -564,6 +564,55 @@ function injectModelsConfig(
 }
 
 /**
+ * Add the runtime provider entry when the host exposes a mutable config.
+ *
+ * OpenClaw 2026.10.x freezes the plugin API config during registration. The
+ * persisted config has already been handled by injectModelsConfig(), and
+ * registerProvider() is the authoritative runtime registration path, so a
+ * frozen runtime config must not make plugin registration fail.
+ */
+function setRuntimeProviderConfig(
+  api: Pick<OpenClawPluginApi, "config" | "logger">,
+  runtimePort: number,
+): void {
+  try {
+    if (!api.config.models) {
+      api.config.models = { providers: {} };
+    }
+    if (!api.config.models.providers) {
+      api.config.models.providers = {};
+    }
+    api.config.models.providers.blockrun = {
+      baseUrl: `http://127.0.0.1:${runtimePort}/v1`,
+      api: "openai-completions",
+      // apiKey is required by pi-coding-agent's ModelRegistry for providers with models.
+      apiKey: "x402-proxy-handles-auth",
+      models: VISIBLE_OPENCLAW_MODELS,
+    };
+  } catch {
+    api.logger.debug?.(
+      "OpenClaw runtime config is read-only; using the persisted BlockRun provider config",
+    );
+  }
+}
+
+function removeRuntimeMcpConfig(api: Pick<OpenClawPluginApi, "config" | "logger">): boolean {
+  try {
+    return removeManagedBlockrunMcpServerConfig(api.config);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      error instanceof TypeError &&
+      /read only|not extensible|Cannot (?:add|assign|delete)/i.test(message)
+    ) {
+      api.logger.debug?.("OpenClaw runtime MCP config is read-only; skipping managed MCP cleanup");
+      return false;
+    }
+    throw error;
+  }
+}
+
+/**
  * Repair the per-agent model cache OpenClaw keeps at
  * `~/.openclaw/agents/<agent>/agent/models.json`.
  *
@@ -2057,21 +2106,10 @@ const plugin: OpenClawPluginDefinition = {
     // OpenClaw's agent system looks for auth even if provider has auth: []
     injectAuthProfile(api.logger);
 
-    // Also set runtime config for immediate availability
+    // Also set runtime config for immediate availability when the host allows
+    // mutation. OpenClaw 2026.10.x freezes this object during registration.
     const runtimePort = getProxyPort();
-    if (!api.config.models) {
-      api.config.models = { providers: {} };
-    }
-    if (!api.config.models.providers) {
-      api.config.models.providers = {};
-    }
-    api.config.models.providers.blockrun = {
-      baseUrl: `http://127.0.0.1:${runtimePort}/v1`,
-      api: "openai-completions",
-      // apiKey is required by pi-coding-agent's ModelRegistry for providers with models.
-      apiKey: "x402-proxy-handles-auth",
-      models: VISIBLE_OPENCLAW_MODELS,
-    };
+    setRuntimeProviderConfig(api, runtimePort);
     // NOTE: tools.web.search.{provider,enabled} are NOT written to runtime
     // api.config here. OpenClaw 2026.5.4 appears to auto-inject the plugin's
     // registered provider id into config.tools.web.search.provider when it
@@ -2081,7 +2119,7 @@ const plugin: OpenClawPluginDefinition = {
     // path), which runs in gateway mode or under `clawrouter setup
     // --forceWrite`. The file write is gated to only set boolean `enabled`,
     // never the provider field, keeping the disk state validator-safe.
-    const runtimeMcpRemoved = removeManagedBlockrunMcpServerConfig(api.config);
+    const runtimeMcpRemoved = removeRuntimeMcpConfig(api);
 
     // Only log provider/tool registration on the first register() call.
     // OpenClaw calls register() 4+ times per gateway startup; logging every
@@ -2684,7 +2722,14 @@ export default plugin;
 export { startProxy, getProxyPort } from "./proxy.js";
 
 // Re-export setup helpers for the `clawrouter setup` CLI command
-export { injectModelsConfig, injectAuthProfile, syncAgentModelCache, isBlockrunWebSearchDisabled };
+export {
+  injectModelsConfig,
+  injectAuthProfile,
+  syncAgentModelCache,
+  isBlockrunWebSearchDisabled,
+  setRuntimeProviderConfig,
+  removeRuntimeMcpConfig,
+};
 export type {
   ProxyOptions,
   ProxyHandle,

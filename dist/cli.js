@@ -282034,10 +282034,12 @@ __export(index_exports, {
   logUsage: () => logUsage,
   parseCallArgs: () => parseCallArgs,
   registerSpendPolicyHook: () => registerSpendPolicyHook,
+  removeRuntimeMcpConfig: () => removeRuntimeMcpConfig,
   resolveModelAlias: () => resolveModelAlias,
   resolvePaymentChain: () => resolvePaymentChain,
   route: () => route,
   savePaymentChain: () => savePaymentChain,
+  setRuntimeProviderConfig: () => setRuntimeProviderConfig,
   setupSolana: () => setupSolana,
   startProxy: () => startProxy,
   syncAgentModelCache: () => syncAgentModelCache
@@ -282330,6 +282332,39 @@ function injectModelsConfig(logger48, options = {}) {
     } catch (err) {
       logger48.info(`Failed to write config: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+}
+function setRuntimeProviderConfig(api, runtimePort) {
+  try {
+    if (!api.config.models) {
+      api.config.models = { providers: {} };
+    }
+    if (!api.config.models.providers) {
+      api.config.models.providers = {};
+    }
+    api.config.models.providers.blockrun = {
+      baseUrl: `http://127.0.0.1:${runtimePort}/v1`,
+      api: "openai-completions",
+      // apiKey is required by pi-coding-agent's ModelRegistry for providers with models.
+      apiKey: "x402-proxy-handles-auth",
+      models: VISIBLE_OPENCLAW_MODELS
+    };
+  } catch {
+    api.logger.debug?.(
+      "OpenClaw runtime config is read-only; using the persisted BlockRun provider config"
+    );
+  }
+}
+function removeRuntimeMcpConfig(api) {
+  try {
+    return removeManagedBlockrunMcpServerConfig(api.config);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof TypeError && /read only|not extensible|Cannot (?:add|assign|delete)/i.test(message)) {
+      api.logger.debug?.("OpenClaw runtime MCP config is read-only; skipping managed MCP cleanup");
+      return false;
+    }
+    throw error;
   }
 }
 function syncAgentModelCache(logger48, options = {}) {
@@ -283448,20 +283483,8 @@ var init_index = __esm({
         syncAgentModelCache(api.logger);
         injectAuthProfile(api.logger);
         const runtimePort = getProxyPort();
-        if (!api.config.models) {
-          api.config.models = { providers: {} };
-        }
-        if (!api.config.models.providers) {
-          api.config.models.providers = {};
-        }
-        api.config.models.providers.blockrun = {
-          baseUrl: `http://127.0.0.1:${runtimePort}/v1`,
-          api: "openai-completions",
-          // apiKey is required by pi-coding-agent's ModelRegistry for providers with models.
-          apiKey: "x402-proxy-handles-auth",
-          models: VISIBLE_OPENCLAW_MODELS
-        };
-        const runtimeMcpRemoved = removeManagedBlockrunMcpServerConfig(api.config);
+        setRuntimeProviderConfig(api, runtimePort);
+        const runtimeMcpRemoved = removeRuntimeMcpConfig(api);
         const shouldLogRegistration = !proc.__clawrouterRegistrationLogged;
         proc.__clawrouterRegistrationLogged = true;
         if (shouldLogRegistration) {
