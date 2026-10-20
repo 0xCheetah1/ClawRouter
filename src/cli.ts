@@ -44,6 +44,7 @@ ClawRouter v${VERSION} - Smart LLM Router
 
 Usage:
   clawrouter [options]
+  clawrouter update                    # Update ClawRouter in place
   clawrouter login [brk_...]           # Use a BlockRun API key (card-funded credit)
   clawrouter logout                    # Forget the API key and go back to the wallet
   clawrouter status                    # Live proxy status (wallet, balance, chain)
@@ -85,7 +86,9 @@ Query Commands (talk to running proxy on localhost:${getProxyPort()}):
   stats --days 14   Custom time range (max 30 days)
   cache             Response cache stats (hit rate, size)
 
-Management Commands:
+  Management Commands:
+  update            Safely update the installed package and OpenClaw integration.
+                    Backs up wallet/config state and rolls back on failure.
   setup             Finish OpenClaw integration (run after npm install -g).
                     Registers ClawRouter as a plugin, syncs the model allowlist,
                     and writes the auth profile. Idempotent — safe to re-run.
@@ -972,6 +975,53 @@ async function cmdSetup(): Promise<void> {
   );
 }
 
+/**
+ * Run the updater shipped with the installed package.
+ *
+ * Keeping this as a thin launcher means the CLI command and the existing
+ * browser/one-line installer use the same rollback-safe update implementation.
+ * The updater replaces the package on disk, so it must run as a child process
+ * rather than through code imported from the package being replaced.
+ */
+async function cmdUpdate(): Promise<void> {
+  const { execFileSync } = await import("node:child_process");
+  const { existsSync } = await import("node:fs");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+
+  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+  const scriptName = process.platform === "win32" ? "update.ps1" : "update.sh";
+  const updateScript = join(packageRoot, "scripts", scriptName);
+
+  if (!existsSync(updateScript)) {
+    console.error("✗ The bundled updater is missing from this ClawRouter installation.");
+    console.error("  Update manually: curl -fsSL https://blockrun.ai/ClawRouter-update | bash");
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`🦞 ClawRouter update (v${VERSION})\n`);
+  try {
+    if (process.platform === "win32") {
+      execFileSync(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", updateScript],
+        { stdio: "inherit", env: process.env },
+      );
+    } else {
+      execFileSync("bash", [updateScript], { stdio: "inherit", env: process.env });
+    }
+  } catch (error) {
+    process.exitCode =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof error.status === "number"
+        ? error.status
+        : 1;
+  }
+}
+
 function parseArgs(args: string[]): {
   version: boolean;
   help: boolean;
@@ -997,6 +1047,7 @@ function parseArgs(args: string[]): {
   reconcileDays: number;
   queryCache: boolean;
   setup: boolean;
+  update: boolean;
   // Share commands
   share: boolean;
   shareTarget?: "last" | "list" | string; // string = an id like resp_...
@@ -1039,6 +1090,7 @@ function parseArgs(args: string[]): {
     reconcileDays: 7,
     queryCache: false,
     setup: false,
+    update: false,
     share: false,
     shareTarget: undefined as "last" | "list" | string | undefined,
     sharePreset: undefined as string | undefined,
@@ -1145,6 +1197,8 @@ function parseArgs(args: string[]): {
       result.noReuse = true;
     } else if (arg === "setup") {
       result.setup = true;
+    } else if (arg === "update") {
+      result.update = true;
     } else if (arg === "phone") {
       result.phone = true;
       const next = args[i + 1];
@@ -1317,6 +1371,11 @@ async function main(): Promise<void> {
   if (args.setup) {
     await cmdSetup();
     process.exit(0);
+  }
+
+  if (args.update) {
+    await cmdUpdate();
+    return;
   }
 
   // Local file operation — no running proxy needed. Non-zero exit on any rejection.

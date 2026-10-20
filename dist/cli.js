@@ -287746,6 +287746,7 @@ ClawRouter v${VERSION} - Smart LLM Router
 
 Usage:
   clawrouter [options]
+  clawrouter update                    # Update ClawRouter in place
   clawrouter login [brk_...]           # Use a BlockRun API key (card-funded credit)
   clawrouter logout                    # Forget the API key and go back to the wallet
   clawrouter status                    # Live proxy status (wallet, balance, chain)
@@ -287787,7 +287788,9 @@ Query Commands (talk to running proxy on localhost:${getProxyPort()}):
   stats --days 14   Custom time range (max 30 days)
   cache             Response cache stats (hit rate, size)
 
-Management Commands:
+  Management Commands:
+  update            Safely update the installed package and OpenClaw integration.
+                    Backs up wallet/config state and rolls back on failure.
   setup             Finish OpenClaw integration (run after npm install -g).
                     Registers ClawRouter as a plugin, syncs the model allowlist,
                     and writes the auth profile. Idempotent \u2014 safe to re-run.
@@ -288516,6 +288519,36 @@ async function cmdSetup() {
 Then verify in your bot: /models \u2014 you should see ${VISIBLE_OPENCLAW_MODELS2.length} BlockRun models.`
   );
 }
+async function cmdUpdate() {
+  const { execFileSync } = await import("child_process");
+  const { existsSync: existsSync9 } = await import("fs");
+  const { dirname: dirname6, join: join21 } = await import("path");
+  const { fileURLToPath: fileURLToPath2 } = await import("url");
+  const packageRoot = dirname6(dirname6(fileURLToPath2(import.meta.url)));
+  const scriptName = process.platform === "win32" ? "update.ps1" : "update.sh";
+  const updateScript = join21(packageRoot, "scripts", scriptName);
+  if (!existsSync9(updateScript)) {
+    console.error("\u2717 The bundled updater is missing from this ClawRouter installation.");
+    console.error("  Update manually: curl -fsSL https://blockrun.ai/ClawRouter-update | bash");
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`\u{1F99E} ClawRouter update (v${VERSION})
+`);
+  try {
+    if (process.platform === "win32") {
+      execFileSync(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", updateScript],
+        { stdio: "inherit", env: process.env }
+      );
+    } else {
+      execFileSync("bash", [updateScript], { stdio: "inherit", env: process.env });
+    }
+  } catch (error) {
+    process.exitCode = typeof error === "object" && error !== null && "status" in error && typeof error.status === "number" ? error.status : 1;
+  }
+}
 function parseArgs(args) {
   const result = {
     version: false,
@@ -288541,6 +288574,7 @@ function parseArgs(args) {
     reconcileDays: 7,
     queryCache: false,
     setup: false,
+    update: false,
     share: false,
     shareTarget: void 0,
     sharePreset: void 0,
@@ -288641,6 +288675,8 @@ function parseArgs(args) {
       result.noReuse = true;
     } else if (arg === "setup") {
       result.setup = true;
+    } else if (arg === "update") {
+      result.update = true;
     } else if (arg === "phone") {
       result.phone = true;
       const next = args[i + 1];
@@ -288777,6 +288813,10 @@ async function main() {
   if (args.setup) {
     await cmdSetup();
     process.exit(0);
+  }
+  if (args.update) {
+    await cmdUpdate();
+    return;
   }
   if (args.policy) {
     const result = runPolicyCommand(args.policyArgs);

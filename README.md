@@ -165,6 +165,16 @@ clawrouter setup            # finishes OpenClaw integration — REQUIRED
 openclaw gateway restart
 ```
 
+Once installed, future updates are one command:
+
+```bash
+clawrouter update
+openclaw gateway restart
+```
+
+The updater backs up the wallet and OpenClaw integration state, updates the package and plugin,
+and rolls back the previous install if anything fails.
+
 > ⚠️ **Skipping `clawrouter setup` will leave you broken.** Bare `npm install -g` only puts the package on disk; it does NOT register the plugin with OpenClaw, sync the models allowlist, or write the auth profile. Symptom: `/models` in your bot shows only OpenClaw's defaults instead of the 55 BlockRun models. Run `clawrouter setup` to repair, or use path A1 to begin with.
 
 ### Option B — Standalone (continue.dev, Cursor, VS Code, any OpenAI-compatible client)
