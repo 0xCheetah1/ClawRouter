@@ -1500,7 +1500,9 @@ function buildMusicGenerationProvider(): MusicGenerationProviderPlugin {
     id: "blockrun",
     label: "BlockRun",
     defaultModel: "minimax/music-2.5+",
-    models: ["minimax/music-2.5+", "minimax/music-2.5"],
+    // minimax/music-2.5 left blockrun's catalog; the gateway remaps pinned
+    // callers to music-2.5+, so the picker offers only the model that is served.
+    models: ["minimax/music-2.5+"],
     capabilities: {
       maxTracks: 1,
       maxDurationSeconds: 240,
@@ -1582,6 +1584,9 @@ function buildVideoGenerationProvider(): VideoGenerationProviderPlugin {
     defaultModel: "xai/grok-imagine-video",
     models: [
       "xai/grok-imagine-video",
+      // Grok Imagine Video 1.5 (blockrun live catalog): native synced audio,
+      // 1–15s, $0.08/s at the 480p default — so 5/8/10s all fit.
+      "xai/grok-imagine-video-1.5",
       "bytedance/seedance-1.5-pro",
       "bytedance/seedance-2.0-fast",
       "bytedance/seedance-2.0",
@@ -2291,7 +2296,7 @@ const plugin: OpenClawPluginDefinition = {
         const parsed = parseGenArgs(ctx.args ?? "");
         if (!parsed.prompt) {
           return {
-            text: "Usage: `/videogen <prompt> [--model=<alias>] [--duration=5|8|10]`\n\nAliases: `seedance` (1.5-pro, default — cheapest), `seedance-2-fast`, `seedance-2`, `seedance-2-mini` (720p + audio, half the flagship rate), `seedance-2.5` (720p + synced audio, long-form), `grok-video`.\n\n⏱️  Generation takes 60–180 seconds. Payment settles only on success.",
+            text: "Usage: `/videogen <prompt> [--model=<alias>] [--duration=5|8|10]`\n\nAliases: `seedance` (1.5-pro, default — cheapest), `seedance-2-fast`, `seedance-2`, `seedance-2-mini` (720p + audio, half the flagship rate), `seedance-2.5` (720p + synced audio, long-form), `grok-video`, `grok-video-1.5` (synced audio).\n\n⏱️  Generation takes 60–180 seconds. Payment settles only on success.",
           };
         }
         const model = resolveModelAlias(parsed.model ?? "seedance");
