@@ -541,7 +541,8 @@ describe("DeepSeek V4.1 Flash (2026-10-20)", () => {
     });
     expect(TOP_MODELS).toContain("deepseek/deepseek-v4.1-flash");
     expect(resolveModelAlias("deepseek-v4.1-flash")).toBe("deepseek/deepseek-v4.1-flash");
-    expect(resolveModelAlias("deepseek")).toBe("deepseek/deepseek-chat");
+    expect(resolveModelAlias("deepseek")).toBe("deepseek/deepseek-v4.1-flash");
+    expect(resolveModelAlias("deepseek-chat")).toBe("deepseek/deepseek-chat");
   });
 
   it("never moves a free-tier deepseek name onto the paid model", () => {

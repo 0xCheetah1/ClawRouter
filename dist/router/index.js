@@ -670,6 +670,13 @@ var DEFAULT_MODEL_CAPABILITIES = Object.freeze({
     supportsTools: true,
     supportsVision: false
   },
+  "deepseek/deepseek-v4.1-flash": {
+    // supportsTools: not probed — fails closed
+    contextWindow: 1048576,
+    maxOutputTokens: 65536,
+    supportsTools: false,
+    supportsVision: false
+  },
   "google/gemini-2.5-flash": {
     contextWindow: 1048576,
     maxOutputTokens: 65536,
@@ -741,6 +748,13 @@ var DEFAULT_MODEL_CAPABILITIES = Object.freeze({
     maxOutputTokens: 65536,
     supportsTools: true,
     supportsVision: false
+  },
+  "mistral/mistral-large-4": {
+    // supportsTools: not probed — fails closed
+    contextWindow: 524288,
+    maxOutputTokens: 262144,
+    supportsTools: false,
+    supportsVision: true
   },
   "moonshot/kimi-k3": {
     contextWindow: 1048576,
@@ -941,6 +955,13 @@ var DEFAULT_MODEL_CAPABILITIES = Object.freeze({
     contextWindow: 105e4,
     maxOutputTokens: 128e3,
     supportsTools: true,
+    supportsVision: true
+  },
+  "openai/gpt-6.1-sol": {
+    // supportsTools: not probed — fails closed
+    contextWindow: 105e4,
+    maxOutputTokens: 128e3,
+    supportsTools: false,
     supportsVision: true
   },
   "openai/o1": {

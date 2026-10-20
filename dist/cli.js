@@ -6893,12 +6893,12 @@ var init_models = __esm({
       "openai-codex/gpt-5.4-mini": "openai/gpt-5.4-mini",
       "gpt-5.4-mini": "openai/gpt-5.4-mini",
       // DeepSeek
-      deepseek: "deepseek/deepseek-chat",
+      deepseek: "deepseek/deepseek-v4.1-flash",
       "deepseek-chat": "deepseek/deepseek-chat",
       reasoner: "deepseek/deepseek-reasoner",
       // DeepSeek V4.1 Flash (blockrun 2026-10-20) — its own id now, PAID at the
       // same $0.14/$0.28 as deepseek-chat (which the gateway serves from the same
-      // upstream). Explicit pins only: bare `deepseek` stays on deepseek-chat, and
+      // upstream). Bare `deepseek` names it now that Base and Solana both list it;
       // the free-tier `deepseek-v4-flash`/`v4-flash` shorthands below are NOT moved
       // onto it — a caller who typed a free name must never start paying.
       "deepseek-v4.1-flash": "deepseek/deepseek-v4.1-flash",
@@ -45749,6 +45749,13 @@ var init_dist = __esm({
         supportsTools: true,
         supportsVision: false
       },
+      "deepseek/deepseek-v4.1-flash": {
+        // supportsTools: not probed — fails closed
+        contextWindow: 1048576,
+        maxOutputTokens: 65536,
+        supportsTools: false,
+        supportsVision: false
+      },
       "google/gemini-2.5-flash": {
         contextWindow: 1048576,
         maxOutputTokens: 65536,
@@ -45820,6 +45827,13 @@ var init_dist = __esm({
         maxOutputTokens: 65536,
         supportsTools: true,
         supportsVision: false
+      },
+      "mistral/mistral-large-4": {
+        // supportsTools: not probed — fails closed
+        contextWindow: 524288,
+        maxOutputTokens: 262144,
+        supportsTools: false,
+        supportsVision: true
       },
       "moonshot/kimi-k3": {
         contextWindow: 1048576,
@@ -46020,6 +46034,13 @@ var init_dist = __esm({
         contextWindow: 105e4,
         maxOutputTokens: 128e3,
         supportsTools: true,
+        supportsVision: true
+      },
+      "openai/gpt-6.1-sol": {
+        // supportsTools: not probed — fails closed
+        contextWindow: 105e4,
+        maxOutputTokens: 128e3,
+        supportsTools: false,
         supportsVision: true
       },
       "openai/o1": {
