@@ -56,8 +56,8 @@ var init_snapshot_v1 = __esm({
     snapshot_v1_default = {
       catalog: {
         schema_version: 1,
-        catalog_version: "2026.10.20.3",
-        observed_at: "2026-10-20T15:39:43.000Z",
+        catalog_version: "2026.10.20.4",
+        observed_at: "2026-10-20T18:13:39.000Z",
         sources: {
           base: "https://blockrun.ai/api/v1/models?format=json",
           solana: "https://sol.blockrun.ai/api/v1/models?format=json"
@@ -1957,6 +1957,56 @@ var init_snapshot_v1 = __esm({
                 pricing: {
                   input: 0.75,
                   output: 3.75
+                },
+                context_window: 1048576,
+                max_output: 65536
+              }
+            }
+          },
+          {
+            id: "google/gemini-4-argon",
+            name: "Gemini 4 Argon",
+            provider: "google",
+            description: "Google's frontier reasoning model, built for long multi-step agent work, complex software engineering and deep math and science problems",
+            lifecycle: "active",
+            declared_capabilities: [
+              "chat",
+              "coding",
+              "reasoning",
+              "vision"
+            ],
+            aliases: [],
+            redirects: [],
+            networks: {
+              base: {
+                listed: true,
+                categories: [
+                  "chat",
+                  "coding",
+                  "reasoning",
+                  "vision"
+                ],
+                billing_mode: "paid",
+                pricing: {
+                  input: 2,
+                  output: 10,
+                  cache_read: 0.1
+                },
+                context_window: 1048576,
+                max_output: 65536
+              },
+              solana: {
+                listed: true,
+                categories: [
+                  "chat",
+                  "coding",
+                  "reasoning",
+                  "vision"
+                ],
+                billing_mode: "paid",
+                pricing: {
+                  input: 2,
+                  output: 10
                 },
                 context_window: 1048576,
                 max_output: 65536
@@ -5706,8 +5756,8 @@ var init_snapshot_v1 = __esm({
       },
       picker_policy: {
         schema_version: 1,
-        policy_version: "2026.10.20.3",
-        catalog_version: "2026.10.20.3",
+        policy_version: "2026.10.20.4",
+        catalog_version: "2026.10.20.4",
         default_network: "solana",
         compatibility_shortcuts: {
           "opus-4.6": "anthropic/claude-opus-4.6",
@@ -6086,6 +6136,7 @@ var init_snapshot_v1 = __esm({
               "claude-opus-4.7": "anthropic/claude-opus-4.7",
               "claude-opus-5.5": "anthropic/claude-opus-5.5",
               "gemini-3.8-flash": "google/gemini-3.8-flash",
+              "gemini-4-argon": "google/gemini-4-argon",
               "nemotron-3-ultra-550b": "nvidia/nemotron-3-ultra-550b",
               "gpt-5.1": "openai/gpt-5.1",
               "claude-fable-5": "anthropic/claude-fable-5",
@@ -6104,7 +6155,7 @@ var init_snapshot_v1 = __esm({
       router_policy: {
         schema_version: 1,
         policy_version: "2026.09.29.1",
-        catalog_version: "2026.10.20.3",
+        catalog_version: "2026.10.20.4",
         default_network: "solana",
         status: "draft",
         description: "Prototype model-specific policy for Router Core. Do not consume in production until benchmark review is complete.",
@@ -6749,6 +6800,7 @@ var init_top_models = __esm({
       "openai/gpt-5.4-nano",
       "openai/gpt-5.1",
       "openai/gpt-5.3-codex",
+      "google/gemini-4-argon",
       "google/gemini-3.1-pro",
       "google/gemini-3.8-flash",
       "google/gemini-3.6-flash",
@@ -8152,6 +8204,26 @@ var init_models = __esm({
         version: "3.0",
         inputPrice: 2,
         outputPrice: 12,
+        contextWindow: 1048576,
+        maxOutput: 65536,
+        reasoning: true,
+        vision: true,
+        toolCalling: true
+      },
+      {
+        // Google's frontier reasoning model (blockrun #855, listed 2026-10-20; live
+        // on Base and Solana). Catalogued so estimateAmount() prices it — an
+        // uncatalogued id skips the balance check and projects $0 into
+        // maxCostPerRun. Catalog only: deliberately NOT in any routing tier yet.
+        id: "google/gemini-4-argon",
+        name: "Gemini 4 Argon",
+        version: "4",
+        // ⏰ INTRO RATE, expires 2026-12-01. Google prices Argon at 2/10 through
+        // 2026-11-30 and 4/20 from 2026-12-01 (ai.google.dev/gemini-api/docs/pricing;
+        // blockrun's src/lib/models.ts carries the same dated note). Leaving 2/10 past
+        // that date under-reports spend 2x and lets maxCostPerRun run to twice its cap.
+        inputPrice: 2,
+        outputPrice: 10,
         contextWindow: 1048576,
         maxOutput: 65536,
         reasoning: true,
