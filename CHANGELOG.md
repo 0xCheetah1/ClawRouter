@@ -4,6 +4,49 @@ All notable changes to ClawRouter.
 
 ---
 
+## v0.12.294 — October 20, 2026
+
+### DeepSeek V4.1 Flash, and the free v4-flash pins move to the free default
+
+blockrun listed `deepseek/deepseek-v4.1-flash` ($0.14/$0.28, 1M context,
+64K output, the same upstream as `deepseek-chat`). It is in the picker and
+reachable through `deepseek-v4.1-flash`, `deepseek-v4-1-flash` and
+`v4.1-flash`; bare `deepseek` still names `deepseek-chat`. The same day the
+gateway dropped the free `nvidia/deepseek-v4-flash` and now answers
+`400 Unknown model` for it. The aliases that named it
+(`nvidia/deepseek-v4-flash`, `deepseek-v4-flash`, `v4-flash`) now resolve to
+the free default, `free/nemotron-3.5-lightning`, and never to the paid
+V4.1 Flash: a caller who typed a free name does not start paying (#487).
+
+### Catalog synced to the live gateway
+
+Six chat models the gateway served but ClawRouter did not carry, so a pin
+on one of them skipped the balance pre-check and `maxCostPerRun`:
+`openai/gpt-6.1-sol`, `qwen/qwen3.8-max`, `tencent/hy4-preview`,
+`mistral/mistral-large-4`, `poolside/laguna-s-2.1` and the free
+`free/muse-glimmer-30b`. Every price, context and max-output value is the
+gateway's own. `xai/grok-imagine-video-1.5` joins the video picker ($0.08/s
+at the 480p default), and `minimax/music-2.5`, which the gateway now
+remaps to `music-2.5+`, leaves the music picker.
+
+Retired ids follow the gateway's own redirect instead of failing:
+`openai/gpt-5.3` → `gpt-5.2`; `grok-3`, `grok-3-mini` and `grok-4-fast-*` →
+`grok-4-1-fast-*`; `grok-2-vision` → `grok-4.3`. Bare shorthands
+(`laguna`, `mistral-large`, `tencent`, `hunyuan`, `qwen`) still name the free
+or cheaper model they always did (#485).
+
+### Development
+
+- CI and the npm publish job run on Node 24 (#488). The `openclaw`
+  devDependency (2026.10+) will not install below Node 24.16; users still
+  install ClawRouter on Node 22, and the install test still covers 22.
+- The scanner integration test finds OpenClaw's scanner in the `.mjs`
+  chunks 2026.10 ships (#490).
+- `tsup` 8 → 9 and `vitest` 4 → 5, plus minor dev-tool bumps (#486). tsup 9
+  builds a `dist/` of exactly the same size as tsup 8.
+
+---
+
 ## v0.12.293 — October 20, 2026
 
 ### OpenClaw 2026.10.x: BlockRun loads again on a frozen runtime config
