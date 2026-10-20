@@ -512,8 +512,9 @@ No Surf account, no API key — settles directly to Surf's Base treasury in USDC
 | xai/grok-4-1-fast                           |     $0.20 |      $0.50 |    $0.0004 | 131K    | tools                                               |
 | openai/gpt-5-mini                           |     $0.25 |      $2.00 |    $0.0011 | 200K    | tools                                               |
 | qwen/qwen3.7-plus                           |     $0.32 |      $1.28 |    $0.0008 | 1M      | reasoning, agentic, tools (balanced Qwen)           |
-| deepseek/deepseek-chat                      |     $0.14 |      $0.28 |    $0.0002 | 1M      | tools (V4 Flash chat)                               |
-| deepseek/deepseek-reasoner                  |     $0.14 |      $0.28 |    $0.0002 | 1M      | reasoning, tools (V4 Flash thinking)                |
+| deepseek/deepseek-v4.1-flash                |     $0.14 |      $0.28 |    $0.0002 | 1M      | tools (V4.1 Flash, non-thinking)                    |
+| deepseek/deepseek-chat                      |     $0.14 |      $0.28 |    $0.0002 | 1M      | tools (V4.1 Flash chat)                             |
+| deepseek/deepseek-reasoner                  |     $0.14 |      $0.28 |    $0.0002 | 1M      | reasoning, tools (V4.1 Flash thinking)              |
 | xiaomi/mimo-v2.5-pro                        |    $0.435 |      $0.87 |    $0.0007 | 1M      | reasoning (Xiaomi MiMo-V2.5 Pro)                    |
 | zai/glm-5-turbo                             |     $1.20 |      $4.00 |    $0.0026 | 200K    | tools                                               |
 | minimax/minimax-m3                          |     $0.30 |      $1.20 |    $0.0008 | 1M      | reasoning, agentic, tools                           |

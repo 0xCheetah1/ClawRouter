@@ -158,6 +158,14 @@ export const MODEL_ALIASES: Record<string, string> = {
   deepseek: "deepseek/deepseek-chat",
   "deepseek-chat": "deepseek/deepseek-chat",
   reasoner: "deepseek/deepseek-reasoner",
+  // DeepSeek V4.1 Flash (blockrun 2026-10-20) — its own id now, PAID at the
+  // same $0.14/$0.28 as deepseek-chat (which the gateway serves from the same
+  // upstream). Explicit pins only: bare `deepseek` stays on deepseek-chat, and
+  // the free-tier `deepseek-v4-flash`/`v4-flash` shorthands below are NOT moved
+  // onto it — a caller who typed a free name must never start paying.
+  "deepseek-v4.1-flash": "deepseek/deepseek-v4.1-flash",
+  "deepseek-v4-1-flash": "deepseek/deepseek-v4.1-flash",
+  "v4.1-flash": "deepseek/deepseek-v4.1-flash",
 
   // Kimi / Moonshot — K3 is the featured flagship on BlockRun (added 2026-07-17; K2.7
   // hidden/superseded, K2.6 hidden, K2.5 hidden). K3 is ~5x K2.7's price ($3/$15 vs
@@ -314,14 +322,18 @@ export const MODEL_ALIASES: Record<string, string> = {
   // probe passes; prod gate fired [ALERT][free-model-dead] kind=gone twice that
   // morning). The whole nvidia/deepseek-* family is now dead upstream — blockrun
   // hid flash and retargeted v3.2/v4-pro (whose redirects chained through flash)
-  // straight to gpt-oss-120b. Ids naming v4-flash itself keep the real id (the
-  // gateway redirects them); the v3.2/v4-pro ids follow blockrun's retarget
+  // straight to gpt-oss-120b. The v3.2/v4-pro ids follow blockrun's retarget
   // rather than chaining through a second dead model.
+  // 2026-10-20: blockrun REMOVED nvidia/deepseek-v4-flash and its redirect —
+  // the gateway now answers 400 Unknown model for it (and for the bare
+  // `deepseek-v4-flash`). Its replacement is the PAID deepseek/deepseek-v4.1-
+  // flash, which a free-tier pin must not silently land on, so every alias
+  // that named the free v4-flash now follows the free default instead.
   "nvidia/deepseek-v3.2": "free/nemotron-3.5-lightning",
   "free/deepseek-v3.2": "free/nemotron-3.5-lightning",
   "nvidia/deepseek-v4-pro": "free/nemotron-3.5-lightning",
   "free/deepseek-v4-pro": "free/nemotron-3.5-lightning",
-  "nvidia/deepseek-v4-flash": "free/deepseek-v4-flash",
+  "nvidia/deepseek-v4-flash": "free/nemotron-3.5-lightning",
   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": "free/nemotron-3-nano-omni-30b-a3b-reasoning",
   // qwen3-coder-480b retired (NVIDIA EOL 2026-06-14). Its server-side redirect used
   // to be seed-oss-36b, but that EOL'd too on 2026-08-03, so blockrun re-pointed it
@@ -371,13 +383,14 @@ export const MODEL_ALIASES: Record<string, string> = {
   // Free model shorthand aliases. v4-flash EOL'd 2026-08-12 — no free DeepSeek
   // is left anywhere, so the generic "a free deepseek" shorthand follows the
   // gateway's retarget (blockrun's /free-deepseek page points at gpt-oss-120b
-  // too). Shorthands naming v4-flash itself stay on the real id — the gateway
-  // redirects them, same treatment as seed-oss/mistral-large pins.
+  // too). Shorthands naming v4-flash itself followed the free id until the
+  // gateway stopped serving it (400 since 2026-10-20, see above); they now take
+  // the free default too, never the paid V4.1 Flash.
   "deepseek-free": "free/nemotron-3.5-lightning",
   "deepseek-v4-pro": "free/nemotron-3.5-lightning", // free shorthand; pro dead upstream (410)
-  "deepseek-v4-flash": "free/deepseek-v4-flash",
+  "deepseek-v4-flash": "free/nemotron-3.5-lightning",
   "v4-pro": "free/nemotron-3.5-lightning",
-  "v4-flash": "free/deepseek-v4-flash",
+  "v4-flash": "free/nemotron-3.5-lightning",
   // mistral-nemotron died 2026-08-30 and it was the LAST free Mistral anywhere —
   // blockrun's own /free-mistral page now says so plainly instead of naming one.
   // Point the generic shorthand at the free default rather than advertise a
@@ -1501,13 +1514,14 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
   },
 
   // DeepSeek — V4 family (2026-04-24). The legacy deepseek-chat/reasoner
-  // aliases are served upstream as V4 Flash non-thinking / thinking modes.
+  // aliases are served upstream as V4.1 Flash non-thinking / thinking modes
+  // (blockrun renamed them "(V4.1 Flash)" on 2026-10-20).
   // Repriced 0.20/0.40 → 0.14/0.28 (blockrun #354: DeepSeek's published
   // deepseek-v4-flash rate; the old numbers were 1.43x the real rate).
   {
     id: "deepseek/deepseek-chat",
-    name: "DeepSeek V4 Flash Chat",
-    version: "4-flash",
+    name: "DeepSeek Chat (V4.1 Flash)",
+    version: "4.1-flash",
     inputPrice: 0.14,
     outputPrice: 0.28,
     contextWindow: 1048576,
@@ -1516,13 +1530,29 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
   },
   {
     id: "deepseek/deepseek-reasoner",
-    name: "DeepSeek V4 Flash Reasoner",
-    version: "4-flash",
+    name: "DeepSeek Reasoner (V4.1 Flash)",
+    version: "4.1-flash",
     inputPrice: 0.14,
     outputPrice: 0.28,
     contextWindow: 1048576,
     maxOutput: 65536,
     reasoning: true,
+    toolCalling: true,
+  },
+  {
+    // DeepSeek V4.1 Flash (blockrun 2026-10-20). The gateway serves it from the
+    // SAME upstream as deepseek-chat, at the same price, in the same
+    // non-thinking mode (thinking is not caller-togglable; use
+    // deepseek-reasoner for it) — so the flags mirror deepseek-chat rather than
+    // the catalog's "reasoning" category, which would enrol it in the long
+    // reasoning timeout for a model that does not think.
+    id: "deepseek/deepseek-v4.1-flash",
+    name: "DeepSeek V4.1 Flash",
+    version: "4.1-flash",
+    inputPrice: 0.14,
+    outputPrice: 0.28,
+    contextWindow: 1048576,
+    maxOutput: 65536,
     toolCalling: true,
   },
   {
@@ -2014,9 +2044,12 @@ export const BLOCKRUN_MODELS: BlockRunModel[] = [
     // published 410 Gone ("has reached its end of life") on both probe passes
     // and blockrun's prod gate fired [ALERT][free-model-dead] kind=gone twice
     // that morning. The whole nvidia/deepseek-* family is dead upstream; there
-    // is no free DeepSeek left anywhere. Blockrun hid it and redirects calls to
-    // gpt-oss-120b. Entry kept so explicit pins stay routable; off the picker,
-    // the FREE_MODELS cascade, and the router fallback chains.
+    // is no free DeepSeek left anywhere. Blockrun hid it and redirected calls,
+    // then on 2026-10-20 REMOVED it outright: the gateway answers 400 Unknown
+    // model, deliberately not moving pins onto the paid deepseek-v4.1-flash.
+    // Entry kept only so a direct pin is still classified free (never billed);
+    // no alias points here any more. Off the picker, the FREE_MODELS cascade,
+    // and the router fallback chains.
     id: "free/deepseek-v4-flash",
     name: "[Free] DeepSeek V4 Flash",
     version: "v4-flash",
