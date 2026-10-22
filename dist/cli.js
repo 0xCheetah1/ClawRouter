@@ -287788,8 +287788,8 @@ Query Commands (talk to running proxy on localhost:${getProxyPort()}):
   stats --days 14   Custom time range (max 30 days)
   cache             Response cache stats (hit rate, size)
 
-  Management Commands:
-  update            Safely update the installed package and OpenClaw integration.
+Management Commands:
+  update            Update the OpenClaw plugin and this global CLI in one step.
                     Backs up wallet/config state and rolls back on failure.
   setup             Finish OpenClaw integration (run after npm install -g).
                     Registers ClawRouter as a plugin, syncs the model allowlist,
@@ -288521,32 +288521,75 @@ Then verify in your bot: /models \u2014 you should see ${VISIBLE_OPENCLAW_MODELS
 }
 async function cmdUpdate() {
   const { execFileSync } = await import("child_process");
-  const { existsSync: existsSync9 } = await import("fs");
-  const { dirname: dirname6, join: join21 } = await import("path");
+  const { copyFileSync: copyFileSync2, existsSync: existsSync9, mkdtempSync, realpathSync: realpathSync2, rmSync } = await import("fs");
+  const { tmpdir } = await import("os");
+  const { dirname: dirname6, join: join21, relative, isAbsolute } = await import("path");
   const { fileURLToPath: fileURLToPath2 } = await import("url");
+  const isWindows = process.platform === "win32";
   const packageRoot = dirname6(dirname6(fileURLToPath2(import.meta.url)));
-  const scriptName = process.platform === "win32" ? "update.ps1" : "update.sh";
+  const scriptName = isWindows ? "update.ps1" : "update.sh";
   const updateScript = join21(packageRoot, "scripts", scriptName);
+  const exitStatus = (error) => typeof error === "object" && error !== null && "status" in error && typeof error.status === "number" ? error.status : 1;
   if (!existsSync9(updateScript)) {
     console.error("\u2717 The bundled updater is missing from this ClawRouter installation.");
-    console.error("  Update manually: curl -fsSL https://blockrun.ai/ClawRouter-update | bash");
+    console.error(
+      isWindows ? "  Update manually: iwr -useb https://blockrun.ai/ClawRouter-update.ps1 | iex" : "  Update manually: curl -fsSL https://blockrun.ai/ClawRouter-update | bash"
+    );
     process.exitCode = 1;
     return;
   }
   console.log(`\u{1F99E} ClawRouter update (v${VERSION})
 `);
+  const tempDir = mkdtempSync(join21(tmpdir(), "clawrouter-update-"));
   try {
-    if (process.platform === "win32") {
+    const script = join21(tempDir, scriptName);
+    copyFileSync2(updateScript, script);
+    if (isWindows) {
       execFileSync(
         "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", updateScript],
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script],
         { stdio: "inherit", env: process.env }
       );
     } else {
-      execFileSync("bash", [updateScript], { stdio: "inherit", env: process.env });
+      execFileSync("bash", [script], { stdio: "inherit", env: process.env });
     }
   } catch (error) {
-    process.exitCode = typeof error === "object" && error !== null && "status" in error && typeof error.status === "number" ? error.status : 1;
+    process.exitCode = exitStatus(error);
+    return;
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+  let globalRoot;
+  try {
+    globalRoot = execFileSync("npm", ["root", "-g"], {
+      encoding: "utf8",
+      shell: isWindows,
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return;
+  }
+  let fromGlobal;
+  try {
+    const rel = relative(realpathSync2(globalRoot), realpathSync2(packageRoot));
+    fromGlobal = rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
+  } catch {
+    return;
+  }
+  if (!fromGlobal) return;
+  const installSpec = process.env.BLOCKRUN_CLAWROUTER_INSTALL_SPEC || "@blockrun/clawrouter@latest";
+  console.log(`
+\u2192 Updating global CLI (npm install -g ${installSpec})...`);
+  try {
+    execFileSync("npm", ["install", "-g", installSpec], {
+      stdio: "inherit",
+      shell: isWindows,
+      env: process.env
+    });
+    console.log("  \u2713 Global CLI updated");
+  } catch {
+    console.warn("  \u26A0 Plugin updated, but the global CLI could not be refreshed.");
+    console.warn(`    Run manually: npm install -g ${installSpec}`);
   }
 }
 function parseArgs(args) {
@@ -288675,7 +288718,7 @@ function parseArgs(args) {
       result.noReuse = true;
     } else if (arg === "setup") {
       result.setup = true;
-    } else if (arg === "update") {
+    } else if (arg === "update" && i === 0) {
       result.update = true;
     } else if (arg === "phone") {
       result.phone = true;

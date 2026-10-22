@@ -86,8 +86,8 @@ Query Commands (talk to running proxy on localhost:${getProxyPort()}):
   stats --days 14   Custom time range (max 30 days)
   cache             Response cache stats (hit rate, size)
 
-  Management Commands:
-  update            Safely update the installed package and OpenClaw integration.
+Management Commands:
+  update            Update the OpenClaw plugin and this global CLI in one step.
                     Backs up wallet/config state and rolls back on failure.
   setup             Finish OpenClaw integration (run after npm install -g).
                     Registers ClawRouter as a plugin, syncs the model allowlist,
@@ -976,49 +976,105 @@ async function cmdSetup(): Promise<void> {
 }
 
 /**
- * Run the updater shipped with the installed package.
+ * Run the updater shipped with the installed package, then bring the global
+ * npm install up to the same release.
  *
- * Keeping this as a thin launcher means the CLI command and the existing
- * browser/one-line installer use the same rollback-safe update implementation.
- * The updater replaces the package on disk, so it must run as a child process
- * rather than through code imported from the package being replaced.
+ * ClawRouter lives in two places: the OpenClaw-managed plugin
+ * (~/.openclaw/extensions/blockrun-clawrouter) and, for most users, a global
+ * npm install that provides this `clawrouter` binary. `npm install -g` only
+ * refreshes the second and the bundled updater only refreshes the first, so
+ * this command runs both and the two copies stop drifting apart.
+ *
+ * The updater runs from a temp copy: when this CLI is executed out of the
+ * plugin directory, `openclaw plugins install --force` rewrites the very file
+ * bash is still reading, and bash reads scripts incrementally.
  */
 async function cmdUpdate(): Promise<void> {
   const { execFileSync } = await import("node:child_process");
-  const { existsSync } = await import("node:fs");
-  const { dirname, join } = await import("node:path");
+  const { copyFileSync, existsSync, mkdtempSync, realpathSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { dirname, join, relative, isAbsolute } = await import("node:path");
   const { fileURLToPath } = await import("node:url");
 
+  const isWindows = process.platform === "win32";
   const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-  const scriptName = process.platform === "win32" ? "update.ps1" : "update.sh";
+  const scriptName = isWindows ? "update.ps1" : "update.sh";
   const updateScript = join(packageRoot, "scripts", scriptName);
+  const exitStatus = (error: unknown): number =>
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+      ? error.status
+      : 1;
 
   if (!existsSync(updateScript)) {
     console.error("✗ The bundled updater is missing from this ClawRouter installation.");
-    console.error("  Update manually: curl -fsSL https://blockrun.ai/ClawRouter-update | bash");
+    console.error(
+      isWindows
+        ? "  Update manually: iwr -useb https://blockrun.ai/ClawRouter-update.ps1 | iex"
+        : "  Update manually: curl -fsSL https://blockrun.ai/ClawRouter-update | bash",
+    );
     process.exitCode = 1;
     return;
   }
 
   console.log(`🦞 ClawRouter update (v${VERSION})\n`);
+  const tempDir = mkdtempSync(join(tmpdir(), "clawrouter-update-"));
   try {
-    if (process.platform === "win32") {
+    const script = join(tempDir, scriptName);
+    copyFileSync(updateScript, script);
+    if (isWindows) {
       execFileSync(
         "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", updateScript],
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script],
         { stdio: "inherit", env: process.env },
       );
     } else {
-      execFileSync("bash", [updateScript], { stdio: "inherit", env: process.env });
+      execFileSync("bash", [script], { stdio: "inherit", env: process.env });
     }
   } catch (error) {
-    process.exitCode =
-      typeof error === "object" &&
-      error !== null &&
-      "status" in error &&
-      typeof error.status === "number"
-        ? error.status
-        : 1;
+    process.exitCode = exitStatus(error);
+    return;
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+
+  // Plugin is current. Refresh the global CLI only when that is where we are
+  // running from — a plugin-dir or npx invocation has no global copy to drift.
+  let globalRoot: string;
+  try {
+    globalRoot = execFileSync("npm", ["root", "-g"], {
+      encoding: "utf8",
+      shell: isWindows,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return;
+  }
+  let fromGlobal: boolean;
+  try {
+    const rel = relative(realpathSync(globalRoot), realpathSync(packageRoot));
+    fromGlobal = rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
+  } catch {
+    return;
+  }
+  if (!fromGlobal) return;
+
+  const installSpec = process.env.BLOCKRUN_CLAWROUTER_INSTALL_SPEC || "@blockrun/clawrouter@latest";
+  console.log(`\n→ Updating global CLI (npm install -g ${installSpec})...`);
+  try {
+    execFileSync("npm", ["install", "-g", installSpec], {
+      stdio: "inherit",
+      shell: isWindows,
+      env: process.env,
+    });
+    console.log("  ✓ Global CLI updated");
+  } catch {
+    // The plugin — what OpenClaw actually loads — is already updated, so this
+    // is a warning, not a failed update. Usually EACCES on a root-owned prefix.
+    console.warn("  ⚠ Plugin updated, but the global CLI could not be refreshed.");
+    console.warn(`    Run manually: npm install -g ${installSpec}`);
   }
 }
 
@@ -1197,7 +1253,9 @@ function parseArgs(args: string[]): {
       result.noReuse = true;
     } else if (arg === "setup") {
       result.setup = true;
-    } else if (arg === "update") {
+    } else if (arg === "update" && i === 0) {
+      // Command position only: `doctor how do I update` must stay a doctor
+      // question, not silently reinstall the plugin.
       result.update = true;
     } else if (arg === "phone") {
       result.phone = true;
